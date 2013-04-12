@@ -9,8 +9,10 @@
 #
 # Look at STEP II
 #
-# Author: S.Viret (vioret@in2p3.fr)
-# Date  : 7/11/2012
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 12/04/2013
+#
+# Script tested with release CMSSW_6_1_2_SLHC1
 #
 #########################
 
@@ -23,22 +25,18 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('SimGeneral.MixingModule.mix_E10TeV_FIX_1_BX432_cfi')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
+process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
-process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 # Special geometry (Tracker only)
-process.load('SLHCUpgradeSimulations.Geometry.Digi_skimBarrelEndcap_cff')
-process.load('SLHCUpgradeSimulations.Geometry.fakeConditions_BarrelEndcap_cff')
-process.load('SLHCUpgradeSimulations.Geometry.recoFromSimDigis_BarrelEndcap_cff')
-process.load('SLHCUpgradeSimulations.Geometry.BarrelEndcap_skimSimIdealGeometryXML_cff')
-process.load('SimG4Core.Application.g4SimHits_JustTrack_cfi')
-
+process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
+process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
+process.load('DataProduction.SkimGeometry.mixPU_SKIM_cfi')
+process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(5)
@@ -48,12 +46,12 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("EmptySource")
 
 process.mix.input.nbPileupEvents.averageNumber = cms.double(10.0)               # The number of pileup events you want  
-process.mix.input.fileNames     = cms.untracked.vstring('file:MinBias_50.root') # The file where to pick them up
+process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10.root') # The file where to pick them up
 
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'DESIGN42_V11::All'
+process.GlobalTag.globaltag = 'POSTLS161_V15::All'
 
 process.RandomNumberGeneratorService.generator.initialSeed      = 20
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
@@ -91,14 +89,24 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
         SelectEvents = cms.vstring('generation_step')
     )
 )
-process.RAWSIMoutput.outputCommands.append('keep PixelDigiedmDetSetVector_simSiPixelDigis_*_*')
-process.RAWSIMoutput.outputCommands.append('keep *_simSiPixelDigis_*_*')
 
-## so strip simhits are not asked for
+process.RAWSIMoutput.outputCommands.append('keep *_simSiPixelDigis_*_*')
+process.RAWSIMoutput.outputCommands.append('keep *_mergedtruth_*_*')
+process.RAWSIMoutput.outputCommands.append('drop *_mix_*_*')
+
 process.mergedtruth.simHitCollections.pixel = cms.vstring('g4SimHitsTrackerHitsPixelBarrelLowTof',
                          'g4SimHitsTrackerHitsPixelBarrelHighTof',
                          'g4SimHitsTrackerHitsPixelEndcapLowTof',
                          'g4SimHitsTrackerHitsPixelEndcapHighTof')
+
+process.mergedtruth.simHitCollections = cms.PSet(
+        pixel = cms.vstring (
+            'g4SimHitsTrackerHitsPixelBarrelLowTof',
+            'g4SimHitsTrackerHitsPixelBarrelHighTof',
+            'g4SimHitsTrackerHitsPixelEndcapLowTof',
+            'g4SimHitsTrackerHitsPixelEndcapHighTof'
+        )
+    )
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
@@ -113,4 +121,10 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 
 # filter all path with the production filter sequence
 for path in process.paths:
-	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
+	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
+
+# Automatic addition of the customisation function
+from DataProduction.SkimGeometry.phase2TkCustomsBE_SKIM import customise 
+
+#call to customisation function
+process = customise(process)

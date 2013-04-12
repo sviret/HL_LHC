@@ -7,21 +7,19 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('SimGeneral.MixingModule.mix_E10TeV_FIX_1_BX432_cfi')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
+process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
-process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 # Special geometry (Tracker only)
-process.load('SLHCUpgradeSimulations.Geometry.Digi_skimBarrelEndcap_cff')
-process.load('SLHCUpgradeSimulations.Geometry.fakeConditions_BarrelEndcap_cff')
-process.load('SLHCUpgradeSimulations.Geometry.recoFromSimDigis_BarrelEndcap_cff')
-process.load('SLHCUpgradeSimulations.Geometry.BarrelEndcap_skimSimIdealGeometryXML_cff')
-process.load('SimG4Core.Application.g4SimHits_JustTrack_cfi')
+process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
+process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
+process.load('DataProduction.SkimGeometry.mixPU_SKIM_cfi')
+process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
+
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(NEVTS)
@@ -32,7 +30,7 @@ process.source = cms.Source("EmptySource")
 
 # The number of pileup events you want  
 process.mix.input.nbPileupEvents.averageNumber = cms.double(NPU)             
-process.mix.input.fileNames     = cms.untracked.vstring('file:PUFILEA','file:PUFILEB')
+process.mix.input.fileNames     = cms.untracked.vstring('file:PUFILEA')
 
 # Additional output definition
 
@@ -51,7 +49,7 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 0",
     "posMatching  1",
     "maxClusWdth  3",
-    "windowSize   6",
+    "windowSize   -1",
     "pdgSel -1",
     "verbose 0"
     )
@@ -66,6 +64,9 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
         MaxPt = cms.double(PTMAX),
         MinPt = cms.double(PTMIN),
         PartID = cms.vint32(PTYPE),
+	XFlatSpread = cms.double(1.5),  # In mm
+	YFlatSpread = cms.double(1.5),  # In mm
+	ZFlatSpread = cms.double(150.),  # In mm
         MaxEta = cms.double(ETAMAX),
 	MaxPhi = cms.double(PHIMAX),
         MinEta = cms.double(ETAMIN),
@@ -77,15 +78,17 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 
 ## so strip simhits are not asked for
 
-process.mergedtruth.simHitCollections.pixel = cms.vstring('g4SimHitsTrackerHitsPixelBarrelLowTof',
-                         'g4SimHitsTrackerHitsPixelBarrelHighTof',
-                         'g4SimHitsTrackerHitsPixelEndcapLowTof',
-                         'g4SimHitsTrackerHitsPixelEndcapHighTof')
+process.mergedtruth.simHitCollections = cms.PSet(
+        pixel = cms.vstring (
+            'g4SimHitsTrackerHitsPixelBarrelLowTof',
+            'g4SimHitsTrackerHitsPixelBarrelHighTof',
+            'g4SimHitsTrackerHitsPixelEndcapLowTof',
+            'g4SimHitsTrackerHitsPixelEndcapHighTof'
+        )
+    )
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
-
-process.psim                 = cms.Sequence(cms.SequencePlaceholder("randomEngineStateProducer")*process.g4SimHits)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
@@ -97,3 +100,9 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 # filter all path with the production filter sequence
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
+
+# Automatic addition of the customisation function
+from DataProduction.SkimGeometry.phase2TkCustomsBE_SKIM import customise 
+
+#call to customisation function
+process = customise(process)

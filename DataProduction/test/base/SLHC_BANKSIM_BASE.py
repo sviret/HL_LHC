@@ -45,14 +45,15 @@ process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
 process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
 process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
 
-process.generator = cms.EDProducer("FlatRandomPtGunProducer",
+
+process.generator = cms.EDProducer("FlatRandomOneOverPtGunProducer",
     PGunParameters = cms.PSet(
-        MaxPt = cms.double(PTMAX),
-        MinPt = cms.double(PTMIN),
+	MaxOneOverPt = cms.double(PTMAX),
+        MinOneOverPt = cms.double(PTMIN),
+	XFlatSpread = cms.double(1.5),  # In mm
+	YFlatSpread = cms.double(1.5),  # In mm
+	ZFlatSpread = cms.double(150.),  # In mm
         PartID = cms.vint32(PTYPE),
-	XFlatSpread = cms.double(3.),  # In mm
-	YFlatSpread = cms.double(3.),  # In mm
-	ZFlatSpread = cms.double(150.),  # In mm	
         MaxEta = cms.double(ETAMAX),
 	MaxPhi = cms.double(PHIMAX),
         MinEta = cms.double(ETAMIN),
@@ -62,16 +63,8 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     AddAntiParticle = cms.bool(False),
 )
 
-process.MIBextraction.doL1TT           = True
+process.MIBextraction.doL1TT           = False
 
-process.MIBextraction.analysisSettings = cms.untracked.vstring(
-    "matchedStubs 0",
-    "posMatching  0",
-    "maxClusWdth  3",
-    "windowSize   -1",
-    "pdgSel -1",
-    "verbose 0"
-    )
 
 process.mergedtruth.simHitCollections = cms.PSet(
         pixel = cms.vstring (
@@ -81,6 +74,7 @@ process.mergedtruth.simHitCollections = cms.PSet(
             'g4SimHitsTrackerHitsPixelEndcapHighTof'
         )
     )
+
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)

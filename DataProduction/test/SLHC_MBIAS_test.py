@@ -1,7 +1,7 @@
 #########################
 #
-# Configuration file for MinBias events
-# simulation in tracker only
+# Configuration file for simple MBias events
+# production in tracker only
 #
 # Instruction to run this script are provided on this page:
 #
@@ -9,35 +9,38 @@
 #
 # Look at STEP II
 #
-# Author: S.Viret (vioret@in2p3.fr)
-# Date  : 7/11/2012
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 12/04/2013
+#
+# Script tested with release CMSSW_6_1_2_SLHC1
 #
 #########################
 
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('GEN')
+process = cms.Process('SIM')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
+process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
-process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 # Special geometry (Tracker only)
-process.load('SLHCUpgradeSimulations.Geometry.BarrelEndcap_skimSimIdealGeometryXML_cff')
-process.load('SimG4Core.Application.g4SimHits_JustTrack_cfi')
+process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
+process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
+#process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
+#process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
+
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(10)
 )
 
 # Input source
@@ -47,29 +50,16 @@ process.source = cms.Source("EmptySource")
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'DESIGN42_V11::All'
+process.GlobalTag.globaltag = 'POSTLS161_V15::All'
 
 
+# Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
 process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
-process.RandomNumberGeneratorService.mix.initialSeed            = 4
 
 
-# Output definition
-process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
-    splitLevel = cms.untracked.int32(0),
-    eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
-    outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('MinBias_50.root'),
-    dataset = cms.untracked.PSet(
-        filterName = cms.untracked.string(''),
-        dataTier = cms.untracked.string('SIM')
-    ),
-    SelectEvents = cms.untracked.PSet(
-        SelectEvents = cms.vstring('simulation_step')
-    )
-)
+# Generate particle gun events
 
 
 process.generator = cms.EDFilter("Pythia6GeneratorFilter",
@@ -119,19 +109,31 @@ process.generator = cms.EDFilter("Pythia6GeneratorFilter",
 )
 
 
+# Output definition
 
+process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
+    splitLevel = cms.untracked.int32(0),
+    eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
+    outputCommands = process.RAWSIMEventContent.outputCommands,
+    fileName = cms.untracked.string('MBias_10.root'),
+    dataset = cms.untracked.PSet(
+        filterName = cms.untracked.string(''),
+        dataTier = cms.untracked.string('GEN-SIM')
+    ),
+    SelectEvents = cms.untracked.PSet(
+        SelectEvents = cms.vstring('generation_step')
+    )
+)
 
 # Path and EndPath definitions
-process.generation_step = cms.Path(process.pgen)
-process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
-process.psim = cms.Sequence(cms.SequencePlaceholder("randomEngineStateProducer")*process.g4SimHits)
-process.simulation_step   = cms.Path(process.psim)
-process.endjob_step = cms.EndPath(process.endOfProcess)
-process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
+process.generation_step      = cms.Path(process.pgen)
+process.simulation_step      = cms.Path(process.psim)
+process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
+process.endjob_step          = cms.EndPath(process.endOfProcess)
+process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
-# Schedule definition
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
-	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
+	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
