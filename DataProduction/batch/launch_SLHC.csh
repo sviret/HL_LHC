@@ -23,12 +23,15 @@
 # p11: SUFFIX: a specific nickname for this production 
 # p12: BATCH or nothing: launch lxbatch jobs or not
 #
-# Author: Seb Viret <viret@in2p3.fr>
-#
 # For more details, and examples, have a look at:
 # 
 # http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto (STEP II)
 # 
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 12/04/2013
+#
+# Script tested with release CMSSW_6_1_2_SLHC1
+#
 ###########################################
 
 
@@ -48,7 +51,7 @@ set STORAGEDIR2 = srm://$LFC_HOST/$STORAGEDIR                            # The d
 
 # The directory is the one containing the minbias events necessary for PU generation
 set STORAGEPU   = srm://$LFC_HOST/$STORAGEDIR/MINBIAS_forPU_2            
-set NPU         = 200 # How many pile up events you want            
+set NPU         = 140 # How many pile up events you want            
 
 ###########################################################
 ###########################################################
@@ -62,7 +65,7 @@ set NPU         = 200 # How many pile up events you want
 #
 
 source /afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.csh
-voms-proxy-init --voms cms --hours 100 -out $HOME/.globus/gridproxy.cert
+voms-proxy-init --voms cms --valid 100:00 -out $HOME/.globus/gridproxy.cert
 setenv X509_USER_PROXY ${HOME}'/.globus/gridproxy.cert'
 
 set GTAG         = ${1}"::All"    # Global tag
@@ -70,6 +73,9 @@ set N_RUN        = ${2}           # Number of samples
 set EVTS_PER_RUN = ${3}           # Number of events per sample
 set MATTER       = ${4}           # Type of event
 set PTYPE        = -13            # Default particle type (MUON)
+
+@ i = 0
+@ j = 0
 
 # The particle type is set depending on the MATTER type
 
@@ -135,6 +141,10 @@ if ($MATTER == "MUBANK") then
 	set PTYPE = -1013 
 endif  
 
+if ($MATTER == "TKLAYOUT") then
+	set PTYPE = 999 
+	@ j = 5000
+endif 
 
 # Then we setup some environment variables
 
@@ -146,7 +156,7 @@ set RELEASEDIR   = $PWD           # This is where the release is installed
 cd $PACKDIR/batch
 
 
-@ i = 0
+
 
 # Finally we create the batch scripts and launch the jobs
 
@@ -160,21 +170,24 @@ lfc-mkdir $OUTPUTDIR2
 while ($i != $N_RUN)
 
     @ i++
+    @ j++
 
     rm *.log
 
-    set is_run  = `lcg-ls $OUTPUTDIR | grep _${i}.root | wc -l`
-  	           		
-    if ($is_run != 0) then	
-       continue
-    endif
+    #set is_run  = `lcg-ls $OUTPUTDIR | grep _${i}.root | wc -l`
+
+    echo $i	 	 
+          		
+    #if ($is_run != 0) then	
+    #   continue
+    #endif
 
     echo "#\!/bin/bash" > gen_job_${MATTER}_${11}_${i}.sh
-    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU" >> gen_job_${MATTER}_${11}_${i}.sh
+    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $j $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU" >> gen_job_${MATTER}_${11}_${i}.sh
     chmod 755 gen_job_${MATTER}_${11}_${i}.sh
 
     if (${12} == "BATCH") then
-	bsub -q 1nd -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${i}.sh
+	bsub -q 1nw -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${i}.sh
     endif
 end 
 

@@ -29,7 +29,8 @@ ETAMIN=${13}            #
 ETAMAX=${14}            #
 PUDIR=${15}             # Minbias storage repository
 NPU=${16}               # PU events number
-
+PU=0 
+BANK=0
 
 #
 # Setting up environment variables
@@ -38,7 +39,7 @@ NPU=${16}               # PU events number
 TOP=$PWD
 
 cd $CMSSW_PROJECT_SRC
-export SCRAM_ARCH=slc5_amd64_gcc434
+export SCRAM_ARCH=slc5_amd64_gcc472
 eval `scramv1 runtime -sh`   
 voms-proxy-info
 
@@ -59,7 +60,12 @@ SEED1=$RANDOM
 SEED2=$RANDOM
 SEED3=$RANDOM
 SEED4=$RANDOM
+SEED5=$RANDOM
+SEED6=$RANDOM
+SEED7=$RANDOM
+SEED8=$RANDOM
 
+echo $PTYPE
 
 #
 # And we tweak the python generation script according to our needs
@@ -80,14 +86,23 @@ fi
 
 if [ "$PTYPE" -eq 1013 ]; then
     PTYPE=13
-    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy.py 
+    BANK=1
+    cp $PACK_DIR/test/base/SLHC_BANKSIM_BASE.py BH_dummy.py 
+    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy2.py 
 fi
 
 if [ "$PTYPE" -eq -1013 ]; then
     PTYPE=-13
-    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy.py 
+    BANK=1
+    cp $PACK_DIR/test/base/SLHC_BANKSIM_BASE.py BH_dummy.py 
+    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy2.py 
 fi
 
+if [ "$PTYPE" -eq 999 ]; then
+    echo "here!!!"
+    PTYPE=$NRUN
+    cp $PACK_DIR/test/base/SLHC_translate_BASE.py BH_dummy.py 
+fi
 
 # Script for Pileup production
 
@@ -101,9 +116,9 @@ FILE2=`echo $(( $RANDOM % 200 ))`
 
 if [ "$PTYPE" -eq 777 ]; then
     PTYPE=-13
-    cp $PACK_DIR/test/base/SLHC_PU_BASE.py BH_dummy.py 
-    lcg-cp $PUDIR/SLHC_extr_MINBIAS_$FILE1.root file:/$TOP/SLHC_extr_MINBIAS_$FILE1.root 
-    lcg-cp $PUDIR/SLHC_extr_MINBIAS_$FILE2.root file:/$TOP/SLHC_extr_MINBIAS_$FILE2.root 
+    PU=1 
+    cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 
+    cp $PACK_DIR/test/base/SLHC_PU_BASE.py    BH_dummy.py 
     tag=${TYPE}_${NPU}_${NRUN}
 fi
 
@@ -126,10 +141,47 @@ sed "s/PHIMAX/$PHIMAX/"                                -i BH_dummy.py
 sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummy.py
 sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummy.py
 sed "s/NPU/$NPU/"                                      -i BH_dummy.py
-sed "s#PUFILEA#$TOP/SLHC_extr_MINBIAS_$FILE1.root#"    -i BH_dummy.py
-sed "s#PUFILEB#$TOP/SLHC_extr_MINBIAS_$FILE2.root#"    -i BH_dummy.py
+sed "s#PUFILEA#$TOP/MBiasSample.root#"                 -i BH_dummy.py
 
 
+
+if [ "$PU" -eq 1 ]; then
+    PTYPE=777
+    EVTS=500
+    sed "s/NEVTS/$EVTS/"                                   -i BH_dummyMinBias.py
+    sed "s/PTYPE/$PTYPE/"                                  -i BH_dummyMinBias.py
+    sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummyMinBias.py
+    sed "s/NSEEDA/$SEED5/g"                                -i BH_dummyMinBias.py
+    sed "s/NSEEDB/$SEED6/g"                                -i BH_dummyMinBias.py
+    sed "s/NSEEDC/$SEED7/g"                                -i BH_dummyMinBias.py
+    sed "s/NSEEDD/$SEED8/g"                                -i BH_dummyMinBias.py
+    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummyMinBias.py
+    sed "s/PTMIN/$PTMIN/"                                  -i BH_dummyMinBias.py
+    sed "s/PTMAX/$PTMAX/"                                  -i BH_dummyMinBias.py
+    sed "s/PHIMIN/$PHIMIN/"                                -i BH_dummyMinBias.py
+    sed "s/PHIMAX/$PHIMAX/"                                -i BH_dummyMinBias.py
+    sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummyMinBias.py
+    sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummyMinBias.py
+    sed "s/NPU/$NPU/"                                      -i BH_dummyMinBias.py
+fi
+
+if [ "$BANK" -eq 1 ]; then
+    sed "s/NEVTS/$EVTS/"                                   -i BH_dummy2.py
+    sed "s/PTYPE/$PTYPE/"                                  -i BH_dummy2.py
+    sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummy2.py
+    sed "s/NSEEDA/$SEED5/g"                                -i BH_dummy2.py
+    sed "s/NSEEDB/$SEED6/g"                                -i BH_dummy2.py
+    sed "s/NSEEDC/$SEED7/g"                                -i BH_dummy2.py
+    sed "s/NSEEDD/$SEED8/g"                                -i BH_dummy2.py
+    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
+    sed "s/PTMIN/$PTMIN/"                                  -i BH_dummy2.py
+    sed "s/PTMAX/$PTMAX/"                                  -i BH_dummy2.py
+    sed "s/PHIMIN/$PHIMIN/"                                -i BH_dummy2.py
+    sed "s/PHIMAX/$PHIMAX/"                                -i BH_dummy2.py
+    sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummy2.py
+    sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummy2.py
+    sed "s/NPU/$NPU/"                                      -i BH_dummy2.py
+fi
 
 # Set output filenames
 #
@@ -139,8 +191,16 @@ DATA_NAME=SLHC_extr_$tag.root
 # Launch the whole thing
 #
 
+if [ "$PTYPE" -eq 777 ]; then
+    cmsRun BH_dummyMinBias.py
+fi
+
 cmsRun BH_dummy.py
 
+if [ "$BANK" -eq 1 ]; then
+    cmsRun BH_dummy2.py
+    mv extracted_skimmed.root extracted.root
+fi
 
 # Recover the data
 #
