@@ -76,6 +76,10 @@ cd $TOP
 # Download the main config script
 cp $PACK_DIR/test/base/SLHC_PGUN_BASE.py BH_dummy.py 
 
+# Script for Jets production
+if [ "$PTYPE" -eq 1 ]; then
+    cp $PACK_DIR/test/base/SLHC_JETS_BASE.py BH_dummy.py 
+fi
 
 # Script for MinBias production
 if [ "$PTYPE" -eq 666 ]; then
@@ -122,7 +126,12 @@ if [ "$PTYPE" -eq 777 ]; then
     tag=${TYPE}_${NPU}_${NRUN}
 fi
 
-
+if [ "$PTYPE" -eq 888 ]; then
+    PU=1 
+    cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 
+    cp $PACK_DIR/test/base/SLHC_PU_4T_BASE.py BH_dummy.py 
+    tag=${TYPE}_${NPU}_${NRUN}
+fi
 
 # Finally the script is modified according to the requests
 
@@ -147,7 +156,7 @@ sed "s#PUFILEA#$TOP/MBiasSample.root#"                 -i BH_dummy.py
 
 if [ "$PU" -eq 1 ]; then
     PTYPE=777
-    EVTS=500
+    EVTS=200
     sed "s/NEVTS/$EVTS/"                                   -i BH_dummyMinBias.py
     sed "s/PTYPE/$PTYPE/"                                  -i BH_dummyMinBias.py
     sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummyMinBias.py

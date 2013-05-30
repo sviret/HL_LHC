@@ -1,6 +1,24 @@
+#########################
+#
+# Configuration file for 4 tops events
+# production in tracker only
+#
+# Instruction to run this script are provided on this page:
+#
+# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto
+#
+# Look at STEP II
+#
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 30/05/2013
+#
+#########################
+
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('EXTR')
+from Configuration.Generator.PythiaUESettings_cfi import *
+
+process = cms.Process('SIM')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -20,18 +38,17 @@ process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cf
 process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
+
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(NEVTS)
+    input = cms.untracked.int32(10)
 )
 
 # Input source
-process.source = cms.Source("EmptySource")
-
+process.source = cms.Source("LHESource",
+    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/s/sviret/publis/LHE/4tops_SM_10000_events.lhe')
+)
 
 # Additional output definition
-
-# Other statements
-process.GlobalTag.globaltag = 'MYGLOBALTAG'
 
 # Load the extracto
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
@@ -40,26 +57,48 @@ process.MIBextraction.doMC             = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
 
-process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
-process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
-process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
+# Other statements
+process.GlobalTag.globaltag = 'POSTLS161_V15::All'
 
-process.generator = cms.EDProducer("FlatRandomPtGunProducer",
-    PGunParameters = cms.PSet(
-        MaxPt = cms.double(PTMAX),
-        MinPt = cms.double(PTMIN),
-        PartID = cms.vint32(PTYPE),
-	XFlatSpread = cms.double(1.5),  # In mm
-	YFlatSpread = cms.double(1.5),  # In mm
-	ZFlatSpread = cms.double(150.),  # In mm	
-        MaxEta = cms.double(ETAMAX),
-	MaxPhi = cms.double(PHIMAX),
-        MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN)
+# Random seeds
+process.RandomNumberGeneratorService.generator.initialSeed      = 1
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
+process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
+process.RandomNumberGeneratorService.mix.initialSeed            = 4
+
+
+# for top events
+
+process.generator = cms.EDFilter("Pythia6HadronizerFilter",
+    pythiaHepMCVerbosity = cms.untracked.bool(True),
+    maxEventsToPrint = cms.untracked.int32(0),
+    pythiaPylistVerbosity = cms.untracked.int32(1),
+    comEnergy = cms.double(14000.0),
+    PythiaParameters = cms.PSet(
+        pythiaUESettingsBlock,
+        processParameters = cms.vstring('MSEL=0         ! User defined processes', 
+                        'PMAS(5,1)=4.4   ! b quark mass',
+                        'PMAS(6,1)=172.4 ! t quark mass',
+			'MSTJ(1)=1       ! Fragmentation/hadronization on or off',
+			'MSTP(61)=1      ! Parton showering on or off'),
+        # This is a vector of ParameterSet names to be read, in this order
+        parameterSets = cms.vstring('pythiaUESettings', 
+            'processParameters')
     ),
-    Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(False),
+    jetMatching = cms.untracked.PSet(
+       scheme = cms.string("Madgraph"),
+       mode = cms.string("auto"),	# soup, or "inclusive" / "exclusive"
+       MEMAIN_etaclmax = cms.double(5.0),
+       MEMAIN_qcut = cms.double(30.0),
+       MEMAIN_minjets = cms.int32(0),
+       MEMAIN_maxjets = cms.int32(12),
+       MEMAIN_showerkt = cms.double(0),   # use 1=yes only for pt-ordered showers !
+       MEMAIN_nqmatch = cms.int32(5), #PID of the flavor until which the QCD radiation are kept in the matching procedure; 
+                                      # if nqmatch=4, then all showered partons from b's are NOT taken into account
+				      # Note (JY): I'm not sure what the default is, but -1 results in a throw...
+       MEMAIN_excres = cms.string(""),
+       outTree_flag = cms.int32(0)        # 1=yes, write out the tree for future sanity check
+    )    
 )
 
 # Output definition
@@ -68,7 +107,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_example.root'),
+    fileName = cms.untracked.string('TTTT_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -108,8 +147,8 @@ process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
-process.p                    = cms.Path(process.MIBextraction)
 process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
+process.p                    = cms.Path(process.MIBextraction)
 
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 

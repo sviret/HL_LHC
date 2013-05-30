@@ -27,7 +27,6 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("EmptySource")
 
-
 # Additional output definition
 
 # Other statements
@@ -45,22 +44,29 @@ process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
 process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
 process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
 
-process.generator = cms.EDProducer("FlatRandomPtGunProducer",
-    PGunParameters = cms.PSet(
-        MaxPt = cms.double(PTMAX),
-        MinPt = cms.double(PTMIN),
-        PartID = cms.vint32(PTYPE),
-	XFlatSpread = cms.double(1.5),  # In mm
-	YFlatSpread = cms.double(1.5),  # In mm
-	ZFlatSpread = cms.double(150.),  # In mm	
-        MaxEta = cms.double(ETAMAX),
-	MaxPhi = cms.double(PHIMAX),
-        MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN)
-    ),
-    Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(False),
-)
+# for jets
+from Configuration.Generator.PythiaUESettings_cfi import *
+process.load("Configuration.Generator.TTbar_cfi")
+process.generator.comEnergy = cms.double(14000.0)
+#process.generator.pythiaHepMCVerbosity = cms.untracked.bool(True)
+process.generator.PythiaParameters.processParameters = cms.vstring(
+    'MSEL=0          !  for user specification of sub-processes',
+    'MSUB(11)=1      !  qq->qq   ON, if one needs quark jets',
+#    'MSUB(68)=1      !  gg->gg   ON, if one needs gluon jets',
+    'MSUB(81)=1      !  qq->qq   qq->QQ massive',
+    'MSUB(82)=1      !  gg->gg   gg->QQ massive',
+    'CKIN(3)=300.    !  Pt low cut but also the Et jet required',
+    'CKIN(4)=1000.    ! Pt hat upper cut', 
+    'CKIN(13)=0.     !  etamin',
+    'CKIN(14)=ETAMAX   !  etamax',
+    'CKIN(15)=ETAMIN   ! -etamax',
+    'CKIN(16)=0.     ! -etamin',
+#    'MSTP(7)=2       ! 2 for UU_bar',
+#    'MSTP(7)=4       ! 4 for CC_bar',
+    'MSTP(7)   = 5     ! 5 for BB_bar',
+#    'MSTP(7)   = 6     ! flavour = top', 
+#    'PMAS(6,1) = 175.  ! top quark mass'
+    )
 
 # Output definition
 
@@ -68,7 +74,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_example.root'),
+    fileName = cms.untracked.string('JETS_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -122,3 +128,4 @@ from DataProduction.SkimGeometry.phase2TkCustomsBE_SKIM import customise
 
 #call to customisation function
 process = customise(process)
+

@@ -105,6 +105,10 @@ if ($MATTER == "POS") then
 	set PTYPE = 11
 endif 
 
+if ($MATTER == "JETS") then  
+	set PTYPE = 1 
+endif 
+
 # Parameters for particle gun
 
 set PTMIN=${5}
@@ -125,6 +129,10 @@ endif
 
 if ($MATTER == "PILEUP") then
 	set PTYPE = 777 
+endif 
+
+if ($MATTER == "PILEUP4T") then
+	set PTYPE = 888 
 endif 
 
 # Specific types for L1 Track Trigger studies

@@ -1,6 +1,22 @@
+#########################
+#
+# Configuration file for Jets events
+# production in tracker only
+#
+# Instruction to run this script are provided on this page:
+#
+# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto
+#
+# Look at STEP II
+#
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 30/05/2013
+#
+#########################
+
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('EXTR')
+process = cms.Process('SIM')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -20,8 +36,9 @@ process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cf
 process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
+
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(NEVTS)
+    input = cms.untracked.int32(100)
 )
 
 # Input source
@@ -30,9 +47,6 @@ process.source = cms.Source("EmptySource")
 
 # Additional output definition
 
-# Other statements
-process.GlobalTag.globaltag = 'MYGLOBALTAG'
-
 # Load the extracto
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 
@@ -40,27 +54,39 @@ process.MIBextraction.doMC             = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
 
-process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
-process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
-process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
+# Other statements
+process.GlobalTag.globaltag = 'POSTLS161_V15::All'
 
-process.generator = cms.EDProducer("FlatRandomPtGunProducer",
-    PGunParameters = cms.PSet(
-        MaxPt = cms.double(PTMAX),
-        MinPt = cms.double(PTMIN),
-        PartID = cms.vint32(PTYPE),
-	XFlatSpread = cms.double(1.5),  # In mm
-	YFlatSpread = cms.double(1.5),  # In mm
-	ZFlatSpread = cms.double(150.),  # In mm	
-        MaxEta = cms.double(ETAMAX),
-	MaxPhi = cms.double(PHIMAX),
-        MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN)
-    ),
-    Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(False),
-)
+# Random seeds
+process.RandomNumberGeneratorService.generator.initialSeed      = 1
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
+process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
+process.RandomNumberGeneratorService.mix.initialSeed            = 4
+
+
+# for jets
+from Configuration.Generator.PythiaUESettings_cfi import *
+process.load("Configuration.Generator.TTbar_cfi")
+process.generator.comEnergy = cms.double(14000.0)
+#process.generator.pythiaHepMCVerbosity = cms.untracked.bool(True)
+process.generator.PythiaParameters.processParameters = cms.vstring(
+    'MSEL=0          !  for user specification of sub-processes',
+    'MSUB(11)=1      !  qq->qq   ON, if one needs quark jets',
+#    'MSUB(68)=1      !  gg->gg   ON, if one needs gluon jets',
+    'MSUB(81)=1      !  qq->qq   qq->QQ massive',
+    'MSUB(82)=1      !  gg->gg   gg->QQ massive',
+    'CKIN(3)=300.    !  Pt low cut but also the Et jet required',
+    'CKIN(4)=1000.    ! Pt hat upper cut', 
+    'CKIN(13)=0.     !  etamin',
+    'CKIN(14)=2.5    !  etamax',
+    'CKIN(15)=-2.5   ! -etamax',
+    'CKIN(16)=0.     ! -etamin',
+#    'MSTP(7)=2       ! 2 for UU_bar',  # U jets
+#    'MSTP(7)=4       ! 4 for CC_bar',  # C jets
+    'MSTP(7)   = 5     ! 5 for BB_bar', # B jets
+#    'MSTP(7)   = 6     ! flavour = top', 
+#    'PMAS(6,1) = 175.  ! top quark mass'
+    )
 
 # Output definition
 
@@ -68,7 +94,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_example.root'),
+    fileName = cms.untracked.string('JETS_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -108,8 +134,8 @@ process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
-process.p                    = cms.Path(process.MIBextraction)
 process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
+process.p                    = cms.Path(process.MIBextraction)
 
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 
