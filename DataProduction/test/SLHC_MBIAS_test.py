@@ -12,7 +12,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC1
+# Script tested with release CMSSW_6_1_2_SLHC4
 #
 #########################
 
@@ -35,8 +35,6 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 # Special geometry (Tracker only)
 process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
 process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
-#process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
-#process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 
 process.maxEvents = cms.untracked.PSet(

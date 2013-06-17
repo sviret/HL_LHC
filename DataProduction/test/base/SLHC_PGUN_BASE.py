@@ -13,6 +13,7 @@ process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
 
 # Special geometry (Tracker only)
 process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
@@ -39,6 +40,7 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 process.MIBextraction.doMC             = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
+process.MIBextraction.doSTUB           = True
 
 process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
@@ -81,6 +83,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 process.RAWSIMoutput.outputCommands.append('keep *_simSiPixelDigis_*_*')
 process.RAWSIMoutput.outputCommands.append('keep *_mergedtruth_*_*')
 process.RAWSIMoutput.outputCommands.append('drop *_mix_*_*')
+process.RAWSIMoutput.outputCommands.append('keep *_L1Tk*_*_*')
 
 process.MIBextraction.doL1TT           = True
 
@@ -107,11 +110,12 @@ process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
+process.L1TrackTrigger_step  = cms.Path(process.L1TrackTrigger)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.p                    = cms.Path(process.MIBextraction)
 process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:

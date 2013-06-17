@@ -11,8 +11,9 @@
 #
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
+# Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_1_2_SLHC1
+# Script tested with release CMSSW_6_1_2_SLHC4
 #
 #########
 
@@ -27,6 +28,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
 process.load("RecoTracker.TransientTrackingRecHit.TransientTrackingRecHitBuilder_cfi") 
 process.load("RecoTracker.TrackProducer.TrackRefitters_cff")
+process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
 
 process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
@@ -58,6 +60,7 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 # Tune some options (see MIB_extractor_cfi.py for details)
 
 process.MIBextraction.doMC             = True
+process.MIBextraction.doSTUB           = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doL1TT           = True
 process.MIBextraction.doMatch          = True
@@ -66,7 +69,7 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 0",
     "posMatching  1",
     "maxClusWdth  3",
-    "windowSize   15",
+    "windowSize   -1",
     "pdgSel -1",
     "verbose 0"
     )

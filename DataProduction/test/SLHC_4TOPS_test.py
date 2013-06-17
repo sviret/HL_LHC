@@ -11,6 +11,7 @@
 #
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 30/05/2013
+# Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
 #########################
 
@@ -31,6 +32,7 @@ process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
 
 # Special geometry (Tracker only)
 process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
@@ -45,7 +47,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("LHESource",
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/s/sviret/publis/LHE/4tops_SM_10000_events.lhe')
+    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/s/sviret/public/LHE/4tops_SM_10000_events.lhe')
 )
 
 # Additional output definition
@@ -56,6 +58,7 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 process.MIBextraction.doMC             = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
+process.MIBextraction.doSTUB           = True
 
 # Other statements
 process.GlobalTag.globaltag = 'POSTLS161_V15::All'
@@ -120,6 +123,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 process.RAWSIMoutput.outputCommands.append('keep *_simSiPixelDigis_*_*')
 process.RAWSIMoutput.outputCommands.append('keep *_mergedtruth_*_*')
 process.RAWSIMoutput.outputCommands.append('drop *_mix_*_*')
+process.RAWSIMoutput.outputCommands.append('keep *_L1Tk*_*_*')
 
 process.MIBextraction.doL1TT           = True
 
@@ -146,11 +150,12 @@ process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
+process.L1TrackTrigger_step  = cms.Path(process.L1TrackTrigger)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
-process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
+process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 process.p                    = cms.Path(process.MIBextraction)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
