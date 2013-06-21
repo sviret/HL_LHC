@@ -9,7 +9,7 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
+process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -96,6 +96,7 @@ process.MIBextraction.doL1TT           = True
 process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 0",
     "posMatching  1",
+    "zMatch  0",
     "maxClusWdth  3",
     "windowSize   -1",
     "pdgSel -1",

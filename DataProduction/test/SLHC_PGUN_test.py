@@ -28,7 +28,7 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
+process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -41,7 +41,7 @@ process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(5000)
 )
 
 # Input source
@@ -63,8 +63,11 @@ process.RandomNumberGeneratorService.mix.initialSeed            = 4
 # Generate particle gun events
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     PGunParameters = cms.PSet(
-        MinPt  = cms.double(10.),
+        MinPt  = cms.double(1.),
         MaxPt  = cms.double(50.),
+	XFlatSpread = cms.double(1.5),  # In mm
+	YFlatSpread = cms.double(1.5),  # In mm
+	ZFlatSpread = cms.double(150.),  # In mm
         PartID = cms.vint32(-13),
         MinEta = cms.double(-2.5),
         MaxEta = cms.double(2.5),
