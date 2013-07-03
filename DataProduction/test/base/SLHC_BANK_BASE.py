@@ -39,7 +39,7 @@ process.MIBextraction.doL1TT           = True
 process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 1",
     "posMatching  1",
-    "maxClusWdth  3",
+    "maxClusWdth  4",
     "windowSize   7",
     "pdgSel -1",
     "verbose 0"
