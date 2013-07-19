@@ -1,6 +1,7 @@
 #########
 #
 # Example script to run the python extractor on MC events
+# for the skimmed geometry
 # 
 # Usage: cmsRun SLHC_Extr_test.py
 #
@@ -13,7 +14,7 @@
 # Date  : 12/04/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_1_2_SLHC4
+# Script tested with release CMSSW_6_1_2_SLHC6_patch1
 #
 #########
 
@@ -36,7 +37,8 @@ process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 # Other statements
 
 # Global tag for PromptReco
-process.GlobalTag.globaltag = 'POSTLS161_V15::All'
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 process.options = cms.untracked.PSet(
     SkipEvent = cms.untracked.vstring('ProductNotFound')
@@ -50,7 +52,7 @@ process.maxEvents = cms.untracked.PSet(
 # The file you want to extract
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring('file:PGun_example.root'),
-                            #fileNames = cms.untracked.vstring('file:PU_10_sample.root'),                           
+                            #fileNames = cms.untracked.vstring('file:PU_10_sample.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
 

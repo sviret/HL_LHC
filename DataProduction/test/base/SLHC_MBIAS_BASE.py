@@ -30,7 +30,8 @@ process.source = cms.Source("EmptySource")
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'MYGLOBALTAG'
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
 
 process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA

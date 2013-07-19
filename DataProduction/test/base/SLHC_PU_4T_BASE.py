@@ -49,7 +49,8 @@ process.mix.input.fileNames     = cms.untracked.vstring('file:PUFILEA')
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'MYGLOBALTAG'
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
 # Load the extracto
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
@@ -66,6 +67,7 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "zMatch  0",
     "maxClusWdth  3",
     "windowSize   -1",
+    "thresh THRESHOLD", 
     "pdgSel -1",
     "verbose 0"
     )

@@ -32,7 +32,8 @@ process.source = cms.Source("EmptySource")
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'MYGLOBALTAG'
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
 # Load the extracto
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
@@ -40,7 +41,7 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 process.MIBextraction.doMC             = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
-process.MIBextraction.doSTUB           = True
+process.MIBextraction.doSTUB           = False
 
 process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB

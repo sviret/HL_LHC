@@ -12,7 +12,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC4
+# Script tested with release CMSSW_6_1_2_SLHC6_patch1
 #
 #########################
 
@@ -47,9 +47,9 @@ process.source = cms.Source("EmptySource")
 
 # Additional output definition
 
-# Other statements
-process.GlobalTag.globaltag = 'POSTLS161_V15::All'
-
+# Global tag for PromptReco
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1
@@ -113,7 +113,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('MBias_10.root'),
+    fileName = cms.untracked.string('MBias_10_test.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')

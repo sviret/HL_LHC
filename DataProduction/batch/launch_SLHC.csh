@@ -20,8 +20,9 @@
 # p8 : PHIMAX
 # p9 : ETAMIN
 # p10: ETAMAX
-# p11: SUFFIX: a specific nickname for this production 
-# p12: BATCH or nothing: launch lxbatch jobs or not
+# p11: THRESH: the pt threshold for the stub maker
+# p12: SUFFIX: a specific nickname for this production 
+# p13: BATCH or nothing: launch lxbatch jobs or not
 #
 # For more details, and examples, have a look at:
 # 
@@ -117,7 +118,7 @@ set PHIMIN=${7}
 set PHIMAX=${8}
 set ETAMIN=${9}
 set ETAMAX=${10}
-
+set THRESH=${11}
 
 # Then MinBias events production
 
@@ -168,10 +169,10 @@ cd $PACKDIR/batch
 
 # Finally we create the batch scripts and launch the jobs
 
-echo 'Creating directory '$STORAGEDIR/${MATTER}_${11}' for type '$PTYPE
+echo 'Creating directory '$STORAGEDIR/${MATTER}_${12}' for type '$PTYPE
 
-set OUTPUTDIR  = $STORAGEDIR2/${MATTER}_${11}
-set OUTPUTDIR2 = $STORAGEDIR/${MATTER}_${11}
+set OUTPUTDIR  = $STORAGEDIR2/${MATTER}_${12}
+set OUTPUTDIR2 = $STORAGEDIR/${MATTER}_${12}
 
 lfc-mkdir $OUTPUTDIR2 
 
@@ -190,12 +191,12 @@ while ($i != $N_RUN)
     #   continue
     #endif
 
-    echo "#\!/bin/bash" > gen_job_${MATTER}_${11}_${i}.sh
-    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $j $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU" >> gen_job_${MATTER}_${11}_${i}.sh
-    chmod 755 gen_job_${MATTER}_${11}_${i}.sh
+    echo "#\!/bin/bash" > gen_job_${MATTER}_${11}_${12}_${i}.sh
+    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $j $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH}" >> gen_job_${MATTER}_${11}_${12}_${i}.sh
+    chmod 755 gen_job_${MATTER}_${11}_${12}_${i}.sh
 
-    if (${12} == "BATCH") then
-	bsub -q 1nw -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${i}.sh
+    if (${13} == "BATCH") then	
+	bsub -q 1nw -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
     endif
 end 
 

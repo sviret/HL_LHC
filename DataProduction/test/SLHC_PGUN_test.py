@@ -13,7 +13,7 @@
 # Date        : 12/04/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_1_2_SLHC4
+# Script tested with release CMSSW_6_1_2_SLHC6_patch1
 #
 #########################
 
@@ -41,16 +41,17 @@ process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5000)
+    input = cms.untracked.int32(100)
 )
 
 # Input source
 process.source = cms.Source("EmptySource")
 
 # Additional output definition
-
 # Other statements
-process.GlobalTag.globaltag = 'POSTLS161_V15::All'
+process.genstepfilter.triggerConditions=cms.vstring("generation_step")
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1

@@ -57,8 +57,9 @@ process.MIBextraction.doSTUB           = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
 
-# Other statements
-process.GlobalTag.globaltag = 'POSTLS161_V15::All'
+# Global tag for PromptReco
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1

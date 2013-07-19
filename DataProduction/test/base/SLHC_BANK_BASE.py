@@ -21,7 +21,8 @@ process.source = cms.Source("EmptySource")
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'MYGLOBALTAG'
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
 # Load the extracto
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
@@ -40,7 +41,8 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 1",
     "posMatching  1",
     "maxClusWdth  4",
-    "windowSize   7",
+    "windowSize  -1",
+    "thresh -1", 
     "pdgSel -1",
     "verbose 0"
     )

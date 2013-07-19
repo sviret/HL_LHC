@@ -13,7 +13,7 @@
 # Date  : 12/04/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_1_2_SLHC4
+# Script tested with release CMSSW_6_1_2_SLHC6_patch1
 #
 #########################
 
@@ -47,13 +47,15 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("EmptySource")
 
-process.mix.input.nbPileupEvents.averageNumber = cms.double(10.0)  # The average number of pileup events you want  
-process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10.root') # The file where to pick them up
+process.mix.input.nbPileupEvents.averageNumber = cms.double(4.0)  # The average number of pileup events you want  
+process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10_test.root') # The file where to pick them up
 
 # Additional output definition
 
 # Other statements
-process.GlobalTag.globaltag = 'POSTLS161_V15::All'
+# Global tag for PromptReco
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 process.RandomNumberGeneratorService.generator.initialSeed      = 20
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
@@ -82,7 +84,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PU_10_sample.root'),
+    fileName = cms.untracked.string('PU_10_sample_test.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
