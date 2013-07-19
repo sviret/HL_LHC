@@ -66,7 +66,9 @@ process.MIBextraction.doMC             = True
 process.MIBextraction.doSTUB           = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doL1TT           = True
-process.MIBextraction.doMatch          = True
+# Uncomment the following line if you input file contains Tracking Particles info
+# if not you will not have the matching done for the private stub maker
+#process.MIBextraction.doMatch          = True
 
 process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 0",
