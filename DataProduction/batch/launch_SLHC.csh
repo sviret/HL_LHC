@@ -69,7 +69,7 @@ source /afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.csh
 voms-proxy-init --voms cms --valid 100:00 -out $HOME/.globus/gridproxy.cert
 setenv X509_USER_PROXY ${HOME}'/.globus/gridproxy.cert'
 
-set GTAG         = ${1}"::All"    # Global tag
+set GTAG         = ${1}           # Global tag
 set N_RUN        = ${2}           # Number of samples 
 set EVTS_PER_RUN = ${3}           # Number of events per sample
 set MATTER       = ${4}           # Type of event
