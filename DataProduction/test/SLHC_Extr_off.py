@@ -62,13 +62,13 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 
 # Tune some options (see MIB_extractor_cfi.py for details)
 
-process.MIBextraction.doMC             = True
 process.MIBextraction.doSTUB           = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doL1TT           = True
-# Uncomment the following line if you input file contains Tracking Particles info
+# Uncomment the following two lines if you input file contains Tracking Particles info
 # if not you will not have the matching done for the private stub maker
 #process.MIBextraction.doMatch          = True
+#process.MIBextraction.doMC             = True
 
 process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 0",
