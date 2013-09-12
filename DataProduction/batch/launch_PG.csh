@@ -100,8 +100,8 @@ set INDIR_XROOT = root://$LFC_HOST/$INDIR
 set OUTDIR_GRID = srm://$LFC_HOST/$OUTDIR
                   
 # The directory where the banks are stored (accessible from lxplus)
-set BANKDIR = /afs/cern.ch/work/s/sviret/testarea/PatternBanks/BE_5D/Eta7_Phi8
-set BANKDIR2= $BANKDIR/ss64_cov40 # Bank directory for CMSSW pattern reco 
+set BANKDIR  = /afs/cern.ch/work/s/sviret/testarea/PatternBanks/BE_5D/Eta7_Phi8
+set BANKDIR2 = $BANKDIR/ss64_cov40 # Bank directory for CMSSW pattern reco 
 
 # Options for bank generation only 
 
