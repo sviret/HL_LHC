@@ -31,7 +31,7 @@
 # http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto (STEP IV)
 # 
 #
-# --> Usage for pattern recognition:
+# --> Usage for standalone pattern recognition:
 #
 #
 # source launch_PG.sh PR p1 p2 p3 p4 p5
@@ -44,7 +44,23 @@
 #
 # For more details, and examples, have a look at:
 # 
-# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto (STEP V)
+# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto (STEP V.1)
+#
+#
+# --> Usage for CMSSW pattern recognition:
+#
+#
+# source launch_PG.sh FASTPR p1 p2 p3 p4 p5
+# with:
+# p1 : The SE subdirectory containing the data file you want to analyze
+# p2 : Not used here (put -1)
+# p3 : How many events you want to test in total? 
+# p4 : How many events per job (should be below p3...)?
+# p5 : BATCH or nothing: launch lxbatch jobs or not 
+#
+# For more details, and examples, have a look at:
+# 
+# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto (STEP V.2)
 #
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 01/08/2013
@@ -84,7 +100,8 @@ set INDIR_XROOT = root://$LFC_HOST/$INDIR
 set OUTDIR_GRID = srm://$LFC_HOST/$OUTDIR
                   
 # The directory where the banks are stored (accessible from lxplus)
-set BANKDIR = /afs/cern.ch/work/s/sviret/testarea/PatternBanks/BE_5D/Eta7_Phi8  
+set BANKDIR = /afs/cern.ch/work/s/sviret/testarea/PatternBanks/BE_5D/Eta7_Phi8
+set BANKDIR2= $BANKDIR/ss64_cov40 # Bank directory for CMSSW pattern reco 
 
 # Options for bank generation only 
 
@@ -160,7 +177,6 @@ endif
 
 if ($STEP == "PR") then  
 
-
     echo 'The data will be read from directory: '$INDIR_XROOT
     echo 'The pattern reco output files will be written in: '$OUTDIR
 
@@ -181,7 +197,7 @@ if ($STEP == "PR") then
 
 	    echo 'Working with file '$l
 
-	    while ($i <= $NTOT)
+	    while ($i < $NTOT)
 
 		set OUT = `echo $l | cut -d. -f1`_`echo $k | cut -d. -f1`_${i}_${j}
 
@@ -190,7 +206,57 @@ if ($STEP == "PR") then
 		chmod 755 pr_job_${OUT}.sh
 
 		if (${6} == "BATCH") then	
-		    bsub -q 8nh -e /dev/null -o /tmp/${LOGNAME}_out.txt pr_job_${OUT}.sh
+		    bsub -q 1nd -e /dev/null -o /tmp/${LOGNAME}_out.txt pr_job_${OUT}.sh
+		endif
+
+		@ i += $NPFILE
+		@ j += $NPFILE
+
+	    end 
+	end
+    end
+endif  
+
+
+# Finally, CMSSW pattern recognition 
+
+if ($STEP == "FASTPR") then  
+
+    echo 'The data will be read from directory: '$INDIR_XROOT
+    echo 'The pattern reco output files will be written in: '$OUTDIR
+
+    lfc-mkdir $OUTDIR
+
+    # We loop over all the banks for the corresponding sector
+
+    foreach k (`ls $BANKDIR2 | grep _sec`) 
+
+	echo 'Working with bank file '$k
+
+	@ i = 0
+	@ j = $NPFILE
+
+	# We loop over the data directory in order to find all the files to analyse
+	
+	foreach l (`lcg-ls $INDIR_GRID/ | cut -d/ -f15`) 
+
+	    echo 'Working with file '$l
+
+	    while ($i < $NTOT)
+
+		set OUT = `echo $l | cut -d. -f1`_`echo $k | cut -d. -f1`_${i}_${j}
+
+		set deal = `lcg-ls $OUTDIR_GRID/$OUT.root | wc -l`
+
+		if ($deal == "0") then
+
+		    echo "#\!/bin/bash" > fpr_job_${OUT}.sh
+		    echo "source $PACKDIR/batch/PG.sh FASTPR ${INDIR_XROOT}/$l $BANKDIR2/$k $OUT.root  ${i} $NPFILE $OUTDIR_GRID $RELEASEDIR" >> fpr_job_${OUT}.sh
+		    chmod 755 fpr_job_${OUT}.sh
+
+		    if (${6} == "BATCH") then	
+			bsub -q 8nh -e /dev/null -o /tmp/${LOGNAME}_out.txt fpr_job_${OUT}.sh			
+		    endif
 		endif
 
 		@ i += $NPFILE

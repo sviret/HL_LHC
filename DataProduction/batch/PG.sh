@@ -32,7 +32,7 @@ if [ ${1} = "PR" ]; then
     eval `scramv1 runtime -sh`   
     voms-proxy-info
 
-    cd /tmp/sviret
+    cd /tmp/$USER
     TOP=$PWD
 
     #
@@ -80,7 +80,7 @@ if [ ${1} = "BG" ]; then
     eval `scramv1 runtime -sh`   
     voms-proxy-info
 
-    cd /tmp/sviret
+    cd /tmp/$USER
     TOP=$PWD
 
     #
@@ -101,5 +101,61 @@ if [ ${1} = "BG" ]; then
     sed "s/ALAY/$LAY/"                     -i amsimulation.cfg
 
     $CMSSW_PROJECT_SRC/src/trunk/AMSimulation --generateBank 
+
+fi
+
+
+
+#
+# Case 3: CMSSW pattern recognition
+#
+
+
+if [ ${1} = "FASTPR" ]; then
+
+    # echo "source $PACKDIR/batch/PG.sh FASTPR ${INDIR_XROOT}/$l $BANKDIR2/$k $OUT.root  ${i} $NPFILE $OUTDIR_GRID $RELEASEDIR" >> fpr_job_${OUT}.sh
+
+    INPUT=${2} 
+    BK=${3}  
+    OUTPUT=${4}  
+    OUTPUTFULL=${7}/${4}  
+    START=${5}  
+    STOP=${6}  
+    CMSSW_PROJECT_SRC=${8}
+
+    #
+    # Setting up environment variables
+    #   
+
+    cd $CMSSW_PROJECT_SRC
+    export SCRAM_ARCH=slc5_amd64_gcc472
+    eval `scramv1 runtime -sh`   
+    voms-proxy-info
+
+    cd /tmp/$USER
+    TOP=$PWD
+
+    #
+    # And we tweak the python generation script according to our needs
+    #  
+
+    cd $TOP
+    cp $CMSSW_PROJECT_SRC/src/DataProduction/test/base/SLHC_PR_BASE.py BH_dummy.py 
+
+    # Finally the script is modified according to the requests
+    
+    sed "s/NEVTS/$STOP/"                                   -i BH_dummy.py
+    sed "s/NSKIP/$START/"                                  -i BH_dummy.py
+    sed "s#INPUTFILENAME#$INPUT#"                          -i BH_dummy.py
+    sed "s#OUTPUTFILENAME#$OUTPUT#"                        -i BH_dummy.py
+    sed "s#BANKFILENAME#$BK#"                              -i BH_dummy.py
+
+    cmsRun BH_dummy.py -j4
+
+    # Recover the data
+    #  
+
+    ls -l
+    lcg-cp file://$TOP/$OUTPUT $OUTPUTFULL
 
 fi
