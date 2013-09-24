@@ -89,6 +89,7 @@ process.RAWSIMoutput.outputCommands.append('keep *_L1Tk*_*_*')
 process.MIBextraction.doL1TT           = True
 
 process.MIBextraction.analysisSettings = cms.untracked.vstring(
+    "evtNum RUN",
     "matchedStubs 0",
     "posMatching  1",
     "zMatch  0",

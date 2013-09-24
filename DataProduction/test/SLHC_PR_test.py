@@ -38,6 +38,7 @@ process.preco = cms.EDAnalyzer('PatternExtractor',
                                outputRootFile= cms.string('my_PR_output.root'),
                                n_events      = cms.untracked.int32(5000),
                                skip_events   = cms.untracked.int32(0),
+                               keepID        = cms.untracked.int32(0),
                                threshold     = cms.int32(5))
 
 

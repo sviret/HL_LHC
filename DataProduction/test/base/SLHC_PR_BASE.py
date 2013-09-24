@@ -20,6 +20,7 @@ process.preco = cms.EDAnalyzer('PatternExtractor',
                                inputBankFile = cms.string('BANKFILENAME'),
                                n_events      = cms.untracked.int32(NEVTS),
                                skip_events   = cms.untracked.int32(NSKIP),
+                               keepID        = cms.untracked.int32(USEID),
                                threshold     = cms.int32(5))
 
 process.p = cms.Path(process.preco)

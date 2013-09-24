@@ -48,6 +48,10 @@ voms-proxy-info
 # We take care of random numbers, so that they are different for all runs
 
 MAXCOUNT=$NRUN
+START=$(($NRUN * $EVTS)) # To keep track of the right event number (for parallel production)
+
+echo $START
+
 count=0
 tag=${TYPE}_${NRUN}
 
@@ -137,6 +141,7 @@ fi
 # Finally the script is modified according to the requests
 
 sed "s/NEVTS/$EVTS/"                                   -i BH_dummy.py
+sed "s/RUN/$START/"                                    -i BH_dummy.py
 sed "s/PTYPE/$PTYPE/"                                  -i BH_dummy.py
 sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummy.py
 sed "s/NSEEDA/$SEED1/g"                                -i BH_dummy.py

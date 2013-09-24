@@ -10,7 +10,7 @@
 # Usage:
 # source launch_SLHC.sh p1 p2 p3 p4 p5 p6 p7 ...
 # with:
-# p1 : global tag for MC production (eg DESIGN42_V11)
+# p1 : global tag for MC production (eg POSTLS161_V15::All)
 # p2 : the number of runs
 # p3 : the number of events per run 
 # p4 : MU/ANTIMU/PIP/PIM/....
@@ -31,7 +31,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC1
+# Script tested with release CMSSW_6_1_2_SLHC6_patch1
 #
 ###########################################
 
@@ -196,7 +196,7 @@ while ($i != $N_RUN)
     chmod 755 gen_job_${MATTER}_${11}_${12}_${i}.sh
 
     if (${13} == "BATCH") then	
-	bsub -q 1nw -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
+	bsub -q 1nd -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
     endif
 end 
 
