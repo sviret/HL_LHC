@@ -122,6 +122,7 @@ if [ ${1} = "FASTPR" ]; then
     START=${5}  
     STOP=${6}  
     CMSSW_PROJECT_SRC=${8}
+    USEID=${9}
 
     #
     # Setting up environment variables
@@ -146,6 +147,7 @@ if [ ${1} = "FASTPR" ]; then
     
     sed "s/NEVTS/$STOP/"                                   -i BH_dummy.py
     sed "s/NSKIP/$START/"                                  -i BH_dummy.py
+    sed "s/USEID/$USEID/"                                  -i BH_dummy.py
     sed "s#INPUTFILENAME#$INPUT#"                          -i BH_dummy.py
     sed "s#OUTPUTFILENAME#$OUTPUT#"                        -i BH_dummy.py
     sed "s#BANKFILENAME#$BK#"                              -i BH_dummy.py

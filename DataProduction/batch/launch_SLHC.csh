@@ -76,7 +76,6 @@ set MATTER       = ${4}           # Type of event
 set PTYPE        = -13            # Default particle type (MUON)
 
 @ i = 0
-@ j = 0
 
 # The particle type is set depending on the MATTER type
 
@@ -178,18 +177,9 @@ lfc-mkdir $OUTPUTDIR2
 
 while ($i != $N_RUN)
 
-    @ i++
-    @ j++
-
     rm *.log
 
-    #set is_run  = `lcg-ls $OUTPUTDIR | grep _${i}.root | wc -l`
-
     echo $i	 	 
-          		
-    #if ($is_run != 0) then	
-    #   continue
-    #endif
 
     echo "#\!/bin/bash" > gen_job_${MATTER}_${11}_${12}_${i}.sh
     echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $j $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH}" >> gen_job_${MATTER}_${11}_${12}_${i}.sh
@@ -198,6 +188,8 @@ while ($i != $N_RUN)
     if (${13} == "BATCH") then	
 	bsub -q 1nd -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
     endif
+
+    @ i++
 end 
 
 
