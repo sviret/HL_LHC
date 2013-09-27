@@ -52,7 +52,7 @@
 # --> Usage for CMSSW pattern recognition:
 #
 #
-# source launch_PG.sh FASTPR p1 p2 p3 p4 p5
+# source launch_PG.sh FASTPR p1 p2 p3 p4 p5 p6
 # with:
 # p1 : The SE subdirectory containing the data file you want to analyze
 # p2 : Not used here as you will use all available bank files (put -1)
@@ -77,8 +77,8 @@
 
 set STEP    = ${1}   # PR or BG
 set MATTER  = ${2}   # Directory where the input root files are
-set BANKDIR = ${3}   # Directory where the bank (.pbk) files are
-set SECID   = ${4}   # The sector number  
+set SECID   = ${3}   # The sector number  
+set BANKDIR = ${4}   # Directory where the bank (.pbk) files are
 set NTOT    = ${5}   # How many events per data file (PR step only)?
 set NPFILE  = ${6}   # How many events per job (PR step only)?
 
