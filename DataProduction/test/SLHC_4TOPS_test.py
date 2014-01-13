@@ -13,6 +13,8 @@
 # Date  : 30/05/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
+# Script tested with release CMSSW_6_2_0_SLHC5
+#
 #########################
 
 import FWCore.ParameterSet.Config as cms
@@ -28,11 +30,12 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
+process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
+process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
+process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 
 # Special geometry (Tracker only)
 process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
@@ -52,16 +55,8 @@ process.source = cms.Source("LHESource",
 
 # Additional output definition
 
-# Load the extracto
-process.load("Extractors.RecoExtractor.MIB_extractor_cff")
-
-process.MIBextraction.doMC             = True
-process.MIBextraction.doPixel          = True
-process.MIBextraction.doMatch          = True
-process.MIBextraction.doSTUB           = True
-
-
 # Global tag for PromptReco
+process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
@@ -122,49 +117,43 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     )
 )
 
-process.RAWSIMoutput.outputCommands.append('keep *_simSiPixelDigis_*_*')
-process.RAWSIMoutput.outputCommands.append('keep *_mergedtruth_*_*')
-process.RAWSIMoutput.outputCommands.append('drop *_mix_*_*')
-process.RAWSIMoutput.outputCommands.append('keep *_L1Tk*_*_*')
-
-process.MIBextraction.doL1TT           = True
-
-process.MIBextraction.analysisSettings = cms.untracked.vstring(
-    "matchedStubs 0",
-    "posMatching  1",
-    "maxClusWdth  3",
-    "windowSize   -1",
-    "pdgSel -1",
-    "verbose 0"
-    )
-
-process.mergedtruth.simHitCollections = cms.PSet(
-        pixel = cms.vstring (
-            'g4SimHitsTrackerHitsPixelBarrelLowTof',
-            'g4SimHitsTrackerHitsPixelBarrelHighTof',
-            'g4SimHitsTrackerHitsPixelEndcapLowTof',
-            'g4SimHitsTrackerHitsPixelEndcapHighTof'
-        )
-    )
+process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
-process.L1TrackTrigger_step  = cms.Path(process.L1TrackTrigger)
+process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
+process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
-process.p                    = cms.Path(process.MIBextraction)
+
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
+
+# filter all path with the production filter sequence
+for path in process.paths:
+	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
+	
+# Automatic addition of the customisation function
+
+from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import customise as customiseBE5D
+from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import l1EventContent as customise_ev_BE5D
+
+process=customiseBE5D(process)
+process=customise_ev_BE5D(process)
+
 
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
-	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
+	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 	
 # Automatic addition of the customisation function
-from DataProduction.SkimGeometry.phase2TkCustomsBE_SKIM import customise 
 
-#call to customisation function
-process = customise(process)
+from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import customise as customiseBE5D
+from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import l1EventContent as customise_ev_BE5D
+
+process=customiseBE5D(process)
+process=customise_ev_BE5D(process)

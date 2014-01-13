@@ -12,7 +12,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC6_patch1
+# Script tested with release CMSSW_6_2_0_SLHC5
 #
 #########################
 
@@ -27,7 +27,7 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
+process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -38,7 +38,7 @@ process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cf
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(30)
 )
 
 # Input source
@@ -48,6 +48,7 @@ process.source = cms.Source("EmptySource")
 # Additional output definition
 
 # Global tag for PromptReco
+process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 

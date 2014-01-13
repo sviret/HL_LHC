@@ -9,18 +9,18 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
+process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
+process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
+process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 
 # Special geometry (Tracker only)
 process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
 process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
 process.load('DataProduction.SkimGeometry.mixPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
-
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(NEVTS)
@@ -36,6 +36,7 @@ process.mix.input.fileNames     = cms.untracked.vstring('file:PUFILEA')
 # Additional output definition
 
 # Other statements
+process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
@@ -84,32 +85,26 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 
 ## so strip simhits are not asked for
 
-process.mergedtruth.simHitCollections = cms.PSet(
-        pixel = cms.vstring (
-            'g4SimHitsTrackerHitsPixelBarrelLowTof',
-            'g4SimHitsTrackerHitsPixelBarrelHighTof',
-            'g4SimHitsTrackerHitsPixelEndcapLowTof',
-            'g4SimHitsTrackerHitsPixelEndcapHighTof'
-        )
-    )
-
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.digitisation_step    = cms.Path(process.pdigi)
-process.L1TrackTrigger_step  = cms.Path(process.L1TrackTrigger)
+process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
+process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.p                    = cms.Path(process.MIBextraction)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.p)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p)
 
 # filter all path with the production filter sequence
 for path in process.paths:
-	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
-
+	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
+	
 # Automatic addition of the customisation function
-from DataProduction.SkimGeometry.phase2TkCustomsBE_SKIM import customise 
 
-#call to customisation function
-process = customise(process)
+from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import customise as customiseBE5D
+from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import l1EventContent as customise_ev_BE5D
+
+process=customiseBE5D(process)
+process=customise_ev_BE5D(process)

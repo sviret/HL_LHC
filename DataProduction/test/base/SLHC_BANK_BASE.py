@@ -41,6 +41,7 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 1",
     "posMatching  1",
     "maxClusWdth  4",
+    "zMatch  0",
     "windowSize  -1",
     "thresh -1", 
     "pdgSel -1",

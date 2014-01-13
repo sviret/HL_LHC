@@ -17,7 +17,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date        : 19/07/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC6_patch1
+# Script tested with release CMSSW_6_2_0_SLHC5
 #
 #########################
 
@@ -35,15 +35,18 @@ process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DReco_cff')
 process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5D_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
+process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.Digi_cff')
 process.load('Configuration.StandardSequences.SimL1Emulator_cff')
 process.load('Configuration.StandardSequences.DigiToRaw_cff')
-process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
+process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
+process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+
+
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(100)
@@ -72,6 +75,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 # Additional output definition
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
+process.mix.digitizers = cms.PSet(process.theDigitizersValid)
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
@@ -89,12 +93,12 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     PGunParameters = cms.PSet(
         MinPt  = cms.double(1.),
         MaxPt  = cms.double(50.),
-	#XFlatSpread = cms.double(1.5),  # In mm (requires an update 
-	#YFlatSpread = cms.double(1.5),  # In mm  of the official 
-	#ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
+#	XFlatSpread = cms.double(1.5),  # In mm (requires an update 
+#	YFlatSpread = cms.double(1.5),  # In mm  of the official 
+#	ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
         PartID = cms.vint32(-13),
-        MinEta = cms.double(-2.5),
-        MaxEta = cms.double(2.5),
+        MinEta = cms.double(-3.5),
+        MaxEta = cms.double(3.5),
         MinPhi = cms.double(0.),
 	MaxPhi = cms.double(6.28)
     ),
@@ -103,7 +107,8 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 )
 
 # This line is necessary to keep track of the Tracking Particles
-process.RAWSIMoutput.outputCommands.append('keep *_mergedtruth_*_*')
+
+process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 
 # Path and EndPath definitions
 process.generation_step       = cms.Path(process.pgen)
@@ -112,15 +117,22 @@ process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
 process.digitisation_step     = cms.Path(process.pdigi)
 process.L1simulation_step     = cms.Path(process.SimL1Emulator)
 process.digi2raw_step         = cms.Path(process.DigiToRaw)
-process.L1TrackTrigger_step   = cms.Path(process.L1TrackTrigger)
+process.L1TrackTrigger_step   = cms.Path(process.TrackTriggerClustersStubs)
+process.L1TTAssociator_step   = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step           = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step     = cms.EndPath(process.RAWSIMoutput)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1simulation_step,process.digi2raw_step,process.L1TrackTrigger_step,process.endjob_step,process.RAWSIMoutput_step)
+#process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.endjob_step,process.RAWSIMoutput_step)
+
+#process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
+
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1simulation_step,process.digi2raw_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
+	
+
 
 # customisation of the process.
 

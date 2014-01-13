@@ -13,7 +13,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 19/07/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC6_patch1
+# Script tested with release CMSSW_6_2_0_SLHC5
 #
 #########
 
@@ -26,13 +26,12 @@ process.load('Configuration/StandardSequences/Services_cff')
 process.load('Configuration/StandardSequences/EndOfProcess_cff')
 process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
-process.load("RecoTracker.TransientTrackingRecHit.TransientTrackingRecHitBuilder_cfi") 
-process.load("RecoTracker.TrackProducer.TrackRefitters_cff")
-process.load('Configuration.StandardSequences.L1TrackTrigger_cff')
+process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
+process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 
 process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DReco_cff')
 process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5D_cff')
-process.load('Configuration.StandardSequences.Digi_cff')
+#process.load('Configuration.StandardSequences.Digi_cff')
 
 
 # Other statements
@@ -67,14 +66,14 @@ process.MIBextraction.doPixel          = True
 process.MIBextraction.doL1TT           = True
 # Uncomment the following two lines if you input file contains Tracking Particles info
 # if not you will not have the matching done for the private stub maker
-#process.MIBextraction.doMatch          = True
-#process.MIBextraction.doMC             = True
+#process.MIBextraction.doMatch = True
+#process.MIBextraction.doMC = True
 
 process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "matchedStubs 0",
     "posMatching  1",
     "zMatch  0",
-    "maxClusWdth  3",
+    "maxClusWdth  4",
     "windowSize   -1",
     "pdgSel -1",
     "verbose 0"

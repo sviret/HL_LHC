@@ -31,7 +31,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC6_patch1
+# Script tested with release CMSSW_6_2_0_SLHC4
 #
 ###########################################
 

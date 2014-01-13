@@ -17,7 +17,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 19/07/2013
 #
-# Script tested with release CMSSW_6_1_2_SLHC6_patch1
+# Script tested with release CMSSW_6_2_0_SLHC5
 #
 #########################
 
@@ -51,6 +51,7 @@ process.source = cms.Source("EmptySource")
 # Additional output definition
 
 # Global tag for PromptReco
+process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
@@ -139,12 +140,3 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
-# customisation of the process.
-
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_phase2_BE5D 
-
-#call to customisation function cust_phase2_BE5D imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
-process = cust_phase2_BE5D(process)
-
-# End of customisation functions
