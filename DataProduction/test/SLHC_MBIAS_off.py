@@ -30,6 +30,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
+process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DReco_cff')
 process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5D_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
@@ -59,7 +60,7 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 process.RandomNumberGeneratorService.generator.initialSeed      = 1
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
 process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
-
+process.RandomNumberGeneratorService.mix.initialSeed            = 4
 
 # Generate particle gun events
 
@@ -140,3 +141,12 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
+# customisation of the process.
+
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_phase2_BE5D 
+
+#call to customisation function cust_phase2_BE5D imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
+process = cust_phase2_BE5D(process)
+
+# End of customisation functions

@@ -114,17 +114,13 @@ process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.generation_step       = cms.Path(process.pgen)
 process.simulation_step       = cms.Path(process.psim)
 process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
-process.digitisation_step     = cms.Path(process.pdigi)
+process.digitisation_step     = cms.Path(process.pdigi_valid)
 process.L1simulation_step     = cms.Path(process.SimL1Emulator)
 process.digi2raw_step         = cms.Path(process.DigiToRaw)
 process.L1TrackTrigger_step   = cms.Path(process.TrackTriggerClustersStubs)
 process.L1TTAssociator_step   = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step           = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step     = cms.EndPath(process.RAWSIMoutput)
-
-#process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.endjob_step,process.RAWSIMoutput_step)
-
-#process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1simulation_step,process.digi2raw_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 

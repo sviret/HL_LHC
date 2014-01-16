@@ -47,8 +47,11 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("EmptySource")
-
-process.mix.input.nbPileupEvents.averageNumber = cms.double(4.0)  # The average number of pileup events you want  
+process.mix.bunchspace = cms.int32(25)
+process.mix.minBunch = cms.int32(-12)
+process.mix.maxBunch = cms.int32(3)
+process.mix.digitizers = cms.PSet(process.theDigitizersValid)
+process.mix.input.nbPileupEvents.averageNumber = cms.double(4.0)  # The average number of pileup events you want
 process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10_off.root') # The file where to pick them up
 
 # Additional output definition
@@ -71,6 +74,9 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
         MinPt  = cms.double(10.),
         MaxPt  = cms.double(50.),
         PartID = cms.vint32(-13),
+#	XFlatSpread = cms.double(1.5),  # In mm (requires an update 
+#	YFlatSpread = cms.double(1.5),  # In mm  of the official 
+#	ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)	
         MinEta = cms.double(-2.5),
         MaxEta = cms.double(2.5),
         MinPhi = cms.double(0.),
@@ -103,7 +109,7 @@ process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
-process.digitisation_step    = cms.Path(process.pdigi)
+process.digitisation_step    = cms.Path(process.pdigi_valid)
 process.L1simulation_step    = cms.Path(process.SimL1Emulator)
 process.digi2raw_step        = cms.Path(process.DigiToRaw)
 process.L1TrackTrigger_step   = cms.Path(process.TrackTriggerClustersStubs)
