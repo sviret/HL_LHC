@@ -39,7 +39,8 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("LHESource",
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/s/sviret/public/LHE/4tops_SM_10000_events.lhe')
+    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/s/sviret/public/LHE/4tops_SM_10000_events.lhe'),
+    skipEvents=cms.untracked.uint32(RUN)
 )
 
 # The number of pileup events you want  
