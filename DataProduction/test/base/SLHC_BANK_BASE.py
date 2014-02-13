@@ -28,25 +28,8 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 
 process.MIBextraction.fillTree         = False
-process.MIBextraction.doMC             = False
-process.MIBextraction.doPixel          = False
+process.MIBextraction.doBANK           = True
 process.MIBextraction.n_events         = NEVTS
-process.MIBextraction.skip_events      = 0
-
-
-
-process.MIBextraction.doL1TT           = True
-
-process.MIBextraction.analysisSettings = cms.untracked.vstring(
-    "matchedStubs 1",
-    "posMatching  1",
-    "maxClusWdth  4",
-    "zMatch  0",
-    "windowSize  -1",
-    "thresh -1", 
-    "pdgSel -1",
-    "verbose 0"
-    )
 
 process.MIBextraction.inputRootFile=cms.string('extracted.root')
 process.MIBextraction.extractedRootFile=cms.string('extracted_skimmed.root')

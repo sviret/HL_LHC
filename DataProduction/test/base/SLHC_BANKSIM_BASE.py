@@ -43,7 +43,7 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 process.MIBextraction.doMC             = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
-process.MIBextraction.doSTUB           = False
+process.MIBextraction.doSTUB           = True
 
 process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
