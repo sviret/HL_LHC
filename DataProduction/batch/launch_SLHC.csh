@@ -181,12 +181,33 @@ while ($i != $N_RUN)
 
     echo $i	 	 
 
+    if ($MATTER == "MUBANK") then
+	set deal = `lcg-ls $OUTPUTDIR/SLHC_extr_MUBANK_${i}.root | wc -l`
+
+	if ($deal != "0") then
+	    set run  = `ls gen_job_${MATTER}_${11}_${12}_${i}.sh | wc -l`
+
+	    if ($run != "0") then
+		rm gen_job_${MATTER}_${11}_${12}_${i}.sh
+	    endif
+	    @ i++
+	    continue
+	endif
+
+	set run  = `ls gen_job_${MATTER}_${11}_${12}_${i}.sh | wc -l`
+
+	if ($run != "0") then
+	    @ i++
+	    continue
+	endif
+    endif  
+
     echo "#\!/bin/bash" > gen_job_${MATTER}_${11}_${12}_${i}.sh
     echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH}" >> gen_job_${MATTER}_${11}_${12}_${i}.sh
     chmod 755 gen_job_${MATTER}_${11}_${12}_${i}.sh
 
     if (${13} == "BATCH") then	
-	bsub -q 1nd -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
+	bsub -q 8nh -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
     endif
 
     @ i++

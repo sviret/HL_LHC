@@ -225,4 +225,4 @@ fi
 
 ls -l
 lcg-cp file://$TOP/extracted.root $STOR_DIR/$DATA_NAME
-
+lcg-cp file://$TOP/PGun_example.root $STOR_DIR/EDM_$DATA_NAME

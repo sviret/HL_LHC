@@ -77,6 +77,22 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     )
 
 
+process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
+    splitLevel = cms.untracked.int32(0),
+    eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
+    outputCommands = process.RAWSIMEventContent.outputCommands,
+    fileName = cms.untracked.string('PGun_example.root'),
+    dataset = cms.untracked.PSet(
+        filterName = cms.untracked.string(''),
+        dataTier = cms.untracked.string('GEN-SIM')
+    ),
+    SelectEvents = cms.untracked.PSet(
+        SelectEvents = cms.vstring('generation_step')
+    )
+)
+
+process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
+
 process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
 process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
@@ -123,8 +139,9 @@ process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
 process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.p                    = cms.Path(process.MIBextraction)
+process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
