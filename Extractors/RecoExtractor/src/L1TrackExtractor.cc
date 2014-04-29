@@ -213,87 +213,91 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
     m_patt =  patCnt;
   }
 
+  //  std::cout << "STEP 2 " << std::endl;
 
   /// STEP 2
   /// Loop over tracks
 
-  
   /// Go on only if there are Tracks from Patterns
-
 
   if (m_TRCK_tag.label()!="" && m_TRCK_tag.instance()!="")
   {
-  if ( TTTrackHandle->size() > 0 )
-  {
-    /// Loop over Patterns
-    unsigned int tkCnt = 0;
-
-    for ( iterTTTrack = TTTrackHandle->begin();
-	  iterTTTrack != TTTrackHandle->end();
-	  ++iterTTTrack )
+    if ( TTTrackHandle->size() > 0 )
     {
-      edm::Ptr< TTTrack< Ref_PixelDigi_ > > tempTrackPtr( TTTrackHandle, tkCnt++ );
+      /// Loop over Patterns
+      unsigned int tkCnt = 0;
 
-      /// Get everything is relevant
+      std::cout << TTTrackHandle->size() << std::endl;
 
-      std::vector< edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_  > >, TTStub< Ref_PixelDigi_  > > > trackStubs = tempTrackPtr->getStubRefs();
-
-      // Loop over stubs contained in the pattern to recover the info
-      // and match them with the stubs in the STUB_extractor container
-
-      m_trk_secid->push_back(tempTrackPtr->getSector());
-      m_trk_pt->push_back(tempTrackPtr->getMomentum().perp() );
-      m_trk_eta->push_back(tempTrackPtr->getMomentum().eta());
-      m_trk_phi->push_back(tempTrackPtr->getMomentum().phi());
-      m_trk_z->push_back(tempTrackPtr->getPOCA().z());
-
-      //      std::cout << tempTrackPtr->getMomentum().perp() << " / " 
-      //		<< tempTrackPtr->getMomentum().eta() << " / " 
-      //		<< tempTrackPtr->getPOCA().z() << std::endl;
-      
-      stub_list.clear();
-
-      for(unsigned int i=0;i<trackStubs.size();i++)
+      for ( iterTTTrack = TTTrackHandle->begin();
+	    iterTTTrack != TTTrackHandle->end();
+	    ++iterTTTrack )
       {
-
-	edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > >, TTStub< Ref_PixelDigi_ > > tempStubRef = trackStubs.at(i);
-
-	/// Calculate average coordinates col/row for inner/outer Cluster
-	/// These are already corrected for being at the center of each pixel
-	//	MeasurementPoint mp0 = tempStubRef->getClusterRef(0)->findAverageLocalCoordinates();
-	GlobalPoint posStub  = theStackedGeometry->findGlobalPosition( &(*tempStubRef) );
+	edm::Ptr< TTTrack< Ref_PixelDigi_ > > tempTrackPtr( TTTrackHandle, tkCnt++ );
 	
-	StackedTrackerDetId detIdStub( tempStubRef->getDetId() );
+	/// Get everything is relevant
 	
-	// Here we rearrange the numbers
-	if ( detIdStub.isBarrel() )
+	//	std::cout << tkCnt << "/" << TTTrackHandle->size() << std::endl;
+	
+	std::vector< edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_  > >, TTStub< Ref_PixelDigi_  > > > trackStubs = tempTrackPtr->getStubRefs();
+
+	// Loop over stubs contained in the pattern to recover the info
+	// and match them with the stubs in the STUB_extractor container
+	
+	m_trk_secid->push_back(tempTrackPtr->getSector());
+	m_trk_pt->push_back(tempTrackPtr->getMomentum(5).perp() );
+	m_trk_eta->push_back(tempTrackPtr->getMomentum(5).eta());
+	m_trk_phi->push_back(tempTrackPtr->getMomentum(5).phi());
+	m_trk_z->push_back(tempTrackPtr->getPOCA(5).z());
+	
+	//	std::cout << tempTrackPtr->getMomentum(5).perp() << " / " 
+	//	  << tempTrackPtr->getMomentum(5).eta() << " / " 
+	//		  << tempTrackPtr->getPOCA(5).z() << " / " 
+	//	  << trackStubs.size()
+	//	  << std::endl;
+	
+	stub_list.clear();
+	
+	for(unsigned int i=0;i<trackStubs.size();i++)
 	{
-	  layer  = detIdStub.iLayer()+4;
-	  ladder = detIdStub.iPhi()-1;
-	  module = detIdStub.iZ()-1;
-	}
-	else if ( detIdStub.isEndcap() )
-	{
-	  layer  = 10+detIdStub.iZ()+abs(detIdStub.iSide()-2)*7;
-	  ladder = detIdStub.iRing()-1;
-	  module = detIdStub.iPhi()-1;
-	}
+	  //	  std::cout << "A" << std::endl;
+	  edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > >, TTStub< Ref_PixelDigi_ > > tempStubRef = trackStubs.at(i);
+	  //	  std::cout << "B" << std::endl;	  
 
-	//	std::cout << layer << "//" << ladder << "//" << module << std::endl;
-	stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z()));
+	  /// Calculate average coordinates col/row for inner/outer Cluster
+	  /// These are already corrected for being at the center of each pixel
+	  //	MeasurementPoint mp0 = tempStubRef->getClusterRef(0)->findAverageLocalCoordinates();
+	  GlobalPoint posStub  = theStackedGeometry->findGlobalPosition( &(*tempStubRef) );
+	  
+	  StackedTrackerDetId detIdStub( tempStubRef->getDetId() );
+	
+	  // Here we rearrange the numbers
+	  if ( detIdStub.isBarrel() )
+	  {
+	    layer  = detIdStub.iLayer()+4;
+	    ladder = detIdStub.iPhi()-1;
+	    module = detIdStub.iZ()-1;
+	  }
+	  else if ( detIdStub.isEndcap() )
+	  {
+	    layer  = 10+detIdStub.iZ()+abs(detIdStub.iSide()-2)*7;
+	    ladder = detIdStub.iRing()-1;
+	    module = detIdStub.iPhi()-1;
+	  }
 
+	  //	  std::cout << layer << "//" << ladder << "//" << module << std::endl;
+	  stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z()));
 
-      } /// End of loop over track stubs
+	} /// End of loop over track stubs	
+	
+	m_trk_links->push_back(stub_list);
 
-      m_trk_links->push_back(stub_list);
-
-
-    } // End of loop over patterns
-
-    m_trk =  tkCnt;
-  }
+      } // End of loop over patterns
+      
+      m_trk =  tkCnt;
+    }
   }      
- 
+
   L1TrackExtractor::fillTree();
 }
 
