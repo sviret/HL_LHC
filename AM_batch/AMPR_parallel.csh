@@ -55,8 +55,11 @@ set NFILES  = ${7}   # #files per job
 # The scratch directory where you put the input and temporary files
 # !!! Ensure that you have enough scratch space available !!!
 
-set INDIR       = /scratch/viret/$MATTER 
-set OUTDIRTMP   = /scratch/viret/TMP/$MATTER
+set BASE = /scratch/viret
+
+set INDIR       = $BASE/$MATTER
+mkdir $BASE/TMP
+set OUTDIRTMP   = $BASE/TMP/$MATTER
 
 # The SE directory containing the output EDM file with the PR output
 set OUTDIR      = /dpm/in2p3.fr/home/cms/data/store/user/sviret/SLHC/PR/$MATTER
