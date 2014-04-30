@@ -222,7 +222,7 @@ if [ ${1} = "FINAL" ]; then
 
       l=`basename $ll`
       echo $l
-      echo "$INPUTROOTDIR/$l" >> list_${FNAME}.txt
+      echo "file:$INPUTROOTDIR/$l" >> list_${FNAME}.txt
 
       if [ ${nfiles} = "1" ]; then
 
