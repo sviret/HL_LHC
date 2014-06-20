@@ -13,7 +13,7 @@
 # Date  : 12/04/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_2_0_SLHC5
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 #########################
 
@@ -48,13 +48,18 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("EmptySource")
 
-process.mix.input.nbPileupEvents.averageNumber = cms.double(15.0)  # The average number of pileup events you want  
-process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10_test.root') # The file where to pick them up
+process.mix.input.nbPileupEvents.averageNumber = cms.double(20.0)  # The average number of pileup events you want  
+process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10_trOnly_test.root') # The file where to pick them up
 
 # Additional output definition
 
 # Other statements
 # Global tag for PromptReco
+#
+# To find where upgradePLS3 is pointing, look here:
+#
+# https://github.com/cms-sw/cmssw/blob/CMSSW_6_2_X_SLHC_2014-06-16-0200/Configuration/AlCa/python/autoCond.py
+
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
@@ -89,7 +94,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PU_20_sample_test.root'),
+    fileName = cms.untracked.string('PU_20_sample_trOnly_test.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -117,11 +122,15 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 # filter all path with the production filter sequence
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
-	
+
+
 # Automatic addition of the customisation function
 
-from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import customise as customiseBE5D
-from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import l1EventContent as customise_ev_BE5D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customise_ev_BE5DPixel10D
 
-process=customiseBE5D(process)
-process=customise_ev_BE5D(process)
+process=customiseBE5DPixel10D(process)
+process=customise_ev_BE5DPixel10D(process)
+
+# End of customisation functions
+

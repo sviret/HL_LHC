@@ -8,7 +8,7 @@
 # The jobs themselves are launched by generator_SLHC.sh
 #
 # Usage:
-# source launch_SLHC.sh p1 p2 p3 p4 p5 p6 p7 ...
+# source launch_SLHC.csh p1 p2 p3 p4 p5 p6 p7 ...
 # with:
 # p1 : global tag for MC production (eg POSTLS161_V15::All)
 # p2 : the number of runs
@@ -20,7 +20,7 @@
 # p8 : PHIMAX
 # p9 : ETAMIN
 # p10: ETAMAX
-# p11: THRESH: the pt threshold for the stub maker
+# p11: THRESH: the pt threshold for the stub maker (2/3/4 of -1 for no thresh)
 # p12: SUFFIX: a specific nickname for this production 
 # p13: BATCH or nothing: launch lxbatch jobs or not
 #
@@ -31,7 +31,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_2_0_SLHC4
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 ###########################################
 
@@ -52,7 +52,7 @@ set STORAGEDIR2 = srm://$LFC_HOST/$STORAGEDIR                            # The d
 
 # The directory is the one containing the minbias events necessary for PU generation
 set STORAGEPU   = srm://$LFC_HOST/$STORAGEDIR/MINBIAS_forPU_2            
-set NPU         = 140 # How many pile up events you want            
+set NPU         = 200 # How many pile up events you want            
 
 ###########################################################
 ###########################################################
@@ -65,7 +65,7 @@ set NPU         = 140 # How many pile up events you want
 # https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideLcgAccess
 #
 
-source /afs/cern.ch/cms/LCG/LCG-2/UI/cms_ui_env.csh
+source /afs/cern.ch/project/gd/LCG-share/current_3.2/etc/profile.d/grid-env.csh
 voms-proxy-init --voms cms --valid 100:00 -out $HOME/.globus/gridproxy.cert
 setenv X509_USER_PROXY ${HOME}'/.globus/gridproxy.cert'
 

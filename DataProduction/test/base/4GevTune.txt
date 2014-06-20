@@ -1,0 +1,11 @@
+#Stub window tuning for 95% stub efficiency between 4 and 5 GeV
+
+process.TTStubAlgorithm_tab2013_PixelDigi_.BarrelCut = cms.vdouble( 0, 1.5, 1.5, 1.5, 2.5, 3, 3.5)
+process.TTStubAlgorithm_tab2013_PixelDigi_.EndcapCutSet = cms.VPSet(
+							cms.PSet( EndcapCut = cms.vdouble( 0 ) ), 
+							cms.PSet( EndcapCut = cms.vdouble( 0, 1, 1, 1, 1.5, 1.5, 1.5, 1.5, 2, 2, 2.5, 2, 2, 2, 2.5, 3) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 1, 1, 1, 1, 1.5, 1.5, 1.5, 1.5, 2, 2.5, 1.5, 2, 2, 2, 2.5) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 1, 1, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.5, 2, 2.5, 2, 2, 2, 2) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 1, 1, 1, 1, 1, 1, 1.5, 1.5, 1.5, 2, 2, 1, 1.5, 2, 2) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 2, 2, 1, 1.5, 2) ),
+							)

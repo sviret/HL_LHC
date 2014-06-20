@@ -12,7 +12,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 19/07/2013
 #
-# Script tested with release CMSSW_6_2_0_SLHC5
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 #########################
 
@@ -26,8 +26,8 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mix_POISSON_average_cfi')
-process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DReco_cff')
-process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5D_cff')
+process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DPixel10DReco_cff')
+process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DPixel10D_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
@@ -42,7 +42,7 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5)
+    input = cms.untracked.int32(2)
 )
 
 # Input source
@@ -51,8 +51,8 @@ process.mix.bunchspace = cms.int32(25)
 process.mix.minBunch = cms.int32(-12)
 process.mix.maxBunch = cms.int32(3)
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
-process.mix.input.nbPileupEvents.averageNumber = cms.double(4.0)  # The average number of pileup events you want
-process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10_off.root') # The file where to pick them up
+process.mix.input.nbPileupEvents.averageNumber = cms.double(20.0)  # The average number of pileup events you want
+process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_100_off.root') # The file where to pick them up
 
 # Additional output definition
 
@@ -93,7 +93,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PU_10_sample_off.root'),
+    fileName = cms.untracked.string('PU_20_sample_off.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -124,15 +124,10 @@ for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
 
-
-# customisation of the process.
-
 # Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_phase2_BE5D 
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_phase2_BE5DPixel10D 
 
-#call to customisation function cust_phase2_BE5D imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
-process = cust_phase2_BE5D(process)
-
+process = cust_phase2_BE5DPixel10D(process)
 # End of customisation functions
 
 

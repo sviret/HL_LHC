@@ -1,0 +1,11 @@
+#No stub window tuning
+
+process.TTStubAlgorithm_tab2013_PixelDigi_.BarrelCut = cms.vdouble( 0, 10, 10, 10, 10., 10., 10. )
+process.TTStubAlgorithm_tab2013_PixelDigi_.EndcapCutSet = cms.VPSet(
+							cms.PSet( EndcapCut = cms.vdouble( 0 ) ), 
+							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
+							)						

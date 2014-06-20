@@ -15,7 +15,7 @@
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 # Maj. modif  : 10/01/2014 (going to new CMSSW release)
 #
-# Script tested with release CMSSW_6_2_0_SLHC5
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 #########
 
@@ -40,7 +40,7 @@ process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 # Global tag for PromptReco
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'DES23_62_V1::All', '')
 
 process.options = cms.untracked.PSet(
     SkipEvent = cms.untracked.vstring('ProductNotFound')
@@ -53,8 +53,8 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            #fileNames = cms.untracked.vstring('file:PGun_example.root'),
-                            fileNames = cms.untracked.vstring('file:PU_20_sample_test.root'),       
+                            fileNames = cms.untracked.vstring('file:PGun_trOnly_WIDTH_example.root'),
+                            #fileNames = cms.untracked.vstring('file:PU_20_sample_trOnly_test.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
 
@@ -74,7 +74,7 @@ process.MIBextraction.analysisSettings = cms.untracked.vstring(
     "posMatching  1",
     "zMatch  0",
     "maxClusWdth  4",
-    "windowSize   -1",
+    "windowSize   10",
     "pdgSel -1",
     "verbose 0"
     )

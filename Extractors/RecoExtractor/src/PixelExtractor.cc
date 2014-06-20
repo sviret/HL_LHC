@@ -263,13 +263,18 @@ void PixelExtractor::writeInfo(const edm::Event *event)
       {
 	PXFDetId fdetid(detIdObject);
 
+	//	std::cout << static_cast<int>(fdetid.disk()) << " / " << pos.z() 
+	//	  << " / " << rows << " / " << cols << std::endl;
+
+	// Disk 1 to 10 are Pixels, 11 to 15 Tracker
+
 	disk = (static_cast<int>(fdetid.side())*2-3)*static_cast<int>(fdetid.disk());
 
-	if (disk>=4)  m_pixclus_layer->push_back(7+disk); 
-	if (disk<=-4) m_pixclus_layer->push_back(14-disk); 
-	if (disk<4 && disk>-4) m_pixclus_layer->push_back(-1); 
+	if (disk>=11)  m_pixclus_layer->push_back(disk); 
+	if (disk<=-11) m_pixclus_layer->push_back(7-disk); 
+	if (disk<11 && disk>-11) m_pixclus_layer->push_back(-1); 
 
-	if (static_cast<int>(fdetid.disk())<4)
+	if (static_cast<int>(fdetid.disk())<11)
 	{
 	  m_pixclus_ladder->push_back(static_cast<int>(fdetid.blade())); 
 	}

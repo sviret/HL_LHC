@@ -29,9 +29,9 @@ process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
 process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
 process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 
-process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DReco_cff')
-process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5D_cff')
-#process.load('Configuration.StandardSequences.Digi_cff')
+process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DPixel10DReco_cff')
+process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DPixel10D_cff')
+
 
 
 # Other statements
@@ -51,8 +51,8 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('file:PGun_example.root'),
-                            #fileNames = cms.untracked.vstring('file:PU_10_sample_off.root'),        
+                            #fileNames = cms.untracked.vstring('file:PGun_example.root'),
+                            fileNames = cms.untracked.vstring('file:PU_20_sample_off.root'),        
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
 

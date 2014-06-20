@@ -14,7 +14,7 @@
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 # Maj. modif  : 10/01/2014 (going to new CMSSW release)
 #
-# Script tested with release CMSSW_6_2_0_SLHC5
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 #########################
 
@@ -27,7 +27,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
@@ -43,7 +43,7 @@ process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(50000)
 )
 
 # Input source
@@ -53,7 +53,7 @@ process.source = cms.Source("EmptySource")
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'DES23_62_V1::All', '')
 
 # Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1
@@ -65,9 +65,21 @@ process.RandomNumberGeneratorService.mix.initialSeed            = 4
 
 # Generate particle gun events
 process.generator = cms.EDProducer("FlatRandomPtGunProducer",
+#    PGunParameters = cms.PSet(
+#        MinPt  = cms.double(1.),
+#        MaxPt  = cms.double(50.),
+#	#XFlatSpread = cms.double(1.5),  # In mm (requires an update 
+#	#YFlatSpread = cms.double(1.5),  # In mm  of the official 
+#	#ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
+#        PartID = cms.vint32(-13),
+#        MinEta = cms.double(-3.5),
+#        MaxEta = cms.double(3.5),
+#        MinPhi = cms.double(0.),
+#	MaxPhi = cms.double(6.28)
+#    ),
     PGunParameters = cms.PSet(
         MinPt  = cms.double(1.),
-        MaxPt  = cms.double(50.),
+        MaxPt  = cms.double(20.),
 	#XFlatSpread = cms.double(1.5),  # In mm (requires an update 
 	#YFlatSpread = cms.double(1.5),  # In mm  of the official 
 	#ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
@@ -78,7 +90,7 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	MaxPhi = cms.double(6.28)
     ),
     Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(False),
+    AddAntiParticle = cms.bool(True),
 )
 
 
@@ -88,7 +100,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_example.root'),
+    fileName = cms.untracked.string('PGun_trOnly_WIDTH_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -117,8 +129,10 @@ for path in process.paths:
 	
 # Automatic addition of the customisation function
 
-from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import customise as customiseBE5D
-from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import l1EventContent as customise_ev_BE5D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customise_ev_BE5DPixel10D
 
-process=customiseBE5D(process)
-process=customise_ev_BE5D(process)
+process=customiseBE5DPixel10D(process)
+process=customise_ev_BE5DPixel10D(process)
+
+# End of customisation functions

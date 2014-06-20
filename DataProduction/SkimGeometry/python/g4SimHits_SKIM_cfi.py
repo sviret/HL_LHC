@@ -1,5 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
+# Based on https://github.com/cms-sw/cmssw/blob/CMSSW_6_2_0_SLHC14/SimG4Core/Application/python/g4SimHits_cfi.py
+
 from SimG4Core.Application.hectorParameter_cfi import *
 
 common_heavy_suppression = cms.PSet(
@@ -16,6 +18,19 @@ common_maximum_time = cms.PSet(
 
 common_UsePMT = cms.PSet(
     UseR7600UPMT  = cms.bool(False)
+)
+
+common_UseHF = cms.PSet(
+    Lambda1 = cms.double(280.0),
+    Lambda2 = cms.double(700.0),
+    Gain = cms.double(0.33),
+    CheckSurvive = cms.bool(False),
+    FibreR = cms.untracked.double(0.3)
+)
+
+common_UseLuminosity = cms.PSet(
+    InstLuminosity = cms.double(0.),
+    DelivLuminosity = cms.double(5000.)
 )
 
 g4SimHits = cms.EDProducer("OscarProducer",
@@ -65,6 +80,7 @@ g4SimHits = cms.EDProducer("OscarProducer",
         delta = cms.double(1.0)
     ),
     Physics = cms.PSet(
+        common_maximum_time,
         # NOTE : if you want EM Physics only,
         # please select "SimG4Core/Physics/DummyPhysics" for type
         # and turn ON DummyEMPhysics
@@ -85,6 +101,7 @@ g4SimHits = cms.EDProducer("OscarProducer",
         Region = cms.string(' '),
         TrackingCut = cms.bool(True),
         SRType = cms.bool(True),
+        FlagFluo    = cms.bool(False),
         EMPhysics = cms.untracked.bool(True),
         HadPhysics = cms.untracked.bool(True),
         FlagBERT = cms.untracked.bool(False),

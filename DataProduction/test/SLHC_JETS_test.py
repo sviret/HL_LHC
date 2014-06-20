@@ -13,7 +13,7 @@
 # Date  : 30/05/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_2_0_SLHC5
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 #########################
 
@@ -26,7 +26,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_cff')
+process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
@@ -51,14 +51,6 @@ process.source = cms.Source("EmptySource")
 
 
 # Additional output definition
-
-# Load the extractor
-process.load("Extractors.RecoExtractor.MIB_extractor_cff")
-
-process.MIBextraction.doMC             = True
-process.MIBextraction.doSTUB           = True
-process.MIBextraction.doPixel          = True
-process.MIBextraction.doMatch          = True
 
 # Global tag for PromptReco
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
@@ -114,19 +106,6 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 
-process.MIBextraction.doL1TT           = True
-
-process.MIBextraction.analysisSettings = cms.untracked.vstring(
-    "matchedStubs 0",
-    "posMatching  1",
-    "maxClusWdth  4",
-    "windowSize   -1",
-    "zMatch  0",
-    "pdgSel -1",
-    "verbose 0"
-    )
-
-
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
@@ -136,9 +115,8 @@ process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
 process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
-process.p                    = cms.Path(process.MIBextraction)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
@@ -146,9 +124,11 @@ for path in process.paths:
 	
 # Automatic addition of the customisation function
 
-from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import customise as customiseBE5D
-from SLHCUpgradeSimulations.Configuration.phase2TkCustomsBE5D import l1EventContent as customise_ev_BE5D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customise_ev_BE5DPixel10D
 
-process=customiseBE5D(process)
-process=customise_ev_BE5D(process)
+process=customiseBE5DPixel10D(process)
+process=customise_ev_BE5DPixel10D(process)
+
+# End of customisation functions	
 

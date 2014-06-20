@@ -116,12 +116,20 @@ fi
 # Script for Pileup production
 
 # Pile up requires a bit of tweaking
-# Indeed we choose two random MinBias files in which the PU events will be chosen
-# They are downloaded on the batch machine
+# We create beforehand a mbias sample of 300 events, which are then used for the mix
+# Of course seed for the minbias file is different from one run to the other
 #
 
-FILE1=`echo $(( $RANDOM % 200 ))`
-FILE2=`echo $(( $RANDOM % 200 ))`
+
+if [ "$THRESH" -eq -1 ]; then
+    cp $PACK_DIR/test/base/NoTune.txt tune 
+else
+    cp $PACK_DIR/test/base/${THRESH}GevTune.txt tune 
+fi
+
+SWTUN=`cat tune`
+
+echo $SWTUN
 
 if [ "$PTYPE" -eq 777 ]; then
     PTYPE=-13
@@ -159,11 +167,11 @@ sed "s/NPU/$NPU/"                                      -i BH_dummy.py
 sed "s/THRESHOLD/$THRESH/"                             -i BH_dummy.py
 sed "s#PUFILEA#$TOP/MBiasSample.root#"                 -i BH_dummy.py
 
-
+perl -i.bak -pe 's/SWTUNING/'"${SWTUN}"'/g' BH_dummy.py
 
 if [ "$PU" -eq 1 ]; then
     PTYPE=777
-    EVTS=200
+    EVTS=300
     sed "s/NEVTS/$EVTS/"                                   -i BH_dummyMinBias.py
     sed "s/PTYPE/$PTYPE/"                                  -i BH_dummyMinBias.py
     sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummyMinBias.py

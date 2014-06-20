@@ -17,7 +17,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date        : 19/07/2013
 #
-# Script tested with release CMSSW_6_2_0_SLHC5
+# Script tested with release CMSSW_6_2_0_SLHC14
 #
 #########################
 
@@ -31,8 +31,8 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DReco_cff')
-process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5D_cff')
+process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DPixel10DReco_cff')
+process.load('Configuration.Geometry.GeometryExtendedPhase2TkBE5DPixel10D_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
@@ -93,9 +93,9 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     PGunParameters = cms.PSet(
         MinPt  = cms.double(1.),
         MaxPt  = cms.double(50.),
-	XFlatSpread = cms.double(1.5),  # In mm (requires an update
-	YFlatSpread = cms.double(1.5),  # In mm  of the official 
-	ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
+	#XFlatSpread = cms.double(1.5),  # In mm (requires an update
+	#YFlatSpread = cms.double(1.5),  # In mm  of the official 
+	#ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
         PartID = cms.vint32(-13),
         MinEta = cms.double(-3.5),
         MaxEta = cms.double(3.5),
@@ -128,14 +128,8 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 	
-
-
-# customisation of the process.
-
 # Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_phase2_BE5D 
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_phase2_BE5DPixel10D 
 
-#call to customisation function cust_phase2_BE5D imported from SLHCUpgradeSimulations.Configuration.combinedCustoms
-process = cust_phase2_BE5D(process)
-
+process = cust_phase2_BE5DPixel10D(process)
 # End of customisation functions	
