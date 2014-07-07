@@ -598,7 +598,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
     if (fabs(d0)>d0cut) continue;
     if (fabs(z0)>20) continue;
 
-    if (mult[38]<nh) continue; 
+   // if (mult[38]<nh) continue; 
 
 
 
