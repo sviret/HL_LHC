@@ -190,8 +190,13 @@ class track_eff
   std::vector<int>     *stub_seg;    // segment number of ALL the stubs
   std::vector<float>   *stub_strip;  // strip number of ALL the stubs
   std::vector<int>     *stub_tp;     // tp index of ALL the stubs (in part_*** vectors of this tree!!!!)
+  std::vector<float>   *stub_ptGEN;  // PT gen of the particle inducing the stub (-1 if bad)
+  std::vector<float>   *stub_d0GEN;  // d0 gen of the particle inducing the stub (-1 if bad)
   std::vector<int>     *stub_inpatt; // is the stub in a pattern (1) of not (0)?
   std::vector<int>     *stub_intrk;  // is the stub in a track (1) of not (0)?
+  std::vector< std::vector<int> >     *stub_sec;    // the list of sectors in which the stub is
+
+
 
   int n_part;                        // The total number of particles inducing at least one stub in the event
 

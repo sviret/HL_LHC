@@ -54,6 +54,7 @@ void track_eff::do_test(int nevt)
 
   std::vector<int> stubs;
   std::vector<int> parts;
+  std::vector<int> msec;
 
   // Loop over the events
 
@@ -77,7 +78,7 @@ void track_eff::do_test(int nevt)
     n_track=nb_tracks; 
 
     parts.clear();
-
+    msec.clear();
     // Here we fill the pattern and tracks containers    
     // the info is already there
 
@@ -123,6 +124,22 @@ void track_eff::do_test(int nevt)
 
     for (int j=0;j<m_stub;++j)
     {  
+      msec.clear();
+      msec.push_back(-1);
+
+      layer  = m_stub_layer[j]; 
+      ladder = m_stub_ladder[j]; 
+      module = m_stub_module[j]; 
+      id       = 10000*layer+100*ladder+module; // Get the module ID
+      
+      if (m_modules.at(id).size()>1)
+      {
+	for (unsigned int kk=1;kk<m_modules.at(id).size();++kk) // In which sector the module is
+	{
+	  msec.push_back(m_modules.at(id).at(kk)-1);
+	}
+      }
+
       stub_x->push_back(m_stub_x[j]);  
       stub_y->push_back(m_stub_y[j]);   
       stub_z->push_back(m_stub_z[j]);  
@@ -132,9 +149,12 @@ void track_eff::do_test(int nevt)
       stub_seg->push_back(m_stub_segment[j]);  
       stub_strip->push_back(m_stub_strip[j]);  
       stub_tp->push_back(-1);  
+      stub_ptGEN->push_back(-1);  
+      stub_d0GEN->push_back(-1);  
       stub_inpatt->push_back(0);  
       stub_intrk->push_back(0);  
-  
+      stub_sec->push_back(msec);  
+
       if (m_stub_tp[j]<0) continue; // Bad stub (unmatched) 
       
       // Basic primary selection (pt and d0 cuts)
@@ -148,6 +168,8 @@ void track_eff::do_test(int nevt)
 	if (m_primaries.at(k).at(0)!=m_stub_tp[j]) continue;
 
 	stub_tp->at(j)=k;  
+	stub_ptGEN->at(j)=sqrt(m_stub_pxGEN[j]*m_stub_pxGEN[j]+m_stub_pyGEN[j]*m_stub_pyGEN[j]);
+	stub_d0GEN->at(j)=sqrt(m_stub_X0[j]*m_stub_X0[j]+m_stub_Y0[j]*m_stub_Y0[j]);  
 	already_there = true;
 	m_primaries.at(k).push_back(j); // If yes, just put the stub index
 	break;
@@ -579,6 +601,9 @@ void track_eff::initTuple(std::string test,std::string out)
   m_finaltree->Branch("stub_segment", &stub_seg);
   m_finaltree->Branch("stub_strip",   &stub_strip);
   m_finaltree->Branch("stub_tp",      &stub_tp);
+  m_finaltree->Branch("stub_ptGEN",   &stub_ptGEN);
+  m_finaltree->Branch("stub_d0GEN",   &stub_d0GEN);
+  m_finaltree->Branch("stub_sec",     &stub_sec);
   m_finaltree->Branch("stub_inpatt",  &stub_inpatt);
   m_finaltree->Branch("stub_intrack", &stub_intrk);
 
@@ -715,7 +740,10 @@ void track_eff::reset()
   stub_tp->clear();  
   stub_inpatt->clear();  
   stub_intrk->clear();  
- 
+  stub_sec->clear();  
+  stub_ptGEN->clear();   
+  stub_d0GEN->clear();  
+
   n_part=0; 
   part_pdg->clear();   
   part_nsec->clear();   
