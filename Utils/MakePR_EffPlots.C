@@ -55,7 +55,7 @@
 // =>sec_num is the sector number
 
 
-void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, float ptcut=2., float d0cut=1.)
+void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, float ptcut=2., float ptmax=100., float d0cut=1.)
 {
   // First get the data
   // by merging all the available files
@@ -189,7 +189,7 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
 
 
     if (pdg!=pdgid && pdgid!=-1) continue;
-    if (fabs(pt)>100) continue;
+    if (fabs(pt)>ptmax) continue;
     //    if (fabs(eta)>2.2) continue;
     if (nhits<nh) continue;
     if (fabs(pt)<ptcut) continue;
@@ -258,7 +258,7 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
        << " hits in the sector and no more than 5 hits in any other sector" << endl;
   cout << tot_match << " were matched in a pattern..." << endl;
   cout << " Efficiency is " << 100*tot_match/tot_in_sec << "%" << endl;
-  cout << " Fake rate is " << 100*(tot_patts-tot_goodpatts)/tot_patts << "%" << endl;
+ // cout << " Fake rate is " << 100*(tot_patts-tot_goodpatts)/tot_patts << "%" << endl;
   
   for (int i=0;i<nbin_phi;++i)
   {
@@ -591,14 +591,14 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
     newtree->GetEntry(i);
 
     if (pdg!=pdgid && pdgid!=-1) continue;
-    if (fabs(pt)>100) continue;
+  //  if (fabs(pt)>20) continue;
     if (fabs(eta)>2.5) continue;
     if (nhits<nh) continue;
     if (fabs(pt)<ptcut) continue;
     if (fabs(d0)>d0cut) continue;
     if (fabs(z0)>20) continue;
 
-   // if (mult[38]<nh) continue; 
+//    if (mult[35]<nh) continue; 
 
 
 
@@ -714,7 +714,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
   cout << " Fake pattern rate is " << float(tot_patts-tot_goodpatts)/float(tot_patts) << endl;
   cout << tot_trcks << " tracks were fitted in total" << endl;
   cout << tot_goodtrcks << " tracks were containing at least " << nh << " good hits " << endl;
-  cout << " Fake track rate is " << float(tot_trcks-tot_goodtrcks)/float(tot_trcks) << endl;
+//  cout << " Fake track rate is " << float(tot_trcks-tot_goodtrcks)/float(tot_trcks) << endl;
 
   for (int i=0;i<nbin_phi;++i)
   {
@@ -724,8 +724,6 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
       if (e_p_eff[i][j][1]!=0.) eff_pat->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][2]/e_p_eff[i][j][1]);
       if (e_p_eff[i][j][2]!=0.)
       {
-
-
 	if (e_p_eff[i][j][3]/e_p_eff[i][j][2] > 1) 
 	{
 	  eff_trk->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,1.);
@@ -736,7 +734,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
 	}
       }
 
-      if (e_p_eff[i][j][0]!=0.) eff_tot->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][3]/e_p_eff[i][j][0]);
+      if (e_p_eff[i][j][1]!=0.) eff_tot->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][3]/e_p_eff[i][j][1]);
     }
   }
 
@@ -746,14 +744,14 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
     {
       if (pt_eff[i][1]!=0.) pt_patt_eff->Fill((i+0.5)*100./nbin_pt,pt_eff[i][2]/pt_eff[i][1]);
       if (pt_eff[i][2]!=0.) pt_trck_eff->Fill((i+0.5)*100./nbin_pt,pt_eff[i][3]/pt_eff[i][2]);
-      if (pt_eff[i][0]!=0.) pt_tot_eff->Fill((i+0.5)*100./nbin_pt,pt_eff[i][3]/pt_eff[i][0]);
+      if (pt_eff[i][1]!=0.) pt_tot_eff->Fill((i+0.5)*100./nbin_pt,pt_eff[i][3]/pt_eff[i][1]);
     }
 
     if (pt_eff_z[i][0]>10)
     {
       if (pt_eff_z[i][1]!=0.) pt_patt_eff_z->Fill((i+0.5)*10./nbin_pt,pt_eff_z[i][2]/pt_eff_z[i][1]);
       if (pt_eff_z[i][2]!=0.) pt_trck_eff_z->Fill((i+0.5)*10./nbin_pt,pt_eff_z[i][3]/pt_eff_z[i][2]);
-      if (pt_eff_z[i][0]!=0.) pt_tot_eff_z->Fill((i+0.5)*10./nbin_pt,pt_eff_z[i][3]/pt_eff_z[i][0]);
+      if (pt_eff_z[i][1]!=0.) pt_tot_eff_z->Fill((i+0.5)*10./nbin_pt,pt_eff_z[i][3]/pt_eff_z[i][1]);
     }
   }
 
@@ -763,7 +761,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
     {
       if (eta_eff[i][1]!=0.) eta_patt_eff->Fill(-2.5+(i+0.5)*5./nbin_eta,eta_eff[i][2]/eta_eff[i][1]);
       if (eta_eff[i][2]!=0.) eta_trck_eff->Fill(-2.5+(i+0.5)*5./nbin_eta,eta_eff[i][3]/eta_eff[i][2]);
-      if (eta_eff[i][0]!=0.) eta_tot_eff->Fill(-2.5+(i+0.5)*5./nbin_eta,eta_eff[i][3]/eta_eff[i][0]);
+      if (eta_eff[i][1]!=0.) eta_tot_eff->Fill(-2.5+(i+0.5)*5./nbin_eta,eta_eff[i][3]/eta_eff[i][1]);
     }
   }
 
@@ -773,7 +771,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
     {
       if (z0_eff[i][1]!=0.) z0_patt_eff->Fill(-20.+(i+0.5)*40./nbin_z0,z0_eff[i][2]/z0_eff[i][1]);
       if (z0_eff[i][2]!=0.) z0_trck_eff->Fill(-20.+(i+0.5)*40./nbin_z0,z0_eff[i][3]/z0_eff[i][2]);
-      if (z0_eff[i][0]!=0.) z0_tot_eff->Fill(-20.+(i+0.5)*40./nbin_z0,z0_eff[i][3]/z0_eff[i][0]);
+      if (z0_eff[i][1]!=0.) z0_tot_eff->Fill(-20.+(i+0.5)*40./nbin_z0,z0_eff[i][3]/z0_eff[i][1]);
     }
   }
 
