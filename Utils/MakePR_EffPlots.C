@@ -591,7 +591,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
     newtree->GetEntry(i);
 
     if (pdg!=pdgid && pdgid!=-1) continue;
-  //  if (fabs(pt)>20) continue;
+    if (fabs(pt)>100) continue;
     if (fabs(eta)>2.5) continue;
     if (nhits<nh) continue;
     if (fabs(pt)<ptcut) continue;
@@ -626,7 +626,7 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
       if (mult[j]>=nh) ++n_sec; 
     }
 
-    if (n_sec>1) continue;
+//    if (n_sec>1) continue;
 
     if (n_sec==0) continue; // The track is not in the acceptance
 
