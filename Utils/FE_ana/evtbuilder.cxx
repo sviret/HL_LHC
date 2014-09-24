@@ -1,7 +1,4 @@
-// Class for the rates determination
-// For more info, look at the header file
-
-#include "evtbuilder.h"
+// Base class for Phase II tracker FrontEnd tests
 
 // Main constructor
 
@@ -10,42 +7,48 @@
 // Meaning of the parameters
 //
 //
-// filename : the input data files
-// outfile  : name of the output root file
-// npatt    : how many BXs should be produced (will be fitted correctly afterwards)
-// rate     : input L1A rate (for the L1 raw block writing
-// layer    : restrict info to a given layer, or not (give -1 in this case)
-// sector   : the input file defining the modules
-// RAW      : write the L1 block or not
-// TRIG     : write the Trigger block or not
-// npblock  : How many bits do we reserve to L1 in the concentrator block (between 8 and 320, should be a multiple of 8) 
-// BMPA     : How many bits are used to code the stub bend on MPA concentrator level (0 to 5)
-// BCBC     : How many bits are used to code the stub bend on CBC concentrator level (0 to 5)
-// conc     : Are we building concentrator (true) or FE (false) sequences
-// L1prop   : The proportion of PU4T events you want in the TRG flow (in %)
+// filenameRAW : the input data files for L1 block generation
+// filenameTRG : the input data files for trigger block generation
+// outfile     : name of the output root file
+// npatt       : how many BXs should be produced (will be fitted correctly afterwards)
+// rate        : input L1A rate (for the L1 raw block writing
+// layer       : restrict info to a given layer, or not (give -1 in this case)
+// sector      : the input file defining the modules
+// RAW         : write the L1 block or not
+// TRIG        : write the Trigger block or not
+// npblock     : How many bits do we reserve to L1 in the concentrator block (between 8 and 320, should be a multiple of 8) 
+// BMPA        : How many bits are used to code the stub bend on MPA concentrator level (0 to 5)
+// BCBC        : How many bits are used to code the stub bend on CBC concentrator level (0 to 5)
+// conc        : Are we building concentrator (true) or FE (false) data sequences
+// L1prop      : The proportion of PU4T events you want in the TRG flow (in %)
+// CICsize     : The size of the concentrator block, in BX
 
+#include "evtbuilder.h"
 
-evtbuilder::evtbuilder(std::string filenameRAW, std::string filenameTRG, std::string outfile, int npatt, int rate, int layer, std::string sector, bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,bool conc,int L1prop)
+evtbuilder::evtbuilder(std::string filenameRAW, std::string filenameTRG, std::string outfile, 
+		       int npatt, int rate, int layer, std::string sector, 
+		       bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,
+		       bool conc,int L1prop, int CICsize)
 {
   m_rate       = rate;
   m_lay        = layer;
   m_npblock    = npblock;
   m_tri_data   = new  std::vector<int>;
   m_raw_data   = new  std::vector<int>;
+  m_raw_chip_bx= new  std::vector<int>;;
+  m_raw_chip_fifo= new  std::vector<int>;;
   m_L1prop     = L1prop; 
-
-  m_write_raw = RAW;
-  m_write_trg = TRIG;
-
-
+  m_CICsize    = CICsize; 
+  m_write_raw  = RAW;
+  m_write_trg  = TRIG;
   bend_bit_MPA = BMPA;
   bend_bit_CBC = BCBC;
 
 
-  evtbuilder::initVars();
-  evtbuilder::convert(sector);
-  evtbuilder::initTuple(filenameRAW,filenameTRG,outfile);
-  evtbuilder::get_stores(npatt-npatt%8,conc);   
+  evtbuilder::initVars();                                 // Initialize everything
+  evtbuilder::convert(sector);                            // Get the tracker module info
+  evtbuilder::initTuple(filenameRAW,filenameTRG,outfile); // Initialize ROOT stuff
+  evtbuilder::get_stores(npatt-conc*npatt%8,conc);             // Prepare the data store where to pickup info
 }
 
 /////////////////////////////////////////////////////////
@@ -69,13 +72,10 @@ void evtbuilder::get_stores(int nevts, bool conc)
   int n_entries_TRG = L1TT->GetEntries();
   int n_entries_RAW = PIX->GetEntries();
 
-  bool isPS=false;
-  //  bool isCONC=true;
-
-  int goodstub = -1;
-
-  float pTgen=0.;
-  float d0gen=0.;
+  bool  isPS        = false;
+  int   goodstub    = -1;
+  float pTgen       = 0.;
+  float d0gen       = 0.;
 
   // Then loop over events
 
@@ -87,45 +87,54 @@ void evtbuilder::get_stores(int nevts, bool conc)
 
   //
   // We make a first loop over all entries available
-  // in order to data stores, using the digis (L1raw block)
+  // in order to build data stores, using the digis (L1raw block)
   // and the stubs (trigger block)
   // 
-  // 2 data samples are defined for that, one with 50%/50%  minbias/physics events, 
+  // 2 data samples are defined for that, one with m_L1prop % physics events, 
   // for the trigger words, and one with pure physics events, for L1 data transmission 
   //
   // You can choose the proportion of complex events you want in the TRG block, in % 
   //
 
   int mixpar = 0;
+  int store_size;
 
+  if (m_write_raw) store_size = n_entries_RAW;
+  if (m_write_trg) store_size = n_entries_TRG;
 
   cout << "--> Entering loop 1, producing the big data stores for " 
-       << std::min(n_entries_TRG,n_entries_RAW) << " events..." << endl;
+       << store_size << " events..." << endl;
 
-  //  for (int j=0;j<std::min(n_entries_TRG,n_entries_RAW);++j)
-  for (int j=0;j<200;++j)
+  // for (int j=0;j<10;++j)
+  for (int j=0;j<store_size;++j)
   {    
     if (j%20==0)
-      cout << "Processing event " <<  j << "/" << std::min(n_entries_TRG,n_entries_RAW) << endl;
+      cout << "Processing event " <<  j << "/" << store_size << endl;
 
     m_chip_trig.clear();
     m_chip_raw.clear();
 
-    if (rand()%100>m_L1prop) // Mbias
+    if (m_write_trg) 
     {
-      mixpar=rand()%int(n_entries_TRG/2.); 
-    }
-    else // Phys
-    {
-      mixpar=rand()%int(n_entries_TRG/2.)+n_entries_TRG/2.; 
+      if (rand()%100>m_L1prop) // Mbias event in the trigger block
+      {
+	mixpar=rand()%(n_entries_TRG-m_PHYsize); 
+
+	L1TT->GetEntry(m_PHYsize+mixpar); 
+      }
+      else // Phys event (stored in the s2nd half of the TRG sample)
+      {
+	mixpar=rand()%m_PHYsize; 
+	L1TT->GetEntry(mixpar); 
+      }
     }
 
-    if (m_write_trg) L1TT->GetEntry(mixpar); 
-    if (m_write_raw) PIX->GetEntry(j); 
+    if (m_write_raw) PIX->GetEntry(rand()%n_entries_RAW); // For the L1 it's much more simple
 
     // Initialize the map with dummy values for all referenced modules
     //
     // Please keep in mind that this map is 8 times larger in the FE output case
+    // Maps are quite heavy, so don't produce a lot of FE events
 
     if (!conc)
     {
@@ -139,7 +148,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
     }
     else
     {
-      for (unsigned int i=0;i<m_concs.size();++i) // All the concentrators if one asks the CONC output
+      for (unsigned int i=0;i<m_concs.size();++i) // All the concentrators if one asks the CONC output (8 times less)
       {
 	m_digi_list.clear();
 	m_digi_list.push_back(-1);
@@ -151,12 +160,12 @@ void evtbuilder::get_stores(int nevts, bool conc)
     // First loop over the digis (raw block)
     if (m_write_raw)
     {
-      for (int i=0;i<m_pix;++i)
+      for (int i=0;i<m_pix;++i) // Loop over pixels
       {
 	isPS  = false;
 	layer = m_pix_layer[i]; 
 	
-	if (layer!=m_lay && m_lay!=-1) continue;
+	if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
 	ladder= m_pix_ladder[i]-1;
 	if (layer<8 || (layer>10 && ladder<9)) isPS = true; 
@@ -165,56 +174,58 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	seg   = m_pix_col[i]; 
 	strip = m_pix_row[i]; 
 	
-	if (isPS && m_pix_module[i]%2==1)
+	if (isPS && m_pix_module[i]%2==1) // Ger the chip number for the PS
 	{
 	  chip  = static_cast<int>(strip/127)+(seg/16)*8;      
 	}
-	else
+	else // For the 2S
 	{
 	  chip  = static_cast<int>(strip/127)+seg*8;
 	}
 
 	strip = strip%128+((m_pix_module[i]-1)%2)*128;
 
-	B_id = layer*1000000 + ladder*10000 + module*100 + chip;
+	B_id = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the module ID corresponding to the map
 
 	if (conc) B_id = B_id - chip%8; // Here we get the concentrator ID
-	
+
 	// Look if this chip has already been touched in this event
 	m_iter = m_chip_raw.find(B_id);
 	
-	if (m_iter == m_chip_raw.end()) // Unknown concentrator???
+	if (m_iter == m_chip_raw.end()) // Unknown chip, this can happen because csv file is only considering chips involved in TRG
 	{
-	  continue;
-	  cout << "Wow, this should not happen, the chip ref " << B_id << " is unknown!!!" << endl;
-	}
-	else // Otherwise complement
-	{
+	  continue; // We don't consider them for the moment...
 	  m_digi_list.clear();
-	  m_digi_list = m_iter->second;
-	  m_digi_list.push_back(chip%8);
-	  m_digi_list.push_back(strip);
-	  
-	  (isPS) 
-	    ? m_digi_list.push_back(seg%16)
-	    : m_digi_list.push_back(-1);
-
-	  m_chip_raw.erase(m_iter->first);
+	  m_digi_list.push_back(-1);
 	  m_chip_raw.insert(std::make_pair(B_id,m_digi_list));
+	  m_chip_trig.insert(std::make_pair(B_id,m_digi_list));
+	  m_iter = m_chip_raw.find(B_id);
 	}
-      } // End of digi collection
-    }
 
-    // Start the stub loop
+	m_digi_list.clear();
+	m_digi_list = m_iter->second;
+	m_digi_list.push_back(chip%8);
+	m_digi_list.push_back(strip);
+	  
+	(isPS) 
+	  ? m_digi_list.push_back(seg%16)
+	  : m_digi_list.push_back(-1);
+
+	m_chip_raw.erase(m_iter->first);
+	m_chip_raw.insert(std::make_pair(B_id,m_digi_list));      
+      } // End of digi collection
+    } // End of raw event collection
+
+    // Start the trigger store building
 
     if (m_write_trg)
     {
-      for (int i=0;i<m_stub;++i)
+      for (int i=0;i<m_stub;++i) // Loop over stubs
       {  
 	// First of all we compute the ID of the stub's module
-	isPS  = false;
-	goodstub=-1;
-	layer = m_stub_layer[i]; 
+	isPS     = false;
+	goodstub =-1;
+	layer    = m_stub_layer[i]; 
 	
 	if (layer!=m_lay && m_lay!=-1) continue;
 	
@@ -246,7 +257,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	pTgen = sqrt(m_stub_pxGEN[i]*m_stub_pxGEN[i]+m_stub_pyGEN[i]*m_stub_pyGEN[i]);
 	d0gen = sqrt(m_stub_X0[i]*m_stub_X0[i]+m_stub_Y0[i]*m_stub_Y0[i]);
 
-	if (pTgen>2 && d0gen<0.5) goodstub=1;
+	if (pTgen>2 && d0gen<0.5) goodstub=1; // Good stubs are the ones looked at by L1 tracking
 
 	pt   = static_cast<int>(abs(2*m_stub_deltas[i]));
 	B_id = layer*1000000 + ladder*10000 + module*100 + chip;
@@ -277,14 +288,14 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  m_chip_trig.erase(m_iter->first);
 	  m_chip_trig.insert(std::make_pair(B_id,m_stub_list));
 	}
-      }  // End of digi collection
-    }      
+      }  // End of stub collection
+    } // End of trigger event collection     
 
     // Finally we add both collection to the stores
     
     m_data_trig.push_back(m_chip_trig);
     m_data_raw.push_back(m_chip_raw);
-  }
+  } // End of storage loop
 
   // Now we have two collections one containing the raw data, and one the trigger data for all event at the concentrator level
 
@@ -310,9 +321,6 @@ void evtbuilder::get_stores(int nevts, bool conc)
   srand(time(NULL));
 
   int trg_evnum;
-  //int raw_evnum;
-  //int raw_rank;
-  //int delta_ref=delta;
 
   std::vector<int> trig_seq;
   std::vector<int> raw_seq;
@@ -416,11 +424,11 @@ void evtbuilder::get_stores(int nevts, bool conc)
   int L1_id = 0;
 
   std::vector<int> FIFO,FIFO_new;
-  int FIFO_size;
   int last_rank;
   int last_BX;
 
   m_raw_FIFO.clear();
+  m_chip_FIFOs.clear();
 
   if (conc)
   {
@@ -433,27 +441,31 @@ void evtbuilder::get_stores(int nevts, bool conc)
       m_digi_list.clear();
       m_digi_list.push_back(-1);
       m_raw_FIFO.insert(std::make_pair(m_concs.at(i),m_digi_list));
+      m_digi_list.clear();
+      m_digi_list.push_back(0);
+      m_digi_list.push_back(0);
+      m_chip_FIFOs.insert(std::make_pair(m_concs.at(i),m_digi_list));
     }
   }
 
-  // First write the FE raw data (pretty simple 
-  // because here we don't really bother with BX sequences)
   //
-  // We just try to emulate the FIFO behaviour for the concentrator case
+  // First of all one writes the L1 word, either at the FE of the concentrator level
+  // 
+  //
+  //
 
- 
   if (m_write_raw)
   {
-    for (int i=0;i<nevts;++i)
+    for (int i=0;i<nevts;++i) 
     { 
       if (i%100==0)
 	cout << i << endl;
 
-      if (nevts%3564==0) L1_id=0; // BCR, L1ID get back to 0
+      if (i%3564==0) L1_id=0; // BCR, L1ID get back to 0
 
       evtbuilder::initVars();
 
-      if (raw_seq.at(i)!=-1) // CBC/MPA received a L1 A, we write the raw block
+      if (raw_seq.at(i)!=-1) // Chip has received received a L1 A, we write the raw block
       {
 	++L1_id;
 	
@@ -474,41 +486,51 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  m_raw_ns        = 0;
 
 
+	  //	  if (m_raw_lay>10) cout << m_raw_lay << " / " <<  m_raw_lad << " /  " << m_raw_chip << endl;
+
 	  if (m_raw_lay<8 || (m_raw_lay>10 && m_raw_lad<9)) isPS = true; 
 
 	  // Now, we get the digis contained in the event, and fill the block
 	  m_digi_list = m_iter->second;
 	  
+	  // We have the info, we now write the word, making a difference bet. CIC and FE chip words
+	  
 	  (conc)
 	    ? evtbuilder::fill_CONC_RAW_block(m_digi_list,isPS,L1_id)
 	    : evtbuilder::fill_RAW_block(m_digi_list,isPS,L1_id);
 	  
+	  // The word is written, we now emulate the FIFO behavior for the CIC 
+
 	  m_raw_size  = m_raw_data->size();
 
 	  // Concentrator FIFO size is 266*8*16 = 34048 bits
-	  // You can store up to 17024 BX of data transmission
+	  
+	  int FIFO_size = 0.;
 
-	  if (conc)
+	  if (conc) // From now on it's only for the CIC
 	  {
 	    // Find the chip FIFO footprint
 	    // defined as follows:
 
-	    // < CHIP_ID, <-1,BXi(1),BXo(1), > >
+	    // < CHIP_ID, <-1,BXin(1),BXout(1),BXin(2),BXout(2),... > >
 
-	    m_iter2 = m_raw_FIFO.find(m_raw_chip);
+	    m_iter2 = m_raw_FIFO.find(m_raw_chip); // Find the chip
 
 	    FIFO_new.clear();
 	    FIFO=m_iter2->second;
-	    FIFO_size=(FIFO.size()-1)/2;	    
+	    FIFO_size=(FIFO.size()-1)/2; // How many L1 events are in the FIFO?	    
 	    FIFO_new.push_back(-1);
 
-	    if (FIFO_size==0) // Empty FIFO
+	    if (FIFO_size==0) // Empty FIFO, initialize it!
 	    {
-	      FIFO_new.push_back(i);                            // BXi is the current BX
-	      FIFO_new.push_back(i+m_raw_size/(m_npblock/8)+1); // BXi + numb of BXs to extract the event 
-	      m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;          // Number of events in the FIFO (1)
+	      FIFO_new.push_back(i);                                    // BXin is the current BX, the L1 event enters the CIC
+	      FIFO_new.push_back(i+m_raw_size/(m_npblock/m_CICsize)+1); // BXout = BXin + numb of BXs to extract the event (if FIFO is empty it's simple) 
+	      m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;                  // Number of events in the FIFO (1)
+	      FIFO_size=m_raw_size;
+
+	      last_BX=i+m_raw_size/(m_npblock/m_CICsize)+1;
 	    }
-	    else  // FIFO not empty
+	    else  // FIFO not empty, one need to increment
 	    {
 	      last_BX=i;
 
@@ -525,42 +547,56 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	      // Here we compute the size of the current FIFO
 
 	      last_rank=0;
-	      if (FIFO_new.size()>1) last_rank = (last_BX-FIFO_new.at(1))*(m_npblock/8);
+	      if (FIFO_new.size()>1) last_rank = (last_BX-i)*(m_npblock/m_CICsize);
 
-	      if (last_rank+m_raw_size>34048) // The new event cannot fit in, we raise an error 
+	      FIFO_size=m_raw_size+last_rank;
+
+	      //if (last_rank+m_raw_size>34048)   // The new event cannot fit in, we raise an error... 
+	      if (last_rank+m_raw_size>100000000) // ...or not, as here, as we want to study the FIFO divergence 
 	      {
 		m_raw_FIFO_FULL = -1;
 	      }
 	      else // OK, come in!
 	      {
-		FIFO_new.push_back(last_BX);
-		FIFO_new.push_back(last_BX+m_raw_size/(m_npblock/8)+1);
+		FIFO_new.push_back(i);                                          // BXin is the current BX, the L1 event enters the CIC
+		FIFO_new.push_back(last_BX+m_raw_size/(m_npblock/m_CICsize)+1); // BXout tells us when the event really goes out
 		m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;
+
+		last_BX=last_BX+m_raw_size/(m_npblock/m_CICsize)+1;
 	      }
 	    }
 
 	    m_raw_FIFO.erase(m_iter2->first);
 	    m_raw_FIFO.insert(std::make_pair(m_raw_chip,FIFO_new)); // Update the FIFO
-	  }
+
+	    // Then update the chip FIFO list
+
+	    m_iter2 = m_chip_FIFOs.find(m_raw_chip);
+	    FIFO=m_iter2->second;
+	    FIFO.push_back(i);
+	    FIFO.push_back(last_BX-i);
+	    m_chip_FIFOs.erase(m_iter2->first);
+	    m_chip_FIFOs.insert(std::make_pair(m_raw_chip,FIFO)); // Update the FIFO list
+	  } // End of the FIFO emulator
 
 	  m_raw_tree->Fill();
 	}
       }
-    }
-  }
+    } // End of the loop on raw events
+  } // End of the RAW block definition
 
-  // Then write the CONC TRG data (8BX for both cases)
+
+  // Then write the trigger data 
   
   if (m_write_trg)
   {
-    if (conc) // For the concentrator we work on a 8BX basis
+    if (conc) // For the concentrator we work on a m_CICsize BXs basis (default is 8)
     {
-      for (int i=0;i<nevts/8;++i)
+      for (int i=0;i<nevts/m_CICsize;++i) // Loop over the number of sequences
       { 
-	if (i%100==0)
-	  cout << 8*i << endl;
+	if (i%100==0) cout << m_CICsize*i << endl;
 
-	m_chip_trig   = m_data_trig.at(trig_seq.at(8*i)); // Pick up the event in the store
+	m_chip_trig = m_data_trig.at(trig_seq.at(m_CICsize*i)); // Pick up the event in the store
 	
 	for ( m_iter = m_chip_trig.begin(); m_iter != m_chip_trig.end();++m_iter )
 	{
@@ -569,7 +605,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  // The main info
 
 	  isPS            = false;
-	  m_tri_bx        = 8*i;
+	  m_tri_bx        = m_CICsize*i;
 	  m_tri_nstubs    = 0;
 	  m_tri_nstubs_g  = 0;
 	  m_tri_nstubs_s  = 0;
@@ -586,14 +622,14 @@ void evtbuilder::get_stores(int nevts, bool conc)
 
 	  trig_sequence.push_back(m_iter->second);
 	  
-	  for (int j=1;j<8;++j)
+	  for (int j=1;j<m_CICsize;++j)
 	  {
-	    trig_sequence.push_back((m_data_trig.at(trig_seq.at(8*i+j)).find(m_tri_chip))->second);
+	    trig_sequence.push_back((m_data_trig.at(trig_seq.at(m_CICsize*i+j)).find(m_tri_chip))->second);
 	  }
 	
 	  // And we write the word
 	  // std::cout << m_tri_bx << " / " << m_tri_chip << " -> ";
-	  evtbuilder::fill_TRG_block(trig_sequence,isPS,conc,8*i);
+	  evtbuilder::fill_TRG_block(trig_sequence,isPS,conc,m_CICsize*i);
 	}
       }
     }
@@ -601,8 +637,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
     {
       for (int i=0;i<nevts/2;++i)
       { 
-	if (i%100==0)
-	  cout << i << endl;
+	if (i%100==0) cout << i << endl;
 
 	m_chip_trig   = m_data_trig.at(trig_seq.at(2*i));
 	
@@ -625,7 +660,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  
 	  if (m_tri_lay<8 || (m_tri_lay>10 && m_tri_lad<9)) isPS = true; 
 	  
-	  if (isPS) 	  
+	  if (isPS) // MPA case, data is sent over 2BXs	  
 	  {
 	    m_tri_nstubs= 0;
 	    m_tri_nstubs_g=0;
@@ -636,7 +671,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	    std::cout << m_tri_bx << " / " << m_tri_chip << " -> ";
 	    evtbuilder::fill_TRG_block(trig_sequence,isPS,conc,2*i);
 	  }
-	  else
+	  else // CBC case, one BX basis
 	  {
 	    m_tri_nstubs= 0;
 	    m_tri_nstubs_g=0;
@@ -657,8 +692,108 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	}
       }
     }
-  }
+  } // End of the trigger writing block
+
+
+  // We evaluate the drift function : BX_out-BX_in = a*BX + b
+  //                                        X      = a*Z  + b
+  //
+  // The idea here is quite simple, we look if the time to extract 
+  // an event from the CIC is drifting or not. If it's drifting, it means that 
+  // the FIFO is filling up slowly, which is bad, definitely...
+  //
+  // Along with the error on these params
+
   
+  std::vector<int> FIFO_cnt;
+
+  double parZX[2][2];
+  double resZX[2];
+  double invZX[2][2];
+  double detZX = 0;
+  
+  float a,b;
+  float da,db;
+  
+  float x,z;
+
+  if (m_write_raw && conc)
+  {    	
+    for ( m_iter = m_chip_FIFOs.begin(); m_iter != m_chip_FIFOs.end();++m_iter )
+    {
+      a = 0;
+      b = 0;
+      da = 0;
+      db = 0;
+
+      for (int i=0;i<2;++i)
+      {
+	resZX[i] = 0.;
+	for (int j=0;j<2;++j) parZX[i][j] = 0.;
+	for (int j=0;j<2;++j) invZX[i][j] = 0.;
+      }
+      
+      detZX = 0;
+
+      m_raw_chip_bx->clear();
+      m_raw_chip_fifo->clear();
+      m_raw_chip_slope=0.;
+      m_raw_chip_slope_err=0.;
+      m_raw_chip_int=0.;
+      m_raw_chip_int_err=0.;
+   
+      FIFO_cnt.clear();
+      m_raw_chip  = m_iter->first;
+      FIFO_cnt    = m_iter->second;
+
+      for (unsigned int j=1;j<(FIFO_cnt.size())/2;++j)	    
+      {
+	//	cout  << j << "/" << FIFO_cnt.at(2*j) << "/" << FIFO_cnt.at(2*j+1) << endl;
+
+	m_raw_chip_bx->push_back(FIFO_cnt.at(2*j));
+	m_raw_chip_fifo->push_back(FIFO_cnt.at(2*j+1));
+
+	x = FIFO_cnt.at(2*j+1); // BXout-BXin
+	z = FIFO_cnt.at(2*j);                    // BXin
+
+	parZX[0][0] += z*z; // S_ZZ
+	parZX[1][1] += 1;   // S
+	parZX[1][0] += z;   // S_Z
+	
+	resZX[0] += x*z;    // S_XZ
+	resZX[1] += x;      // S_X
+
+	//	cout << m_raw_chip << " / " << z << " / " << x << endl;
+      }
+
+
+      detZX = parZX[0][0]*parZX[1][1]-parZX[1][0]*parZX[1][0];
+ 
+      invZX[1][1] = parZX[1][1]/detZX; 
+      invZX[1][0] = parZX[1][0]/detZX; 
+      invZX[0][0] = parZX[0][0]/detZX; 
+
+      b     = invZX[0][0]*resZX[1] - invZX[1][0]*resZX[0]; 
+      a     = invZX[1][1]*resZX[0] - invZX[1][0]*resZX[1]; 
+ 
+      //  cout << m_raw_chip << " / Fifo_cnt =  " << a << "*BX+" << b<< endl;
+      
+      db = sqrt(invZX[0][0]);
+      da = sqrt(invZX[1][1]);
+      
+      //      cout <<" a =  " << a << "+/-" << da << endl;
+      //      cout <<" b =  " << b << "+/-" << db << endl;
+
+      m_raw_chip_slope     = a;
+      m_raw_chip_slope_err = da;
+
+      m_raw_chip_int     = b;
+      m_raw_chip_int_err = db;
+
+      m_raw_summary->Fill();
+    }
+  }
+
   m_outfile->Write();
   
   delete L1TT;
@@ -682,6 +817,7 @@ void evtbuilder::initVars()
   m_tri_chip=0;
   m_raw_chip=0;
   m_tri_size=0;
+  m_tri_size_anders=0;
   m_raw_size=0;
   m_raw_mbits=0;
   m_raw_np=0;
@@ -701,6 +837,14 @@ void evtbuilder::initVars()
 
   m_tri_data->clear();
   m_raw_data->clear();
+
+  m_raw_chip=0;
+  m_raw_chip_bx->clear();
+  m_raw_chip_fifo->clear();
+  m_raw_chip_slope=0.;
+  m_raw_chip_slope_err=0.;
+  m_raw_chip_int=0.;
+  m_raw_chip_int_err=0.;
 }
 
 
@@ -708,8 +852,9 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
 {
   m_outfile    = new TFile(out.c_str(),"recreate");
 
-  m_tri_tree   = new TTree("Trigger_FE","L1Trigger words after FE");
-  m_raw_tree   = new TTree("Raw_FE","Raw data words after FE");
+  m_tri_tree    = new TTree("Trigger_FE","L1Trigger words after FE");
+  m_raw_tree    = new TTree("Raw_FE","Raw data words after FE");
+  m_raw_summary = new TTree("Raw_SUM","Raw data summary info");
 
   m_tri_tree->Branch("TRI_BX",         &m_tri_bx,      "TRI_BX/I");
   m_tri_tree->Branch("TRI_CHP",        &m_tri_chip,    "TRI_CHP/I");
@@ -718,6 +863,7 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
   m_tri_tree->Branch("TRI_MOD",        &m_tri_mod,     "TRI_MOD/I");
   m_tri_tree->Branch("TRI_WORD",       &m_tri_data);
   m_tri_tree->Branch("TRI_SIZE",       &m_tri_size,    "TRI_SIZE/I");  
+  m_tri_tree->Branch("TRI_SIZE_A",     &m_tri_size_anders, "TRI_SIZE_A/I");  
   m_tri_tree->Branch("TRI_NSTUBS",     &m_tri_nstubs);  
   m_tri_tree->Branch("TRI_NSTUBS_S",   &m_tri_nstubs_s);  
   m_tri_tree->Branch("TRI_NSTUBS_G",   &m_tri_nstubs_g);  
@@ -735,113 +881,163 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
 
   m_raw_tree->Branch("RAW_NPCLUS",     &m_raw_np);
   m_raw_tree->Branch("RAW_NSCLUS",     &m_raw_ns);
- 
+
+  m_raw_summary->Branch("RAW_CHP",           &m_raw_chip,    "RAW_CHP/I");
+  m_raw_summary->Branch("RAW_CHP_BX",        &m_raw_chip_bx);
+  m_raw_summary->Branch("RAW_CHP_FIFO",      &m_raw_chip_fifo);
+  m_raw_summary->Branch("RAW_CHP_SLOPE",     &m_raw_chip_slope);
+  m_raw_summary->Branch("RAW_CHP_SLOPE_ERR", &m_raw_chip_slope_err);
+  m_raw_summary->Branch("RAW_CHP_INT",       &m_raw_chip_int);
+  m_raw_summary->Branch("RAW_CHP_INT_ERR",   &m_raw_chip_int_err);
+
   L1TT   = new TChain("TkStubs");
   PIX    = new TChain("Pixels"); 
  
   // Input RAW data file
   
-  std::size_t found = inRAW.find(".root");
-  
-  // Case 1, it's a root file
-  if (found!=std::string::npos)
+  if (m_write_raw)
   {
-    PIX->Add(inRAW.c_str());
-  }
-  else // This is a list provided into a text file
-  {
-    std::string STRING;
-    std::ifstream in2(inRAW.c_str());
-    if (!in2)
-    {
-      std::cout << "Please provide a valid RAW data filename list" << std::endl;
-      return;
-    }
+    std::size_t found = inRAW.find(".root");
   
-    while (!in2.eof())
+    // Case 1, it's a root file
+    if (found!=std::string::npos)
     {
-      getline(in2,STRING);
-      
-      found = STRING.find(".root");
-      if (found!=std::string::npos) PIX->Add(STRING.c_str());
+      PIX->Add(inRAW.c_str());
     }
+    else // This is a list provided into a text file
+    {
+      std::string STRING;
+      std::ifstream in2(inRAW.c_str());
+      if (!in2)
+      {
+	std::cout << "Please provide a valid RAW data filename list" << std::endl;
+	return;
+      }
+  
+      while (!in2.eof())
+      {
+	getline(in2,STRING);
+	
+	found = STRING.find(".root");
+	if (found!=std::string::npos) PIX->Add(STRING.c_str());
+      }
     
-    in2.close();
+      in2.close();
+    }
   }
-
  
   // Input TRG data file
   
-  found = inTRG.find(".root");
+  if (m_write_trg)
+  {
+    std::size_t found = inRAW.find(".root");
   
-  // Case 1, it's a root file
-  if (found!=std::string::npos)
-  {
-    L1TT->Add(inTRG.c_str());
-  }
-  else // This is a list provided into a text file
-  {
-    std::string STRING;
-    std::ifstream in2(inTRG.c_str());
-    if (!in2)
+    // Case 1, it's a root file
+    if (found!=std::string::npos)
     {
-      std::cout << "Please provide a valid TRG data filename list" << std::endl;
-      return;
+      L1TT->Add(inRAW.c_str());
     }
-  
-    while (!in2.eof())
+    else // This is a list provided into a text file
     {
-      getline(in2,STRING);
+      std::string STRING;
+      std::ifstream in2(inRAW.c_str());
+      if (!in2)
+      {
+	std::cout << "Please provide a valid RAW data filename list" << std::endl;
+	return;
+      }
+  
+      while (!in2.eof())
+      {
+	getline(in2,STRING);
       
-      found = STRING.find(".root");
-      if (found!=std::string::npos) L1TT->Add(STRING.c_str());
+	found = STRING.find(".root");
+	if (found!=std::string::npos) L1TT->Add(STRING.c_str());
+      }
+      
+      in2.close();
     }
-    
-    in2.close();
-  }
 
+    m_PHYsize = L1TT->GetEntries();
 
+    found = inTRG.find(".root");
   
-  pm_pix_layer=&m_pix_layer;
-  pm_pix_ladder=&m_pix_ladder;
-  pm_pix_module=&m_pix_module;
-  pm_pix_row=&m_pix_row;
-  pm_pix_col=&m_pix_col;
+    // Case 1, it's a root file
+    if (found!=std::string::npos)
+    {
+      L1TT->Add(inTRG.c_str());
+    }
+    else // This is a list provided into a text file
+    {
+      std::string STRING;
+      std::ifstream in2(inTRG.c_str());
+      if (!in2)
+      {
+	std::cout << "Please provide a valid TRG data filename list" << std::endl;
+	return;
+      }
+  
+      while (!in2.eof())
+      {
+	getline(in2,STRING);
+      
+	found = STRING.find(".root");
+	if (found!=std::string::npos) L1TT->Add(STRING.c_str());
+      }
+      
+      in2.close();
+    }
 
-  PIX->SetBranchAddress("PIX_n",         &m_pix);
-  PIX->SetBranchAddress("PIX_nPU",       &m_npu);
-  PIX->SetBranchAddress("PIX_layer",     &pm_pix_layer);
-  PIX->SetBranchAddress("PIX_ladder",    &pm_pix_ladder);
-  PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
-  PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
-  PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
 
-  pm_stub_layer=&m_stub_layer;
-  pm_stub_ladder=&m_stub_ladder;
-  pm_stub_module=&m_stub_module;
-  pm_stub_pt=&m_stub_pt;
-  pm_stub_deltas=&m_stub_deltas;
-  pm_stub_strip=&m_stub_strip;
-  pm_stub_seg=&m_stub_seg;
-  pm_stub_chip=&m_stub_chip;
-  pm_stub_X0=&m_stub_X0;
-  pm_stub_Y0=&m_stub_Y0;
-  pm_stub_pxGEN=&m_stub_pxGEN;
-  pm_stub_pyGEN=&m_stub_pyGEN;
- 
-  L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
-  L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
-  L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
-  L1TT->SetBranchAddress("L1TkSTUB_module",    &pm_stub_module);
-  L1TT->SetBranchAddress("L1TkSTUB_pt",        &pm_stub_pt);
-  L1TT->SetBranchAddress("L1TkSTUB_deltas",    &pm_stub_deltas);
-  L1TT->SetBranchAddress("L1TkSTUB_strip",     &pm_stub_strip);
-  L1TT->SetBranchAddress("L1TkSTUB_seg",       &pm_stub_seg);
-  L1TT->SetBranchAddress("L1TkSTUB_chip",      &pm_stub_chip);
-  L1TT->SetBranchAddress("L1TkSTUB_pxGEN",     &pm_stub_pxGEN);
-  L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
-  L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
-  L1TT->SetBranchAddress("L1TkSTUB_Y0",        &pm_stub_Y0);
+   
+  }
+  
+  if (m_write_raw)
+  {
+    pm_pix_layer=&m_pix_layer;
+    pm_pix_ladder=&m_pix_ladder;
+    pm_pix_module=&m_pix_module;
+    pm_pix_row=&m_pix_row;
+    pm_pix_col=&m_pix_col;
+
+    PIX->SetBranchAddress("PIX_n",         &m_pix);
+    PIX->SetBranchAddress("PIX_nPU",       &m_npu);
+    PIX->SetBranchAddress("PIX_layer",     &pm_pix_layer);
+    PIX->SetBranchAddress("PIX_ladder",    &pm_pix_ladder);
+    PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
+    PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
+    PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
+  }    
+
+  if (m_write_trg)
+  {
+    pm_stub_layer=&m_stub_layer;
+    pm_stub_ladder=&m_stub_ladder;
+    pm_stub_module=&m_stub_module;
+    pm_stub_pt=&m_stub_pt;
+    pm_stub_deltas=&m_stub_deltas;
+    pm_stub_strip=&m_stub_strip;
+    pm_stub_seg=&m_stub_seg;
+    pm_stub_chip=&m_stub_chip;
+    pm_stub_X0=&m_stub_X0;
+    pm_stub_Y0=&m_stub_Y0;
+    pm_stub_pxGEN=&m_stub_pxGEN;
+    pm_stub_pyGEN=&m_stub_pyGEN;
+    
+    L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
+    L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
+    L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
+    L1TT->SetBranchAddress("L1TkSTUB_module",    &pm_stub_module);
+    L1TT->SetBranchAddress("L1TkSTUB_pt",        &pm_stub_pt);
+    L1TT->SetBranchAddress("L1TkSTUB_deltas",    &pm_stub_deltas);
+    L1TT->SetBranchAddress("L1TkSTUB_strip",     &pm_stub_strip);
+    L1TT->SetBranchAddress("L1TkSTUB_seg",       &pm_stub_seg);
+    L1TT->SetBranchAddress("L1TkSTUB_chip",      &pm_stub_chip);
+    L1TT->SetBranchAddress("L1TkSTUB_pxGEN",     &pm_stub_pxGEN);
+    L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
+    L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
+    L1TT->SetBranchAddress("L1TkSTUB_Y0",        &pm_stub_Y0);
+  }
 }
 
 
@@ -850,11 +1046,11 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
 
 /////////////////////////////////////////////////////////////////////////////////
 //
-// ==> filter::convert(std::string sectorfilename) 
+// ==> convert(std::string sectorfilename) 
 //
 // Here we retrieve info from the TKLayout CSV file containing the sector definition
 //
-// This file contains, for each sector, the ids of the modules contained in the sector
+// This file contains, for each sector, the ids of the modules and chips contained in the sector
 //
 // The role of this method is to create the opposite, ie a vector containing, for every module the list of sectors belonging to it
 //
@@ -928,7 +1124,12 @@ bool evtbuilder::convert(std::string sectorfilename)
 // List of method writing the data blocks, according to the format defined in
 // the following presentation:
 //
-// https://indico.cern.ch/event/321805/session/5/contribution/13/material/slides/1.pdf
+// CBC specifications: 
+// https://indico.cern.ch/event/332678/session/1/contribution/5/material/slides/0.pdf
+//
+// MPA/CIC specifications:
+// https://indico.cern.ch/event/332678/session/4/contribution/14/material/slides/0.pdf
+
 
 //
 // 1: L1 raw block at the MPA/CBC level
@@ -949,9 +1150,9 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
   int ndata=(digis.size()-1)/3; // Default first item is -1
   int hsize=m_raw_data->size();
 
-  if (!spars) // CBC (unsparsified)
+  if (!spars) // CBC (unsparsified), slide 9 of the presentation cited
   {
-    for (int j=0;j<256;++j)   m_raw_data->push_back(0);
+    for (int j=0;j<252;++j)   m_raw_data->push_back(0);
     for (int j=0;j<ndata;++j) m_raw_data->at(digis.at(3*j+2)+hsize) = 1; 
   }
   else // MPA
@@ -1078,8 +1279,8 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
     m_raw_ns        = ns;
 
 
-    np = std::min(31,np);
-    ns = std::min(31,ns);
+    np = std::min(31,np); // One cannot pass more than
+    ns = std::min(31,ns); // 31 clusters out of the MPA
 
     std::bitset<5> N_S = ns;
     std::bitset<5> N_P = np;
@@ -1087,6 +1288,15 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
     for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
     for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
     m_raw_data->push_back(0);
+
+    for (int j=0;j<ns;++j)
+    {
+      std::bitset<7> row =  clus_s.at(2*j);
+      std::bitset<3> wdt =  clus_s.at(2*j+1);
+
+      for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
+      for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
+    }
 
     for (int j=0;j<np;++j)
     {
@@ -1099,14 +1309,7 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
       for (int k=0;k<4;++k) m_raw_data->push_back(col[3-k]);
     }
 
-    for (int j=0;j<ns;++j)
-    {
-      std::bitset<7> row =  clus_s.at(2*j);
-      std::bitset<3> wdt =  clus_s.at(2*j+1);
-
-      for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
-      for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
-    }
+    m_raw_data->push_back(0); // Trailer
   }
 
   // Here we put a common trailer (if needed)
@@ -1156,6 +1359,10 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
   int ndata=(digis.size()-1)/3; // Default first item is -1
   int hsize=m_raw_data->size();
+ 
+  // %%%%%%%%%%%%%%%%
+  // !! Still to clarify (SV 26/08/14), number of bits in the CBC word (252 or 256)
+  // %%%%%%%%%%%%%%%%
 
   if (!spars) // CBC case
   {
@@ -1178,7 +1385,7 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     }
     //    if (ndata!=0) std::cout << std::endl;
 
-    ns      = 0;
+    ns          = 0;
     int compt   = 0;
     int start_r = -1;
 
@@ -1249,7 +1456,6 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     std::bitset<5> N_S = ns;
 
     for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
-    m_raw_data->push_back(0);
 
     for (int j=0;j<ns;++j)
     {
@@ -1408,9 +1614,19 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
     //    std::cout << "This MPA chip contains
 
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
     for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
-    m_raw_data->push_back(0);
+    for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
+
+    for (int j=0;j<ns;++j)
+    {
+      std::bitset<7> row =  clus_s.at(3*j);
+      std::bitset<3> wdt =  clus_s.at(3*j+1);
+      std::bitset<3> chp =  clus_s.at(3*j+2);
+
+      for (int k=0;k<3;++k) m_raw_data->push_back(chp[2-k]);
+      for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
+      for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
+    }
 
     for (int j=0;j<np;++j)
     {
@@ -1425,24 +1641,11 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
       for (int k=0;k<4;++k) m_raw_data->push_back(col[3-k]);
 
     }
-
-    for (int j=0;j<ns;++j)
-    {
-      std::bitset<7> row =  clus_s.at(3*j);
-      std::bitset<3> wdt =  clus_s.at(3*j+1);
-      std::bitset<3> chp =  clus_s.at(3*j+2);
-
-      for (int k=0;k<3;++k) m_raw_data->push_back(chp[2-k]);
-      for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
-      for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
-    }
   }
 
+  // Here we put a common trailer
 
-
-  // Here we put a common trailer (if needed)
-
-  for (int k=0;k<4;++k) m_raw_data->push_back(0);
+  m_raw_data->push_back(0);
 
 
   int max_bits = 0;
@@ -1486,7 +1689,7 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
 
   // Then go for the data
 
-  int nstubs[8];
+  int nstubs[8]; // Number of stubs stored in each chip 
   int seqsize = static_cast<int>(stubs.size());
 
   int lim_CBC=3; // Max number of stubs passed by the CBC is 3/BX
@@ -1505,38 +1708,69 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
 
   if (conc) evtbuilder::fill_CONC_TRG_header(BXid%3564);
 
+  if (!conc) // Put a specific header for FE words  
+  {
+    m_tri_data->push_back(1); // Always start with synchro bit 1
+
+    if (spars) // For the PS one puts the number of stubs in the first BX
+    {          // will be completed at the end 
+      for (int j=0;j<3;++j) m_tri_data->push_back(0);
+    }
+  }
+
   //std::cout << "Writing trigger block for " << seqsize << " BXs" << std::endl;
   //  
   //  (conc)
   //  ? std::cout << "Concentrator" << std::endl
   //  : std::cout << "FE" << std::endl;
   
-  for (int i=0;i<seqsize;++i)
+  int bit_bx = 3; // Number of bits necessary to precise the offset number in the CIC word
+  if (m_CICsize>8) bit_bx=4;
+
+  std::vector<int> sequence;
+  sequence.clear();
+
+  for (int i=0;i<seqsize;++i) // Loop over the block of events 
   {
-    std::bitset<3> bx = i;
+    sequence.push_back(0);
+  }
+
+  for (int i=0;i<seqsize;++i) // Loop over the block of events 
+  {
+    std::bitset<4> bx = i;
  
-    stublist = stubs.at(i); // The 
+    stublist = stubs.at(i); // Get the stubs for event i
     
-    if (spars && i%2==0)
+    // Here we initialize the stub per chip counters
+
+    if (spars && i%2==0) // For the MPA, it's every 2BXs
     {
       for (int j=0;j<8;++j) nstubs[j]=0;
     }
 
-    if (!spars)
+    if (spars && i%2==1 && !conc) // Here we have the number of stubs in the first BX for the MPA
+    {
+      std::bitset<3> cnt= m_tri_nstubs_s;
+      for (int j=0;j<3;++j) m_tri_data->at(j+1)=cnt[2-j];
+    }
+
+    if (!spars) // For the CBC, it's every BX
     {
       for (int j=0;j<8;++j) nstubs[j]=0;
     }
 
     //std::cout << i << "/" << nstubs << "/" << bend_bit_MPA << "/" << bend_bit_CBC << "/" ;
     
-    // Loop over the stubs contained in the event
+    // Then loop over the stubs contained in the event
 
     for (unsigned int kk=0;kk<(stublist.size()-1)/5;++kk)
     {
-      gstub=stublist.at(5*kk+5);
+      gstub=stublist.at(5*kk+5); // Is the stub interesting or not
       
       ++m_tri_nstubs;
       if (gstub>0) ++m_tri_nstubs_g;
+
+      // Here we apply the chip limits
 
       if (nstubs[stublist.at(5*kk+1)]>=lim_CBC && !spars) continue; // No CHIP sorting for the moment
       if (nstubs[stublist.at(5*kk+1)]>=lim_MPA && spars) continue;  // No CHIP sorting for the moment
@@ -1544,6 +1778,7 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
       ++nstubs[stublist.at(5*kk+1)];
       ++m_tri_nstubs_s;
       if (gstub>0) ++m_tri_nstubs_gs;
+      ++sequence.at(i);
 
       std::bitset<3> chp = stublist.at(5*kk+1);        // Chip number
       std::bitset<8> pos = stublist.at(5*kk+2);        // Stub position
@@ -1554,17 +1789,29 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
       //	<<  stublist.at(4*kk+2)<< "," 
       //	<<  stublist.at(4*kk+3) << "," 
       //	<<  stublist.at(4*kk+4) << "/" ;
-      
-      if (spars && !conc) m_tri_data->push_back(i);
+ 
+      // For the CIC, start with the offset and chip number
       if (conc) 
       {
-	for (int j=0;j<3;++j) m_tri_data->push_back(bx[2-j]);
+	for (int j=0;j<3;++j) m_tri_data->push_back(bx[bit_bx-1-j]);
 	for (int j=0;j<3;++j) m_tri_data->push_back(chp[2-j]);
       }
 
-      for (int j=0;j<8;++j) m_tri_data->push_back(pos[7-j]);
-      if (spars) for (int j=0;j<4;++j) m_tri_data->push_back(col[3-j]);
-      
+      // Then the position
+      for (int j=0;j<8;++j) 
+      {
+	if (!conc && m_tri_data->size()==40 && spars) m_tri_data->push_back(0); // Second synchro bit
+	m_tri_data->push_back(pos[7-j]);
+      }
+
+      // The column for MPA side 
+      if (spars) for (int j=0;j<4;++j)
+      {
+	if (!conc && m_tri_data->size()==40 && spars) m_tri_data->push_back(0); // Second synchro bit
+	m_tri_data->push_back(col[3-j]);
+      }
+
+      // Finally the bend
       if (conc)
       {
 	if (spars)
@@ -1578,7 +1825,11 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
       }
       else
       {
-	for (int j=0;j<5;++j) m_tri_data->push_back(off[4-j]);
+	for (int j=0;j<5;++j)
+	{
+	  if (!conc && m_tri_data->size()==40 && spars) m_tri_data->push_back(0); // Second synchro bit
+	  m_tri_data->push_back(off[4-j]);
+	}
       }
       
     }
@@ -1586,14 +1837,29 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
   }
   //  std::cout << std::endl;
 
-  // Potentially put a trailer here
+  // Potentially put a trailer here, only for the FE chips
 
-  if (conc) 
+  if (!conc) 
   {
-    for (int j=0;j<4;++j) m_tri_data->push_back(0);
+    if (!spars)
+    {
+      for (int j=m_tri_data->size();j<40;++j) m_tri_data->push_back(0);
+    }
+    else
+    {
+      for (int j=m_tri_data->size();j<80;++j) m_tri_data->push_back(0);
+    }
+  }
+
+  int nzeros=0;
+
+  for (int i=0;i<seqsize;++i) // Loop over the block of events 
+  {
+    if (sequence.at(i)==0) ++nzeros;
   }
 
   m_tri_size=m_tri_data->size();
+  m_tri_size_anders=m_tri_data->size()-2*m_tri_nstubs_s+nzeros;
   m_tri_tree->Fill();
 
 
@@ -1615,8 +1881,8 @@ void evtbuilder::fill_RAW_header_CBC(int L1id)
 {
   // Format of the CBC L1 word header
   //
-  // HHEECCCCCCCCCPPPPPPPPP : HHEE (header + error) CC..CC (L1 ID bet 0 and 512)
-  //                          PP..PP CBC pipeline address
+  // HHEEPPPPPPPPPLLLLLLLLL : HHEE (header + error) LL..LL (L1 ID bet 0 and 512)
+  //                          PP..PP CBC pipeline address 
 
   for (int j=0;j<4;++j) m_raw_data->push_back(1); // HHEE
 
@@ -1627,8 +1893,8 @@ void evtbuilder::fill_RAW_header_CBC(int L1id)
 
   std::bitset<9> L1_ID = L1id;
 
-  for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // CC..CC
   for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // PP..PP
+  for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // CC..CC
 }
 
 

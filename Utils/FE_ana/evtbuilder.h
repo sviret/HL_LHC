@@ -57,7 +57,7 @@ class evtbuilder
 {
  public:
 
-  evtbuilder(std::string filenameRAW, std::string filenameTRG, std::string outfile, int npatt, int rate, int layer, std::string sector, bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,bool conc, int L1prop);
+  evtbuilder(std::string filenameRAW, std::string filenameTRG, std::string outfile, int npatt, int rate, int layer, std::string sector, bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,bool conc, int L1prop, int CICsize);
   void  initVars();
   void  initTuple(std::string inRAW,std::string inTRG,std::string out);
   void  get_stores(int nevts,bool conc);
@@ -79,7 +79,7 @@ class evtbuilder
 
  private:
 
-  TChain *L1TT;      // The trees containing the input data
+  TChain *L1TT;     // The trees containing the input data
   TChain *PIX;      // The trees containing the input data
 
   // Coding conventions for barrel and endcap module IDs
@@ -156,6 +156,16 @@ class evtbuilder
   std::vector<std::multimap< int, std::vector<int> > > m_data_trig;
   std::vector<std::multimap< int, std::vector<int> > > m_data_raw;
 
+  std::multimap< int, std::vector<int> > m_chip_FIFOs;
+
+  std::vector<int>  *m_raw_chip_fifo;
+  std::vector<int>  *m_raw_chip_bx;
+
+  float m_raw_chip_slope;
+  float m_raw_chip_slope_err;
+  float m_raw_chip_int;
+  float m_raw_chip_int_err;
+
 
   int m_rate; // the input L1 rate, in kHz
   int m_lay;  // the layer number (5/6/7 for the MPA, 8/9/10 for the CBC)
@@ -168,16 +178,22 @@ class evtbuilder
   TFile *m_outfile;  // The output file
   TTree *m_tri_tree; // 
   TTree *m_raw_tree; //
+  TTree *m_raw_summary; //
  
   std::vector< std::vector<int> >   trig_sequence; 
 
   double m_L1prop;
+
+  int m_CICsize;
+
+  int m_PHYsize;
 
   int bend_bit_MPA;
   int bend_bit_CBC;
 
   int m_tri_bx;
   int m_tri_size;
+  int m_tri_size_anders;
   int m_tri_chip;
   int m_tri_nstubs;
   int m_tri_nstubs_s;

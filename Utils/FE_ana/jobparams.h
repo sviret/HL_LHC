@@ -39,6 +39,7 @@ class jobparams{
   int         rate() const;
   int         mpabend() const;
   int         cbcbend() const;
+  int         cicsize() const;
   int         prop() const;
 
 
@@ -60,6 +61,7 @@ class jobparams{
   int          m_mpabend;
   int          m_cbcbend;
   int          m_prop;
+  int          m_cicsize;
 };
 
 inline std::string jobparams::option() const{
@@ -120,6 +122,10 @@ inline int jobparams::mpabend() const{
 
 inline int jobparams::cbcbend() const{
   return m_cbcbend;
+}
+
+inline int jobparams::cicsize() const{
+  return m_cicsize;
 }
 
 inline int jobparams::prop() const{

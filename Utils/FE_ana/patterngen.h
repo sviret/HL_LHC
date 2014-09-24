@@ -62,14 +62,12 @@ class patterngen
   void  get_CONC_input(int npatt);  // The main method  
   void  get_CONC_output(std::string filename);
   void  get_MPA_input(int nevt);
-  void  do_CHIP_ana(int nevt);
 
   void  initVars();
   void  initTuple(std::string in,std::string out,int type);
 
   void  ana_pix(int lay,int lad,int mod, std::vector<int> digits);
   void  do_stub(int lay,int lad,int mod);
-  void  ana_chip(int header_size,int trailer_size, int maxp, int maxs, int cw);
 
  private:
 

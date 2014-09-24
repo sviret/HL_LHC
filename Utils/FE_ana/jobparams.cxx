@@ -12,6 +12,11 @@ jobparams::jobparams(int argc, char** argv){
      // command line parser
      CmdLine cmd("Command option", ' ', "0.9");
 
+
+     ValueArg<int> cbcbend("b","cbcbend","number of bits for the cbc bend",
+			false, 5, "int");
+     cmd.add(cbcbend);
+
      ValueArg<std::string> option("c","case","type of analysis (rates/sectors/rate_n_sec/sec_n_test/stub_eff/PR_eff)",
 				false, "rates", "string");
      cmd.add(option);
@@ -20,8 +25,12 @@ jobparams::jobparams(int argc, char** argv){
 				   false, "", "string");
      cmd.add(pattfile);
 
-     ValueArg<std::string> testfile("f","fortest","name of the input file used to test",
-				    false, "test.root", "string");
+     ValueArg<int> cicsize("e","cicsize","size of the concentrator block (in BX units)",
+			false, 8, "int");
+     cmd.add(cicsize);
+
+     ValueArg<std::string> testfile("f","fortest","name of the csv file containing detector definition",
+				    false, "baseline_Eta6_Phi8.csv", "string");
      cmd.add(testfile);
 
      ValueArg<bool> dbg("g","gdb","debug mode (standalone PR used) or not",
@@ -45,9 +54,6 @@ jobparams::jobparams(int argc, char** argv){
 			false, 5, "int");
      cmd.add(mpabend);
 
-     ValueArg<int> cbcbend("b","cbcbend","number of bits for the cbc bend",
-			false, 5, "int");
-     cmd.add(cbcbend);
 
 
      ValueArg<int> nevt("n","nevt","number of events for the eff test?",
@@ -97,6 +103,7 @@ jobparams::jobparams(int argc, char** argv){
      m_cbcbend      = cbcbend.getValue();
      m_mpabend      = mpabend.getValue();
      m_prop         = prop.getValue();
+     m_cicsize      = cicsize.getValue();
    }
    catch (ArgException &e){ // catch exception from parse
      std::cerr << "ERROR: " << e.error() << " for arg " << e.argId()  << std::endl;

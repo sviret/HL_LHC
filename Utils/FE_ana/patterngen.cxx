@@ -1,5 +1,18 @@
-// Class for the rates determination
-// For more info, look at the header file
+// Base class for simple pattern generation
+// 
+// Output is stored in binary text files corresponding to the front-end data format 
+
+// Meaning of the parameters
+//
+//
+// filename : the input data files, we use official stubs from extracted ROOT files
+//            see how to produce that in part 3.1 of this page:
+//            http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto620
+// 
+// outfile  : name of the output text file containing binary info
+// npatt    : how many BXs should be produced (will be fitted correctly afterwards)
+// rate     : input L1A rate (for the L1 raw block writing
+
 
 #include "patterngen.h"
 
@@ -23,21 +36,12 @@ patterngen::patterngen(std::string filename, std::string outfile,
       
       patterngen::get_CONC_output(filename);
     }
-    else
-    {
-    patterngen::initTuple(filename,outfile,1);
-
-      std::cout << "...Make a data analysis over " << filename 
-		<< " samples " << std::endl;
-      
-      patterngen::do_CHIP_ana(0);
-    }
   }
-  else // Create patterns
+  else // Create patterns or events
   {
     patterngen::initTuple(filename,outfile,1);
 
-    if (rate!=0)
+    if (rate!=0)  // Concentrator
     {
       std::cout << "...Creating " << npatt 
 		<< " patterns with an L1 rate of " 
@@ -45,7 +49,7 @@ patterngen::patterngen(std::string filename, std::string outfile,
 
       patterngen::get_CONC_input(npatt);
     }
-    else
+    else // MPA
     {      
       std::cout << "...Creating " << npatt 
 		<< " events for the MPA " << std::endl;
@@ -56,306 +60,9 @@ patterngen::patterngen(std::string filename, std::string outfile,
 }
 
 
-void patterngen::do_CHIP_ana(int nevt)
-{
-
-  int nevts =  L1TT->GetEntries(); 
-
-  int final_MPA[7];
-  int final_conc_MPA[7];
-  int final_conc_CBC[7];
-
-  for (int j=0;j<7;++j)
-  {
-    final_MPA[j]      = 0;
-    final_conc_MPA[j] = 0;
-    final_conc_CBC[j] = 0;
-  }
-
-  for (int j=0;j<80000;++j)
-  {
-    for (int k=0;k<2;++k)
-    {
-      for (int l=0;l<7;++l)
-      {
-	Conc_CBC_eff[j][k][l] = 0;	
-	Conc_MPA_eff[j][k][l] = 0;
-      }
-    }
-  
-    for (int k=0;k<16;++k)
-    {
-      for (int l=0;l<7;++l) MPA_eff[j][k][l] = 0;
-    }
-  }
-
-  
-
-  for (int j=0;j<nevts;++j)
-  { 
-    L1TT->GetEntry(j); 
-    patterngen::ana_chip(16,2,5,4,3); // Analyze the chip content of the event
-  }
-
-  for (int j=0;j<80000;++j)
-  {
-    for (int k=0;k<16;++k)
-    {
-      if (MPA_eff[j][k][0]!=0)
-      {
-	for (int l=0;l<7;++l) final_MPA[l] += MPA_eff[j][k][l];
-      }
-    }
-  }
-
-  std::cout << "##########################################" << std::endl; 
-  std::cout << "#" << std::endl; 
-  std::cout << "# Result of the MPA L1 word efficiency test made over " << nevts << " events:" << std::endl; 
-  std::cout << "#" << std::endl; 
-  std::cout << "# Total number of MPA chips              : 112064" << std::endl; 
-  std::cout << "# Avg. number of touched chips per event : " << float(final_MPA[0])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/pclus overflow  : " << float(final_MPA[1])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/sclus overflow  : " << float(final_MPA[2])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/clus overflow   : " << float(final_MPA[3])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/L1size>320bits  : " << float(final_MPA[4])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/L1size>480bits  : " << float(final_MPA[5])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/overflow        : " << float(final_MPA[6])/nevts << std::endl; 
-  std::cout << "#" << std::endl;
-  std::cout << "##########################################" << std::endl;
-
-  for (int j=0;j<80000;++j)
-  {
-    for (int k=0;k<2;++k)
-    {
-      if (Conc_MPA_eff[j][k][0]!=0)
-      {
-	for (int l=0;l<7;++l) final_conc_MPA[l] += Conc_MPA_eff[j][k][l];
-      }
-
-      if (Conc_CBC_eff[j][k][0]!=0)
-      {
-	for (int l=0;l<7;++l) final_conc_CBC[l] += Conc_CBC_eff[j][k][l];
-      }
-    }
-  }
-
-  std::cout << "##########################################" << std::endl; 
-  std::cout << "#" << std::endl; 
-  std::cout << "# Result of the CONC_MPA L1 word efficiency test made over " << nevts << " events:" << std::endl; 
-  std::cout << "#" << std::endl; 
-  std::cout << "# Total number of PS concentrator chips  : 16848" << std::endl; 
-  std::cout << "# Avg. number of touched chips per event : " << float(final_conc_MPA[0])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/pclus overflow  : " << float(final_conc_MPA[1])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/sclus overflow  : " << float(final_conc_MPA[2])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/clus overflow   : " << float(final_conc_MPA[3])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/L1size>320bits  : " << float(final_conc_MPA[4])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/L1size>480bits  : " << float(final_conc_MPA[5])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/overflow        : " << float(final_conc_MPA[6])/nevts << std::endl; 
-  std::cout << "#" << std::endl;
-  std::cout << "##########################################" << std::endl;
-
-  std::cout << "##########################################" << std::endl; 
-  std::cout << "#" << std::endl; 
-  std::cout << "# Result of the CONC_CBC L1 word efficiency test made over " << nevts << " events:" << std::endl; 
-  std::cout << "#" << std::endl; 
-  std::cout << "# Total number of PS concentrator chips  : 14008" << std::endl; 
-  std::cout << "# Avg. number of touched chips per event : " << float(final_conc_CBC[0])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/sclus overflow  : " << float(final_conc_CBC[1])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/L1size>320bits  : " << float(final_conc_CBC[2])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/L1size>480bits  : " << float(final_conc_CBC[3])/nevts << std::endl; 
-  std::cout << "# Avg. number of chips w/overflow        : " << float(final_conc_CBC[4])/nevts << std::endl; 
-  std::cout << "#" << std::endl;
-  std::cout << "##########################################" << std::endl;
-}
-
-
-
-//
-// Method making the sparsified L1 raw word analysis for MPA and concentrator
-//
-// header_size : number of bits in the header (baseline is 28)
-// trailer_size: number of bits in the trailer (baseline is 2) 
-// maxp        : numbers of bits for the number of pixel clusters 
-// maxs        : numbers of bits for the number of strip clusters 
-// cw          : maximum cluster width
-
-
-void patterngen::ana_chip(int header_size,int trailer_size, int maxp, int maxs, int cw)
-{
-  if (cw!=2 && cw!=3)
-  {
-    cout << "Cluster can be coded only with 2 or 3 bits" << endl;
-    return;
-  }
-
-  if (maxp!=4 && maxp!=5)
-  {
-    cout << "Number of pixel clusters can be coded only with 4 or 5 bits" << endl;
-    return;
-  }
-
-  if (maxs!=4 && maxs!=5)
-  {
-    cout << "Number of strip clusters can be coded only with 4 or 5 bits" << endl;
-    return;
-  }
-
-  int np,ns; // Number of pixel and strip clusters in the chip
-
-  int maxp_c = 15; // Max number of pixel clus
-  int maxs_c = 15; // Max number of strip clus
-
-  if (maxp==5) maxp_c = 31; 
-  if (maxs==5) maxs_c = 31; 
-
-  int base_size      = header_size+trailer_size+maxp+maxs;
-  int pclus_size_MPA = 11+cw;
-  int sclus_size_MPA = 7+cw;
-  int sclus_size_CBC = 8+cw;
-
-  int L1_size;
-
-  std::vector<int> chip_cnt;
-  
-  int mod;
-  int lad;
-  int lay;
-  int chp;
-
-  int modid;
-  int modid_s;
-
-  for (int j=0;j<80000;++j)
-  {
-    for (int k=0;k<2;++k)
-    {
-      mod_fifos_CBC[j][k] = 0;
-      for (int l=0;l<2;++l) mod_fifos_MPA[j][k][l] = 0;
-    }
-  }
-
-  bool isMPA;
-
-  // The loop is made over all the clusters
-
-  for (unsigned int i=0;i<m_clus_mult.size();++i)
-  {
-    isMPA=true;
-
-    chip_cnt = m_clus_mult.at(i);
-    modid    = chip_cnt.at(0);
-    lay      = modid/1000000;    
-    modid   -= 1000000*lay;
-    lad      = modid/10000;
-
-    if (lay>7 || (lay>10 && lad>9)) isMPA=false;
-
-    if (isMPA)
-    {
-      if (lay<=7) lay-=5;
-      if (lay>7)  lay-=8;
-    }
-    else
-    {
-      lay-=8;
-    }
-
-    modid -= 10000*lad;
-    mod    = modid/100;
-    modid -= 100*mod;
-    chp    = modid;
-
-    modid_s = 10000*lay+100*lad+mod;
-
-    if (cw==2)
-    {
-      np   = chip_cnt.at(3); // Number of pixels clusters w/2 bits for the width
-      ns   = chip_cnt.at(4); // Number of strips clusters w/2 bits for the width
-    }
-    else
-    {
-      np   = chip_cnt.at(5); // Number of pixels clusters w/3 bits for the width      
-      ns   = chip_cnt.at(6); // Number of strips clusters w/3 bits for the width
-    }
-
-    // Compute the size of the L1 words with chosen format
-    //
-
-    L1_size = base_size + np*pclus_size_MPA + ns*sclus_size_MPA;  
-
-    if (isMPA)
-    {
-      mod_fifos_MPA[modid_s][chp/8][0] += np;
-      mod_fifos_MPA[modid_s][chp/8][1] += ns;
-
-      ++MPA_eff[modid_s][chp][0];
-
-      if (np>maxp_c)                              ++MPA_eff[modid_s][chp][1];
-      if (ns>maxs_c)                              ++MPA_eff[modid_s][chp][2];
-      if (np>maxp_c || ns>maxs_c)                 ++MPA_eff[modid_s][chp][3];
-      if (L1_size>320)                            ++MPA_eff[modid_s][chp][4];
-      if (L1_size>480)                            ++MPA_eff[modid_s][chp][5];
-      if (L1_size>480 || np>maxp_c || ns>maxs_c)  ++MPA_eff[modid_s][chp][6];
-    }
-    else
-    {
-      mod_fifos_CBC[modid_s][chp/8] += ns;
-    }
-  } // End of loop over clusters
-
-  // Now we can look at the half-module level and therefore test the concentrator L1 block
-
-  int base_size_CONC      = header_size+trailer_size;
-  int pclus_size_MPA_CONC = pclus_size_MPA+3;
-  int sclus_size_MPA_CONC = sclus_size_MPA+3;
-  int sclus_size_CBC_CONC = sclus_size_CBC+3;
-
-  for (int j=0;j<80000;++j)
-  {
-    // MPA
-    for (int k=0;k<2;++k)
-    {
-      if (mod_fifos_MPA[j][k][0]==0 && mod_fifos_MPA[j][k][1]==0) continue;
-
-      np = mod_fifos_MPA[j][k][0];
-      ns = mod_fifos_MPA[j][k][1];
-
-      L1_size = base_size_CONC + 10
-	+ pclus_size_MPA_CONC*np
-	+ sclus_size_MPA_CONC*ns;
-
-      ++Conc_MPA_eff[j][k][0];
-
-      if (np>31)                          ++Conc_MPA_eff[j][k][1];
-      if (ns>31)                          ++Conc_MPA_eff[j][k][2];
-      if (np>31 || ns>31)                 ++Conc_MPA_eff[j][k][3];
-      if (L1_size>320)                    ++Conc_MPA_eff[j][k][4];
-      if (L1_size>480)                    ++Conc_MPA_eff[j][k][5];
-      if (L1_size>480 || np>31 || ns>31)  ++Conc_MPA_eff[j][k][6];
-    }
-
-    // CBC
-    for (int k=0;k<2;++k)
-    {
-      if (mod_fifos_CBC[j][k]==0) continue;
-
-      ns = mod_fifos_CBC[j][k];
-
-      L1_size = base_size_CONC + 5 + sclus_size_CBC_CONC*ns;
-
-      ++Conc_CBC_eff[j][k][0];
-
-      if (ns>31)                 ++Conc_CBC_eff[j][k][1];
-      if (L1_size>320)           ++Conc_CBC_eff[j][k][2];
-      if (L1_size>480)           ++Conc_CBC_eff[j][k][3];
-      if (L1_size>480 || ns>31)  ++Conc_CBC_eff[j][k][4];
-    }
-  }
-}
-
 //////////////////////////////////////////////
 //
-// Macro creating the input stream to serve as input 
+// Macro creating the input data stream to serve as input 
 // for the MPA verilog model
 //
 //////////////////////////////////////////////
@@ -402,7 +109,7 @@ void patterngen::get_MPA_input(int nevt)
 
     for (int i=0;i<m_pix;++i)
     {
-      if (m_pix_layer[i]!=5) continue; // Only interested into this PS layer
+      if (m_pix_layer[i]!=5) continue; // Only interested into this PS innermost layer
       if (m_pix_ch[i]<thresh) continue; 
       
       ladder= m_pix_ladder[i];
@@ -520,8 +227,7 @@ void patterngen::get_MPA_input(int nevt)
 
       // Finally print the stub info
       do_stub(5,ladder,(module-1)/2);
-    }
-    
+    }    
   }
 }
 
@@ -629,6 +335,8 @@ void patterngen::do_stub(int lay,int lad,int mod)
 // Macro creating the input stream to test 
 // concentrator's Verilog model 
 //
+// A more complex evolution is in evt_builder.cxx
+//
 //////////////////////////////////////////////
 
 void patterngen::get_CONC_input(int npatt)
@@ -670,7 +378,6 @@ void patterngen::get_CONC_input(int npatt)
   cout << "Entering loop 1, producing the big data stores..." << endl;
 
   for (int j=0;j<n_entries;++j)
-    //for (int j=0;j<20;++j)
   {    
     if (j%100==0)
       cout << j << endl;

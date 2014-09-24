@@ -23,6 +23,7 @@ using namespace std;
 //
 //  Author: viret@in2p3_dot_fr
 //  Date       : 24/03/2013
+//  Last rev.  : 25/08/2014
 //
 ///////////////////////////////////
 
@@ -57,26 +58,26 @@ int main(int argc, char** argv) {
 
   if (params.option()=="evtbuild_TRG_CONC")
   {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),false,true,params.l1size(),params.mpabend(),params.cbcbend(),true,params.prop());
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),false,true,params.l1size(),params.mpabend(),params.cbcbend(),true,params.prop(),params.cicsize());
     delete my_pgen;
   }
 
   if (params.option()=="evtbuild_L1_CONC")
   {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),true,0);
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),true,0,8);
     delete my_pgen;
   }
 
 
   if (params.option()=="evtbuild_TRG_FE")
   {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),false,true,params.l1size(),params.mpabend(),params.cbcbend(),false,params.prop());
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),false,true,params.l1size(),params.mpabend(),params.cbcbend(),false,params.prop(),8);
     delete my_pgen;
   }
 
   if (params.option()=="evtbuild_L1_FE")
   {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),false,0);
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),false,0,8);
     delete my_pgen;
   }
   return 0;
