@@ -665,7 +665,7 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	rows = top0->nrows();
 	
 	clust1 = StubExtractor::getClust1Idx(posStub.x(),posStub.y(),posStub.z());
-	clust2 = StubExtractor::getClust2Idx(clust1,displStub);
+	clust2 = StubExtractor::getClust2Idx(clust1,m_clus_strip->at(clust1)+displStub);
 	
 	m_stub_x->push_back(posStub.x());
 	m_stub_y->push_back(posStub.y());
@@ -943,7 +943,7 @@ int  StubExtractor::getClust1Idx(float x, float y, float z)
 
 int  StubExtractor::getClust2Idx(int idx1, float dist)
 {
-  int dmax = 20;
+  float dmax = 20;
   int idx2 = -1;
 
   for (int i=0;i<m_clus;++i) // Loop over clusters
@@ -952,12 +952,14 @@ int  StubExtractor::getClust2Idx(int idx1, float dist)
     if (m_clus_ladder->at(i)!=m_clus_ladder->at(idx1)) continue;
     if (m_clus_module->at(i)-1!=m_clus_module->at(idx1)) continue;
 
-    //    std::cout  << m_clus_module->at(idx1) << " / " <<  m_clus_module->at(i) << " / " 
-    //	       << fabs(m_clus_strip->at(i)-m_clus_strip->at(idx1)) << " / " << dist << std::endl;
+    //    std::cout  << m_clus_layer->at(idx1) << " / " <<  m_clus_ladder->at(idx1) << " / " 
+    //               << m_clus_module->at(idx1) << " / " <<  m_clus_module->at(i) << " / " 
+    //               << m_clus_strip->at(idx1) << " / " <<  m_clus_strip->at(i) << " / " 
+    //    	       << fabs(m_clus_strip->at(i)-dist) << " / " << dist << std::endl;
 
-    if (fabs(m_clus_strip->at(i)-m_clus_strip->at(idx1))<dmax)
+    if (fabs(m_clus_strip->at(i)-dist)<dmax)
     {  
-      dmax = fabs(m_clus_strip->at(i)-m_clus_strip->at(idx1));
+      dmax = fabs(m_clus_strip->at(i)-dist);
       idx2 = i;
     }
   }
