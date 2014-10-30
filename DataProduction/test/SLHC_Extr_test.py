@@ -53,7 +53,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('file:PGun_trOnly_WIDTH_example.root'),
+                            fileNames = cms.untracked.vstring('file:PGun_trOnly_example.root'),
                             #fileNames = cms.untracked.vstring('file:PU_20_sample_trOnly_test.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )

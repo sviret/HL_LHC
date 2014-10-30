@@ -13,7 +13,7 @@
 # Date  : 12/04/2013
 # Maj. modif  : 17/06/2013 (adding the official stub producer)
 #
-# Script tested with release CMSSW_6_2_0_SLHC14
+# Script tested with release CMSSW_6_2_0_SLHC20
 #
 #########################
 
@@ -49,7 +49,7 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("EmptySource")
 
 process.mix.input.nbPileupEvents.averageNumber = cms.double(20.0)  # The average number of pileup events you want  
-process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_10_trOnly_test.root') # The file where to pick them up
+process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_100_trOnly.root') # The file where to pick them up
 
 # Additional output definition
 
@@ -74,9 +74,9 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
     PGunParameters = cms.PSet(
         MinPt  = cms.double(10.),
         MaxPt  = cms.double(50.),
-	#XFlatSpread = cms.double(1.5),  # In mm (requires an update 
-	#YFlatSpread = cms.double(1.5),  # In mm  of the official 
-	#ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)	
+	XFlatSpread = cms.double(1.5),  # In mm (requires an update 
+	YFlatSpread = cms.double(1.5),  # In mm  of the official 
+	ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)	
         PartID = cms.vint32(-13),
         MinEta = cms.double(-2.5),
         MaxEta = cms.double(2.5),

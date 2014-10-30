@@ -1,26 +1,6 @@
-#########################
-#
-# Configuration file for simple PGUN events
-# production in tracker only geometry
-#
-# Instruction to run this script are provided on this page:
-#
-# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto
-#
-# Look at STEP II
-#
-# Author: S.Viret (viret@in2p3.fr)
-# Date        : 12/04/2013
-# Maj. modif  : 17/06/2013 (adding the official stub producer)
-# Maj. modif  : 10/01/2014 (going to new CMSSW release)
-#
-# Script tested with release CMSSW_6_2_0_SLHC20
-#
-#########################
-
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('SIM')
+process = cms.Process('EXTR')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -29,7 +9,7 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
+process.load('IOMC.EventVertexGenerators.VtxSmearedHLLHC_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -39,56 +19,53 @@ process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 # Special geometry (Tracker only)
 process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
 process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
-process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
+process.load('DataProduction.SkimGeometry.mixPU_SKIM_cfi')
 process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(5000)
+    input = cms.untracked.int32(NEVTS)
 )
 
 # Input source
 process.source = cms.Source("EmptySource")
 
+# The number of pileup events you want  
+process.mix.input.nbPileupEvents.averageNumber = cms.double(NPU)             
+process.mix.input.fileNames     = cms.untracked.vstring('file:PUFILEA')
+
 # Additional output definition
+
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'DES23_62_V1::All', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
-# Random seeds
-process.RandomNumberGeneratorService.generator.initialSeed      = 1
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
-process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
-process.RandomNumberGeneratorService.mix.initialSeed            = 4
+# Load the extracto
+process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 
-# Generate particle gun events
+process.MIBextraction.doMC             = True
+process.MIBextraction.doPixel          = True
+process.MIBextraction.doMatch          = True
+process.MIBextraction.doSTUB           = True
+process.MIBextraction.doL1TT           = True
 
-# Generate particle gun events
-process.generator = cms.EDProducer("FlatRandomPtGunProducer",
-    PGunParameters = cms.PSet(
-        MinPt  = cms.double(1.),
-        MaxPt  = cms.double(20.),
-#	XFlatSpread = cms.double(1.5),  # In mm (requires an update 
-#	YFlatSpread = cms.double(1.5),  # In mm  of the official 
-#	ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
-        PartID = cms.vint32(-13),
-        MinEta = cms.double(-3.5),
-        MaxEta = cms.double(3.5),
-        MinPhi = cms.double(0.),
-	MaxPhi = cms.double(6.28)
-    ),
-    Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(True),
-)
-
-
-# Output definition
+process.MIBextraction.analysisSettings = cms.untracked.vstring(
+    "evtNum RUN",
+    "matchedStubs 0",
+    "posMatching  1",
+    "zMatch  0",
+    "maxClusWdth  4",
+    "windowSize   -1",
+    "thresh THRESHOLD", 
+    "pdgSel -1",
+    "verbose 0"
+    )
 
 process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_trOnly_example.root'),
+    fileName = cms.untracked.string('PGun_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -98,8 +75,35 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     )
 )
 
+SWTUNING
+
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 
+process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
+process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
+process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
+
+process.generator = cms.EDProducer("FlatRandomPtGunProducer",
+    PGunParameters = cms.PSet(
+        MaxPt = cms.double(PTMAX),
+        MinPt = cms.double(PTMIN),
+        PartID = cms.vint32(PTYPE),
+	XFlatSpread = cms.double(1.5),  # In mm
+	YFlatSpread = cms.double(1.5),  # In mm
+	ZFlatSpread = cms.double(150.),  # In mm
+        MaxEta = cms.double(ETAMAX),
+	MaxPhi = cms.double(PHIMAX),
+        MinEta = cms.double(ETAMIN),
+        MinPhi = cms.double(PHIMIN)
+    ),
+    Verbosity = cms.untracked.int32(0),
+    AddAntiParticle = cms.bool(False),
+)
+
+## so strip simhits are not asked for
+
+# Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
 process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
@@ -107,20 +111,21 @@ process.digitisation_step    = cms.Path(process.pdigi)
 process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
 process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
+process.p                    = cms.Path(process.MIBextraction)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
-	
+
 # Automatic addition of the customisation function
 
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10Ddev
 from SLHCUpgradeSimulations.Configuration.combinedCustoms import customise_ev_BE5DPixel10D
 
-process=customiseBE5DPixel10D(process)
+process=customiseBE5DPixel10Ddev(process)
 process=customise_ev_BE5DPixel10D(process)
 
-# End of customisation functions
+# End of customisation functions	

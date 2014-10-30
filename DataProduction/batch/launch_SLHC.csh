@@ -131,6 +131,10 @@ if ($MATTER == "PILEUP") then
 	set PTYPE = 777 
 endif 
 
+if ($MATTER == "PILEUP_ND") then
+	set PTYPE = 778 
+endif 
+
 if ($MATTER == "PILEUP4T") then
 	set PTYPE = 888 
 endif 

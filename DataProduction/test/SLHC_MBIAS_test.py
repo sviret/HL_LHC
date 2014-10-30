@@ -14,7 +14,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 12/04/2013
 #
-# Script tested with release CMSSW_6_2_0_SLHC14
+# Script tested with release CMSSW_6_2_0_SLHC20
 #
 #########################
 
@@ -127,7 +127,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('MBias_10_trOnly_test.root'),
+    fileName = cms.untracked.string('MBias_100_trOnly_test.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')

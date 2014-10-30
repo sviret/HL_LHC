@@ -139,6 +139,14 @@ if [ "$PTYPE" -eq 777 ]; then
     tag=${TYPE}_${NPU}_${NRUN}
 fi
 
+if [ "$PTYPE" -eq 778 ]; then
+    PTYPE=-13
+    PU=1 
+    cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 
+    cp $PACK_DIR/test/base/SLHC_PU_ND_BASE.py BH_dummy.py 
+    tag=${TYPE}_${NPU}_${NRUN}
+fi
+
 if [ "$PTYPE" -eq 888 ]; then
     PU=1 
     cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 

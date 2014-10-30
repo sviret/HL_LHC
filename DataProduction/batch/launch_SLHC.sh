@@ -48,7 +48,7 @@
 # Info concerning the grid directory where the data will be stored
 export LFC_HOST=lyogrid06.in2p3.fr
 STORAGEDIR=/dpm/in2p3.fr/home/cms/data/store/user/sviret/SLHC/GEN 
-
+STORAGEPU=yourdir
 # The average number of PU event (for PU simulation)
 NPU=140
 
@@ -110,13 +110,16 @@ PTYPE=1;
 "MINBIAS")
 PTYPE=666;
 ;;
-"PÏLEUP")
+"PILEUP")
 PTYPE=777;
+;;
+"PILEUP_ND")
+PTYPE=778;
 ;;
 "PILEUP4T")
 PTYPE=888;
 ;;
-"PÏLEUPREDO")
+"PILEUPREDO")
 PTYPE=7777;
 ;;
 "MUBANK")
@@ -186,11 +189,11 @@ do
     echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH}" >> gen_job_${MATTER}_${11}_${12}_${i}.sh
     chmod 755 gen_job_${MATTER}_${11}_${12}_${i}.sh
 
-    if [[ -z "$13" ]]; then
-	if [ ${13} == "BATCH" ]; then	
-	    bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
-	fi
+   # if [[ -z "$13" ]]; then
+    if [ ${13} == "BATCH" ]; then	
+	bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
     fi
+    #fi
 
     i=$(( $i + 1))
 done

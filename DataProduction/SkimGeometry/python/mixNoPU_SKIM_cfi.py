@@ -4,7 +4,7 @@ import FWCore.ParameterSet.Config as cms
 # to run it in the zero-pileup mode
 #
 from DataProduction.SkimGeometry.aliases_SKIM_cfi import * 
-from DataProduction.SkimGeometry.mixObjects_SKIM_cfi import * 
+from SimGeneral.MixingModule.mixObjects_cfi import *
 from SimGeneral.MixingModule.pixelDigitizer_cfi import *
 from SimGeneral.MixingModule.stripDigitizer_cfi import *
 from SimGeneral.MixingModule.trackingTruthProducer_cfi import *
@@ -48,9 +48,6 @@ mix = cms.EDProducer("MixingModule",
     playback = cms.untracked.bool(False),
     useCurrentProcessOnly = cms.bool(False),
     mixObjects = cms.PSet(
- #       mixCH = cms.PSet(
- #           mixCaloHits
- #       ),
         mixTracks = cms.PSet(
             mixSimTracks
         ),

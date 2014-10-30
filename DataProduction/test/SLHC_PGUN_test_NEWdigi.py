@@ -1,7 +1,7 @@
 #########################
 #
 # Configuration file for simple PGUN events
-# production in tracker only geometry
+# production in tracker only geometry, using the NEW digitisation
 #
 # Instruction to run this script are provided on this page:
 #
@@ -10,9 +10,7 @@
 # Look at STEP II
 #
 # Author: S.Viret (viret@in2p3.fr)
-# Date        : 12/04/2013
-# Maj. modif  : 17/06/2013 (adding the official stub producer)
-# Maj. modif  : 10/01/2014 (going to new CMSSW release)
+# Date        : 30/10/2014
 #
 # Script tested with release CMSSW_6_2_0_SLHC20
 #
@@ -88,7 +86,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_trOnly_example.root'),
+    fileName = cms.untracked.string('PGun_trOnly_example_NewDigi.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -117,10 +115,10 @@ for path in process.paths:
 	
 # Automatic addition of the customisation function
 
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10D
+from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10Ddev
 from SLHCUpgradeSimulations.Configuration.combinedCustoms import customise_ev_BE5DPixel10D
 
-process=customiseBE5DPixel10D(process)
+process=customiseBE5DPixel10Ddev(process)
 process=customise_ev_BE5DPixel10D(process)
 
 # End of customisation functions

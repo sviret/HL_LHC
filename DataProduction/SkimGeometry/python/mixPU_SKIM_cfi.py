@@ -57,9 +57,6 @@ mix = cms.EDProducer("MixingModule",
         fileNames = FileNames
     ),
     mixObjects = cms.PSet(
-#        mixCH = cms.PSet(
-#            mixCaloHits
-#        ),
         mixTracks = cms.PSet(
             mixSimTracks
         ),
