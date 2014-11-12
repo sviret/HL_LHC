@@ -44,6 +44,11 @@ class StubTranslator
   std::vector<float>  *m_stub_etaGEN; // eta generated of stub i (in GeV/c)
   std::vector<int>    *m_stub_modid;  // 
   std::vector<float>  *m_stub_strip;  // strip of stub i (innermost module value) ///new int -> float
+  std::vector<float>  *m_stub_x;      // x coord of stub i 
+  std::vector<float>  *m_stub_y;      // x coord of stub i 
+  std::vector<float>  *m_stub_z;      // x coord of stub i 
+  std::vector<float>  *m_stub_bend;   // bend of stub i 
+
 };
 
 #endif 

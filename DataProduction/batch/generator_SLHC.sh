@@ -121,7 +121,7 @@ fi
 #
 
 
-if [ "$THRESH" -eq -1 ]; then
+if [ "$THRESH" -eq 0 ]; then
     cp $PACK_DIR/test/base/NoTune.txt tune 
 else
     cp $PACK_DIR/test/base/${THRESH}GevTune.txt tune 

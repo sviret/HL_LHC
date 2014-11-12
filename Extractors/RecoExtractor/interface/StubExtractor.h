@@ -100,6 +100,10 @@ class StubExtractor
 					 +m_stub_pyGEN->at(i)*m_stub_pyGEN->at(i));}
   float getStub_etaGen(int i) {return m_stub_etaGEN->at(i);}
   float getStub_strip(int i) {return m_stub_strip->at(i);}
+  float getStub_x(int i) {return m_stub_x->at(i);}
+  float getStub_y(int i) {return m_stub_y->at(i);}
+  float getStub_z(int i) {return m_stub_z->at(i);}
+  float getStub_bend(int i) {return m_stub_deltas->at(i);}
 
   int getStub_ID(int i) {return 1000000*m_stub_layer->at(i)+10000*m_stub_ladder->at(i)
       +100*m_stub_module->at(i)+m_stub_seg->at(i);}
