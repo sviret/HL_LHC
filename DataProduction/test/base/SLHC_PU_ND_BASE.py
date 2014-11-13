@@ -92,6 +92,7 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 	XFlatSpread = cms.double(1.5),  # In mm
 	YFlatSpread = cms.double(1.5),  # In mm
 	ZFlatSpread = cms.double(150.),  # In mm
+	towerID= cms.int32(-1),        
         MaxEta = cms.double(ETAMAX),
 	MaxPhi = cms.double(PHIMAX),
         MinEta = cms.double(ETAMIN),

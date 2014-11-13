@@ -30,6 +30,7 @@ ETAMAX=${14}            #
 PUDIR=${15}             # Minbias storage repository
 NPU=${16}               # PU events number
 THRESH=${17}            # pt threshold for stub windows
+TID=${18}               # trigger tower ID in which the PGun particles are sent
 PU=0 
 BANK=0
 
@@ -173,6 +174,7 @@ sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummy.py
 sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummy.py
 sed "s/NPU/$NPU/"                                      -i BH_dummy.py
 sed "s/THRESHOLD/$THRESH/"                             -i BH_dummy.py
+sed "s/TRIGGERTOWER/$TID/"                             -i BH_dummy.py
 sed "s#PUFILEA#$TOP/MBiasSample.root#"                 -i BH_dummy.py
 
 perl -i.bak -pe 's/SWTUNING/'"${SWTUN}"'/g' BH_dummy.py
@@ -196,6 +198,7 @@ if [ "$PU" -eq 1 ]; then
     sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummyMinBias.py
     sed "s/NPU/$NPU/"                                      -i BH_dummyMinBias.py
     sed "s/THRESHOLD/$THRESH/"                             -i BH_dummyMinBias.py
+    sed "s/TRIGGERTOWER/$TID/"                             -i BH_dummyMinBias.py
 fi
 
 if [ "$BANK" -eq 1 ]; then
@@ -214,6 +217,7 @@ if [ "$BANK" -eq 1 ]; then
     sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummy2.py
     sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummy2.py
     sed "s/THRESHOLD/$THRESH/"                             -i BH_dummy2.py
+    sed "s/TRIGGERTOWER/$TID/"                             -i BH_dummy2.py
     sed "s/NPU/$NPU/"                                      -i BH_dummy2.py
 fi
 

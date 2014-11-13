@@ -20,9 +20,10 @@
 # p8 : PHIMAX
 # p9 : ETAMIN
 # p10: ETAMAX
-# p11: THRESH: the pt threshold for the stub maker (2/3/4 of -1 for no thresh)
-# p12: SUFFIX: a specific nickname for this production 
-# p13: BATCH or nothing: launch lxbatch jobs or not
+# p11: TOWER ID: the trigger tower ID (put -1 for default)
+# p12: THRESH: the pt threshold for the stub maker (2/3/4 of -1 for no thresh)
+# p13: SUFFIX: a specific nickname for this production 
+# p14: BATCH or nothing: launch lxbatch jobs or not
 #
 # For more details, and examples, have a look at:
 # 
@@ -138,7 +139,8 @@ PHIMIN=${7}
 PHIMAX=${8}
 ETAMIN=${9}
 ETAMAX=${10}
-THRESH=${11}
+TID=${11}
+THRESH=${12}
 
 # Then we setup some environment variables
 
@@ -151,10 +153,10 @@ cd $PACKDIR/batch
 
 # Finally we create the batch scripts and launch the jobs
 
-echo 'Creating directory '$STORAGEDIR/${MATTER}_${12}' for type '$PTYPE
+echo 'Creating directory '$STORAGEDIR/${MATTER}_${13}' for type '$PTYPE
 
-OUTPUTDIR=$STORAGEDIR2/${MATTER}_${12}
-OUTPUTDIR2=$STORAGEDIR/${MATTER}_${12}
+OUTPUTDIR=$STORAGEDIR2/${MATTER}_${13}
+OUTPUTDIR2=$STORAGEDIR/${MATTER}_${13}
 
 lfc-mkdir $OUTPUTDIR2 
 
@@ -168,16 +170,16 @@ do
 
 	if [ $deal != "0" ]; then
 	
-	    run =`ls gen_job_${MATTER}_${11}_${12}_${i}.sh | wc -l`
+	    run =`ls gen_job_${MATTER}_${12}_${13}_${i}.sh | wc -l`
 
 	    if [ $run != "0" ]; then
-		rm gen_job_${MATTER}_${11}_${12}_${i}.sh
+		rm gen_job_${MATTER}_${12}_${13}_${i}.sh
 	    fi
 	    i=$(( $i + 1))
 	    continue
 	fi
 
-	run=`ls gen_job_${MATTER}_${11}_${12}_${i}.sh | wc -l`
+	run=`ls gen_job_${MATTER}_${12}_${13}_${i}.sh | wc -l`
 
 	if [ $run != "0" ]; then
 	    i=$(( $i + 1))
@@ -185,15 +187,15 @@ do
 	fi
     fi 
 
-    echo "#\!/bin/bash" > gen_job_${MATTER}_${11}_${12}_${i}.sh
-    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH}" >> gen_job_${MATTER}_${11}_${12}_${i}.sh
-    chmod 755 gen_job_${MATTER}_${11}_${12}_${i}.sh
+    echo "#\!/bin/bash" > gen_job_${MATTER}_${12}_${13}_${i}.sh
+    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH} $TID" >> gen_job_${MATTER}_${12}_${13}_${i}.sh
+    chmod 755 gen_job_${MATTER}_${12}_${13}_${i}.sh
 
-   # if [[ -z "$13" ]]; then
-    if [ ${13} == "BATCH" ]; then	
-	bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${11}_${12}_${i}.sh
+    if [[ -z "$14" ]]; then
+	if [ ${14} == "BATCH" ]; then	
+	    bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${12}_${13}_${i}.sh
+	fi
     fi
-    #fi
 
     i=$(( $i + 1))
 done

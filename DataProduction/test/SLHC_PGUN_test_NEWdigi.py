@@ -69,6 +69,7 @@ process.generator = cms.EDProducer("FlatRandomPtGunProducer",
 #	XFlatSpread = cms.double(1.5),  # In mm (requires an update 
 #	YFlatSpread = cms.double(1.5),  # In mm  of the official 
 #	ZFlatSpread = cms.double(150.), # In mm  PGUN code, see tutorial)
+#	towerID= cms.int32(-1),           # Trigger tower ID (put -1 for default params)
         PartID = cms.vint32(-13),
         MinEta = cms.double(-3.5),
         MaxEta = cms.double(3.5),

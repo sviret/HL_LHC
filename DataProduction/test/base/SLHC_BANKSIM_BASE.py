@@ -58,6 +58,7 @@ process.generator = cms.EDProducer("FlatRandomOneOverPtGunProducer",
 	XFlatSpread = cms.double(1.5),  # In mm
 	YFlatSpread = cms.double(1.5),  # In mm
 	ZFlatSpread = cms.double(150.),  # In mm
+	towerID= cms.int32(TRIGGERTOWER),  # Tower ID (put -1 for default params)	
         PartID = cms.vint32(PTYPE),
         MaxEta = cms.double(ETAMAX),
 	MaxPhi = cms.double(PHIMAX),

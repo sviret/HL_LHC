@@ -29,7 +29,7 @@ namespace edm
     double            fXFlatSpread   ;
     double            fYFlatSpread   ;
     double            fZFlatSpread   ;
-
+    int               towerID   ;
   };
 } 
 

@@ -25,13 +25,14 @@ FlatRandomPtGunProducer::FlatRandomPtGunProducer(const ParameterSet& pset) :
 
    ParameterSet defpset ;
    ParameterSet pgun_params = 
-      pset.getParameter<ParameterSet>("PGunParameters") ;
+   pset.getParameter<ParameterSet>("PGunParameters") ;
   
    fMinPt = pgun_params.getParameter<double>("MinPt");
    fMaxPt = pgun_params.getParameter<double>("MaxPt");
    fXFlatSpread  = pgun_params.getParameter<double>("XFlatSpread");
    fYFlatSpread  = pgun_params.getParameter<double>("YFlatSpread");
    fZFlatSpread  = pgun_params.getParameter<double>("ZFlatSpread");
+   towerID       = pgun_params.getParameter<int>("towerID");
 
   produces<HepMCProduct>();
   produces<GenEventInfoProduct>();
@@ -56,16 +57,42 @@ void FlatRandomPtGunProducer::produce(Event &e, const EventSetup& es)
    
    // here re-create fEvt (memory)
    //
+
    fEvt = new HepMC::GenEvent() ;
-   
+ 
+   double t_eta_min[6] = {-2.4,-1.7,-1.1,-0.4,0.4,1.2};
+   double t_eta_max[6] = {-1.2,-0.4,0.4,0.6,1.7,2.4};
+   double t_phi_min[8] = {-0.5,0.3,1.1,1.9,2.7,-2.9,-2.1,-1.3};
+   double t_phi_max[8] = {1.3,2.1,2.9,3.7,4.5,-1.1,-0.3,0.5};
+
+   int eta_sec;
+   int phi_sec;
+
+   // Special treatment to produce events in a given trigger tower
+   // according to the 8x6 config defined here:
+   //
+   // http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCData
+   //
+
+   if (towerID>=0 && towerID<=47)
+   {
+     phi_sec=towerID%8;
+     eta_sec=(towerID-phi_sec)/8;
+ 
+     fMinEta = t_eta_min[eta_sec];
+     fMaxEta = t_eta_max[eta_sec];
+     fMinPhi = t_phi_min[phi_sec];
+     fMaxPhi = t_phi_max[phi_sec];
+   }
+
+  
    // now actualy, cook up the event from PDGTable and gun parameters
    //
    // 1st, primary vertex
    //
 
-
-   double xpos     = fRandomGenerator->fire(-fXFlatSpread,fYFlatSpread);
-   double ypos     = fRandomGenerator->fire(-fYFlatSpread,fXFlatSpread);
+   double xpos     = fRandomGenerator->fire(-fXFlatSpread,fXFlatSpread);
+   double ypos     = fRandomGenerator->fire(-fYFlatSpread,fYFlatSpread);
    double zpos     = fRandomGenerator->fire(-fZFlatSpread,fZFlatSpread);
    
    HepMC::GenVertex* Vtx = new HepMC::GenVertex(HepMC::FourVector(xpos,ypos,zpos));
