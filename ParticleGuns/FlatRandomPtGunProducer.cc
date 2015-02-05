@@ -61,7 +61,7 @@ void FlatRandomPtGunProducer::produce(Event &e, const EventSetup& es)
    fEvt = new HepMC::GenEvent() ;
  
    double t_eta_min[6] = {-2.4,-1.7,-1.1,-0.4,0.4,1.2};
-   double t_eta_max[6] = {-1.2,-0.4,0.4,0.6,1.7,2.4};
+   double t_eta_max[6] = {-1.2,-0.4,0.4,1.1,1.7,2.4};
    double t_phi_min[8] = {-0.5,0.3,1.1,1.9,2.7,-2.9,-2.1,-1.3};
    double t_phi_max[8] = {1.3,2.1,2.9,3.7,4.5,-1.1,-0.3,0.5};
 
