@@ -115,6 +115,7 @@ class L1TrackExtractor
   // Size of the following vectors is m_patt
   std::vector< std::vector<int> > *m_patt_links; // Links to the stubs making the patterns in L1TkStubs tree
   std::vector<int>                *m_patt_secid; // Sector number
+  std::vector<int>                *m_patt_miss;  // Number of missed SStrips
 
   // Size of the following vectors is m_trk
 

@@ -92,7 +92,7 @@ class StubExtractor
 
   int getClust1Idx(float x, float y, float z);
   int getClust2Idx(int idx1, float dist);
-  int get_id(int lay,int lad,int mod,float x,float y,float z);
+  int get_id(int lay,int lad,int mod,float x,float y,float z,float sw);
 
   int getNDigis() {return m_clus;}
 

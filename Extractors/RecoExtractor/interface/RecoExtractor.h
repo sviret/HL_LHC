@@ -15,6 +15,7 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 
+#include "../interface/CoordsExtractor.h"
 #include "../interface/PixelExtractor.h"
 #include "../interface/StubExtractor.h"
 #include "../interface/L1TrackExtractor.h"
@@ -58,6 +59,8 @@ class RecoExtractor : public edm::EDAnalyzer{
  
   bool do_fill_;
 
+
+  bool do_COORDS_;
   bool do_PIX_;
   bool do_MC_;
   bool do_STUB_;
@@ -94,7 +97,7 @@ class RecoExtractor : public edm::EDAnalyzer{
   TFile* m_infile;
   TFile* m_outfile;
 
-
+  CoordsExtractor*          m_COORDS;
   PixelExtractor*           m_PIX;
   MCExtractor*              m_MC;
   StubExtractor*            m_STUB;

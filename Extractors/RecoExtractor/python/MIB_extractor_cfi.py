@@ -47,6 +47,7 @@ MIBextraction = cms.EDAnalyzer("RecoExtractor",
                                
   doBANK           = cms.untracked.bool(False),          # Stub container creation for bank (need official stubs)
   doL1TT           = cms.untracked.bool(False),          # Extract the cluster/stub information
+  getCoords        = cms.untracked.bool(False),          # Extract the tracker coordinates
 
   n_events         = cms.untracked.int32(10),            # How many events you want to analyze (only if fillTree=False)
   skip_events      = cms.untracked.int32(0),             # How many events you want to skip (only if fillTree=False)

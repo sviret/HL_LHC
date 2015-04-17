@@ -5,6 +5,7 @@ using namespace edm;
 
 RecoExtractor::RecoExtractor(const edm::ParameterSet& config) :
   do_fill_       (config.getUntrackedParameter<bool>("fillTree", true)),
+  do_COORDS_     (config.getUntrackedParameter<bool>("getCoords",  false)),
   do_PIX_        (config.getUntrackedParameter<bool>("doPixel",    false)),
   do_MC_         (config.getUntrackedParameter<bool>("doMC",       false)),
   do_STUB_       (config.getUntrackedParameter<bool>("doSTUB",     false)),
@@ -65,6 +66,7 @@ void RecoExtractor::beginRun(Run const& run, EventSetup const& setup)
 
   if (do_fill_) // We are filling the ntuple, first init the geom stuff
   {
+    if (do_COORDS_)   m_COORDS->init(&setup);
     if (do_PIX_)      m_PIX->init(&setup);
     if (do_MC_)       m_MC->init(&setup);
     if (do_STUB_)     m_STUB->init(&setup);
@@ -161,6 +163,7 @@ void RecoExtractor::initialize()
   m_STUB     = new StubExtractor(CLUS_tag,CLUS_name,STUB_tag,STUB_name,do_STUB_);
   m_L1TRK    = new L1TrackExtractor(L1_STUB_tag_,L1_PATT_tag_,L1_TRCK_tag_,do_L1TRK_);
   m_PIX      = new PixelExtractor(PIX_tag_,do_PIX_,do_MATCH_);
+  m_COORDS   = new CoordsExtractor();
 }  
 
 // Here are the initializations when starting from already extracted stuff

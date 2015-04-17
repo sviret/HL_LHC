@@ -970,7 +970,7 @@ int  StubExtractor::getClust2Idx(int idx1, float dist)
   return idx2;
 }
 
-int  StubExtractor::get_id(int lay,int lad,int mod,float x,float y,float z)
+int  StubExtractor::get_id(int lay,int lad,int mod,float x,float y,float z,float sw)
 {
   int idx = -1;
 
@@ -981,6 +981,7 @@ int  StubExtractor::get_id(int lay,int lad,int mod,float x,float y,float z)
     if (m_stub_layer->at(i)  !=lay) continue;
     if (m_stub_ladder->at(i) !=lad) continue;
     if (m_stub_module->at(i) !=mod) continue;
+    if (m_stub_deltas->at(i)+m_stub_cor->at(i) !=sw) continue;
     if (fabs(m_stub_x->at(i)-x)>0.001) continue;
     if (fabs(m_stub_y->at(i)-y)>0.001) continue;
     if (fabs(m_stub_z->at(i)-z)>0.001) continue;

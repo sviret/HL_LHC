@@ -14,7 +14,8 @@ L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_ta
  
   m_patt_links   = new  std::vector< std::vector<int> >;
   m_patt_secid   = new  std::vector<int>;
-  
+  m_patt_miss    = new  std::vector<int>;
+
   m_trk_pt       = new  std::vector<float>;
   m_trk_eta      = new  std::vector<float>;
   m_trk_phi      = new  std::vector<float>;
@@ -37,6 +38,7 @@ L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_ta
     m_tree->Branch("L1PATT_n",           &m_patt);
     m_tree->Branch("L1PATT_links",       &m_patt_links);
     m_tree->Branch("L1PATT_secid",       &m_patt_secid);
+    m_tree->Branch("L1PATT_nmiss",       &m_patt_miss);
 
     m_tree->Branch("L1TRK_n",            &m_trk);
     m_tree->Branch("L1TRK_links",        &m_trk_links);
@@ -54,6 +56,7 @@ L1TrackExtractor::L1TrackExtractor(TFile *a_file)
  
   m_patt_links   = new  std::vector< std::vector<int> >;
   m_patt_secid   = new  std::vector<int>;
+  m_patt_miss    = new  std::vector<int>;
   
   m_trk_pt       = new  std::vector<float>;
   m_trk_eta      = new  std::vector<float>;
@@ -85,6 +88,7 @@ L1TrackExtractor::L1TrackExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1PATT_n",           &m_patt);
   m_tree->SetBranchAddress("L1PATT_links",       &m_patt_links);
   m_tree->SetBranchAddress("L1PATT_secid",       &m_patt_secid);
+  m_tree->SetBranchAddress("L1PATT_miss",        &m_patt_miss);
   
   m_tree->SetBranchAddress("L1TRK_n",            &m_trk);
   m_tree->SetBranchAddress("L1TRK_links",        &m_trk_links);
@@ -171,6 +175,7 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
       // and match them with the stubs in the STUB_extractor container
 
       m_patt_secid->push_back(tempTrackPtr->getSector());
+      m_patt_miss->push_back(tempTrackPtr->getWedge());
 
       stub_list.clear();
 
@@ -200,7 +205,9 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 	  module = detIdStub.iPhi()-1;
 	}
 
-	stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z()));
+	double SW = tempStubRef->getTriggerDisplacement();
+
+	stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z(),SW));
 
 
       } /// End of loop over track stubs
@@ -260,9 +267,7 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 	
 	for(unsigned int i=0;i<trackStubs.size();i++)
 	{
-	  //	  std::cout << "A" << std::endl;
 	  edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > >, TTStub< Ref_PixelDigi_ > > tempStubRef = trackStubs.at(i);
-	  //	  std::cout << "B" << std::endl;	  
 
 	  /// Calculate average coordinates col/row for inner/outer Cluster
 	  /// These are already corrected for being at the center of each pixel
@@ -285,8 +290,9 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 	    module = detIdStub.iPhi()-1;
 	  }
 
-	  //	  std::cout << layer << "//" << ladder << "//" << module << std::endl;
-	  stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z()));
+	  double SW = tempStubRef->getTriggerDisplacement();
+
+	  stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z(),SW));
 
 	} /// End of loop over track stubs	
 	
@@ -320,6 +326,7 @@ void L1TrackExtractor::reset()
  
   m_patt_links->clear(); 
   m_patt_secid->clear(); 
+  m_patt_miss->clear(); 
   
   m_trk_pt->clear();    
   m_trk_eta->clear();   
