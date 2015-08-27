@@ -6,6 +6,8 @@
 
 #include "patterngen.h"
 #include "evtbuilder.h"
+#include "stim_builder.h"
+#include "l1_builder.h"
 #include "jobparams.h"
 #include "TROOT.h"
 
@@ -41,7 +43,7 @@ int main(int argc, char** argv) {
   // Option 1: generate a serie of patterns for the concentrator in a text file
   if (params.option()=="pattgen_CONC")
   {
-    patterngen* my_pgen = new patterngen(params.inputfile(),params.outfile(),params.nevt(),params.rate());
+    patterngen* my_pgen = new patterngen(params.inputfile(),params.outfile(),params.nevt(),params.rate(),0,0,0);
     delete my_pgen;
   }
   
@@ -49,7 +51,7 @@ int main(int argc, char** argv) {
   // Option 2: generate a serie of events for the MPA chip in a text file
   if (params.option()=="pattgen_MPA")
   {
-    patterngen* my_pgen = new patterngen(params.inputfile(),params.outfile(),params.nevt(),0);
+    patterngen* my_pgen = new patterngen(params.inputfile(),params.outfile(),params.nevt(),0,params.lay(),params.lad(),params.mod());
     delete my_pgen;
   }
 
@@ -80,5 +82,18 @@ int main(int argc, char** argv) {
     evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),false,0,8);
     delete my_pgen;
   }
+
+  if (params.option()=="build_stim_TRG")
+  {
+    stim_builder* my_stim = new stim_builder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.lay(),params.lad(),params.mod(),-1,params.testfile(),params.prop(),256);
+    delete my_stim;
+  }
+    
+  if (params.option()=="build_stim_RAW")
+  {
+    l1_builder* my_stim = new l1_builder(params.inputfile(),params.outfile(),params.testfile(),params.nevt(),params.rate(),params.lay(),params.lad(),params.mod(),params.cicsize());
+    delete my_stim;
+  }
+    
   return 0;
 }

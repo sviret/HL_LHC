@@ -19,7 +19,7 @@
 // Main constructor
 
 patterngen::patterngen(std::string filename, std::string outfile,
-		       int npatt, int rate)
+		       int npatt, int rate, int lay, int lad, int mod)
 {
   m_rate = rate;
 
@@ -54,7 +54,7 @@ patterngen::patterngen(std::string filename, std::string outfile,
       std::cout << "...Creating " << npatt 
 		<< " events for the MPA " << std::endl;
 
-      patterngen::get_MPA_input(npatt);
+      patterngen::get_MPA_input(npatt,lay,lad,mod);
     }
   }
 }
@@ -67,7 +67,7 @@ patterngen::patterngen(std::string filename, std::string outfile,
 //
 //////////////////////////////////////////////
 
-void patterngen::get_MPA_input(int nevt)
+void patterngen::get_MPA_input(int nevt,int lay, int lad, int mod)
 {
   int ladder,module,strip;
   int seg;
@@ -87,9 +87,8 @@ void patterngen::get_MPA_input(int nevt)
   float d0GEN;
   bool isGOOD;
 
-  int thresh=30; // Pixel digi threshold
-
   for (int j=0;j<nevt;++j)
+    //for (int j=0;j<1;++j)
   { 
     L1TT->GetEntry(j); 
     PIX->GetEntry(j);
@@ -109,17 +108,23 @@ void patterngen::get_MPA_input(int nevt)
 
     for (int i=0;i<m_pix;++i)
     {
-      if (m_pix_layer[i]!=5) continue; // Only interested into this PS innermost layer
-      if (m_pix_ch[i]<thresh) continue; 
+      if (m_pix_layer[i]!=lay) continue; // Only interested into one layer
       
       ladder= m_pix_ladder[i];
+      if (ladder!=lad && lad != -1) continue;
+
       module= static_cast<int>((m_pix_module[i]-1)/2); 
+      if (module!=mod && mod != -1) continue;
+
 
       modid = ladder*100 + module;
 
       m_iter = m_pix_idx.find(modid);
 
       m_digi_list.clear();
+
+      //      cout << lay << " / " << ladder << " / " << module << " / " 
+      //	   << m_pix_row[i] << " / " << m_pix_col[i] << " / " << m_pix_ch[i] << endl;
 
       if (m_iter == m_pix_idx.end()) // New mod, add it
       {
@@ -160,10 +165,12 @@ void patterngen::get_MPA_input(int nevt)
 
       std::cout << std::endl;
       std::cout << "__________________________________________________" << std::endl;
-      std::cout << "Module 1 " << ladder << " " << module << std::endl;	 
+      std::cout << "Layer/Disk  " << lay << std::endl;	 
+      std::cout << "Ladder/Ring " << ladder << std::endl;	 
+      std::cout << "Module      " << module << std::endl;	 
      
       // Link the stub/cluster info
-      patterngen::ana_pix(5,ladder,modid-100*ladder,m_digi_list); 
+      patterngen::ana_pix(lay,ladder,modid-100*ladder,m_digi_list); 
 
       // Start the printing loop
       for (unsigned int k=0;k<m_digi_list.size();++k) // Loop over all digis
@@ -180,6 +187,9 @@ void patterngen::get_MPA_input(int nevt)
 	  if (idx!=m_evt_pix[kk]) continue;
 	  its = m_evt_stu[kk];
 	  itp = m_evt_tp[kk];
+
+	  //	  if (its!=-1)
+	  //	    cout << kk << " / " << its << " / " << itp << endl;
 	}
 
 	isGOOD=false;
@@ -195,38 +205,38 @@ void patterngen::get_MPA_input(int nevt)
 
 	// Start to print
 	(m_pix_module[idx]%2==1)
-	  ? std::cout << "pixeldigi " << strip << " " << seg 
-	  : std::cout << "stripdigi " << strip << " " << seg; 
+	  ? std::cout << "pixeldigi " << std::setw(5) << strip << " " << std::setw(3) << seg 
+	  : std::cout << "stripdigi " << std::setw(5) << strip << " " << std::setw(3) << seg; 
 	
 	if (itp==-1) // Unmatched digi
 	{
-	  std::cout << " // 0 0 0 // " 
+	  std::cout << " // 0   0.00   0.00 // " 
 		    << std::fixed << std::setprecision(2)
-		    << atan2(m_pix_y[idx],m_pix_x[idx]) << " " 
-		    << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " " 
-		    << m_pix_z[idx]
+		    << std::setw(6) << atan2(m_pix_y[idx],m_pix_x[idx]) << " " 
+		    << std::setw(6) << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " " 
+		    << std::setw(6) << m_pix_z[idx]
 		    << std::fixed << std::setprecision(0)
 		    << std::endl;
 	}
 	else // Matched digi
 	{
-	  if (its==-1 && isGOOD) std::cout << " // 1 "; // No stub
-	  if (its!=-1 && isGOOD) std::cout << " // 2 "; // A stub
-	  if (!isGOOD)           std::cout << " // 0 "; // Not from a primary
+	  if (its==-1)  std::cout << " // 0 "; // No stub
+	  if (its!=-1 && isGOOD)  std::cout << " // 2 "; // In a stub from a good part 
+	  if (its!=-1 && !isGOOD) std::cout << " // 1 "; // In a stub from a not good part
 	
 	  std:: cout << std::fixed << std::setprecision(2)
-		     << ptGEN << " " 
-		     << d0GEN << " // "  
-		     << atan2(m_pix_y[idx],m_pix_x[idx]) << " " 
-		     << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " " 
-		     << m_pix_z[idx]
+		     << std::setw(6) << ptGEN << " " 
+		     << std::setw(6) << d0GEN << " // "  
+		     << std::setw(6) << atan2(m_pix_y[idx],m_pix_x[idx]) << " " 
+		     << std::setw(6) << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " " 
+		     << std::setw(6) << m_pix_z[idx]
 		     << std::fixed << std::setprecision(0)
 		     << std::endl;
 	}
       }
 
       // Finally print the stub info
-      do_stub(5,ladder,(module-1)/2);
+      do_stub(lay,ladder,(module-1)/2);
     }    
   }
 }
@@ -320,13 +330,17 @@ void patterngen::do_stub(int lay,int lad,int mod)
 {
   for (int i=0;i<m_stub;++i)
   {  
-    if (m_stub_layer[i]!=5) continue;
+    if (m_stub_layer[i]!=lay) continue;
     if (m_stub_ladder[i]!=lad-1) continue;
     if (m_stub_module[i]!=mod) continue;
 
     // First of all we compute the ID of the stub's module
 
-    std::cout << "stub: " << std::fixed << std::setprecision(1) << m_stub_strip[i] << " " << m_stub_deltas[i] << std::endl;
+    std::cout << "stub: " 
+	      << std::setw(6) << std::fixed << std::setprecision(1) << m_stub_strip[i] << " " 
+	      << std::setw(5) << m_stub_deltas[i]     
+	      << " " << std::setprecision(2) 
+	      << std::setw(7) <<  m_stub_z[i] << std::endl;
   }
 }
 
@@ -371,7 +385,7 @@ void patterngen::get_CONC_input(int npatt)
 
   //
   // We make a first loop over all entries available
-  // in order to data stores, using the digis (L1raw block)
+  // in order to build data stores, using the digis (L1raw block)
   // and the stubs (trigger block)
   // 
 
@@ -1186,6 +1200,7 @@ void patterngen::initTuple(std::string in,std::string out,int type)
   pm_stub_deltas=&m_stub_deltas;
   pm_stub_strip=&m_stub_strip;
   pm_stub_seg=&m_stub_seg;
+  pm_stub_z=&m_stub_z;
   pm_clus_nseg=&m_clus_nseg;
   pm_clus_pix=&m_clus_pix;
   pm_clus_mult=&m_clus_mult;
@@ -1209,6 +1224,7 @@ void patterngen::initTuple(std::string in,std::string out,int type)
   L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
   L1TT->SetBranchAddress("L1TkSTUB_module",    &pm_stub_module);
   L1TT->SetBranchAddress("L1TkSTUB_pt",        &pm_stub_pt);
+  L1TT->SetBranchAddress("L1TkSTUB_z",         &pm_stub_z);
   L1TT->SetBranchAddress("L1TkSTUB_tp",        &pm_stub_tp);
   L1TT->SetBranchAddress("L1TkSTUB_deltas",    &pm_stub_deltas);
   L1TT->SetBranchAddress("L1TkSTUB_strip",     &pm_stub_strip);

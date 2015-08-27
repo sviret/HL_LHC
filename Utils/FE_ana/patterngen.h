@@ -57,11 +57,11 @@ class patterngen
 {
  public:
 
-  patterngen(std::string filename, std::string outfile, int npatt, int rate);
+  patterngen(std::string filename, std::string outfile, int npatt, int rate, int lay, int lad, int mod);
 
   void  get_CONC_input(int npatt);  // The main method  
   void  get_CONC_output(std::string filename);
-  void  get_MPA_input(int nevt);
+  void  get_MPA_input(int nevt, int lay, int lad, int mod);
 
   void  initVars();
   void  initTuple(std::string in,std::string out,int type);
@@ -144,7 +144,6 @@ class patterngen
   std::vector<int>   *pm_clus_layer;
   std::vector<int>   *pm_clus_ladder;
   std::vector<int>   *pm_clus_module;
-  std::vector<int>   *pm_clus_nrows;
   std::vector<int>   *pm_clus_tp;
   std::vector<std::vector<int> >   *pm_clus_pix;
   std::vector<std::vector<int> >   *pm_clus_mult;
@@ -166,6 +165,7 @@ class patterngen
   std::vector<int>    m_stub_tp;
   std::vector<float>  m_stub_deltas;
   std::vector<float>  m_stub_strip;
+  std::vector<float>  m_stub_z;
   std::vector<int>    m_stub_seg;
   std::vector<int>    m_stub_chip;
   std::vector<int>    m_stub_clust1;
@@ -181,11 +181,11 @@ class patterngen
   std::vector<float>  *pm_stub_X0;     // x origin of particle inducing stub i (in cm)
   std::vector<float>  *pm_stub_Y0;     // y origin of particle inducing stub i (in cm)
   std::vector<float>  *pm_stub_Z0;     // z origin of particle inducing stub i (in cm)
-  std::vector<float>  *pm_stub_PHI0;   // phi origin of particle inducing stub i (in rad)
   std::vector<float>  *pm_stub_pt;
   std::vector<int>    *pm_stub_tp;
   std::vector<float>  *pm_stub_deltas;
   std::vector<float>  *pm_stub_strip;
+  std::vector<float>  *pm_stub_z;
   std::vector<int>    *pm_stub_seg;
   std::vector<int>    *pm_stub_chip;
   std::vector<int>    *pm_stub_clust1;
@@ -220,23 +220,13 @@ class patterngen
   int m_raw_chip;
 
   int m_tri_chp[8][40];
-  int m_raw_chp[8][266];  
-
-  int m_tri_data[40];
-  int m_raw_data[266]; 
+  int m_raw_chp[8][266];
 
   std::vector<int>   m_evt_pix;
   std::vector<int>   m_evt_clu;
   std::vector<int>   m_evt_stu;
   std::vector<int>   m_evt_tp;
 
-
-  int MPA_eff[80000][16][7];
-  int Conc_CBC_eff[80000][2][7];
-  int Conc_MPA_eff[80000][2][7];
-
-  int mod_fifos_CBC[80000][2];
-  int mod_fifos_MPA[80000][2][2];
 };
 
 #endif

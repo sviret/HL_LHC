@@ -41,6 +41,9 @@ class jobparams{
   int         cbcbend() const;
   int         cicsize() const;
   int         prop() const;
+  int         lay() const;
+  int         lad() const;
+  int         mod() const;
 
 
  private:
@@ -62,6 +65,9 @@ class jobparams{
   int          m_cbcbend;
   int          m_prop;
   int          m_cicsize;
+  int          m_lay;
+  int          m_lad;
+  int          m_mod;
 };
 
 inline std::string jobparams::option() const{
@@ -132,4 +138,15 @@ inline int jobparams::prop() const{
   return m_prop;
 }
 
+inline int jobparams::lay() const{
+  return m_lay;
+}
+
+inline int jobparams::lad() const{
+  return m_lad;
+}
+
+inline int jobparams::mod() const{
+  return m_mod;
+}
 #endif

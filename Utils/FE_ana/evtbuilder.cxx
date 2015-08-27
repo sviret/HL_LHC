@@ -44,11 +44,14 @@ evtbuilder::evtbuilder(std::string filenameRAW, std::string filenameTRG, std::st
   bend_bit_MPA = BMPA;
   bend_bit_CBC = BCBC;
 
+  m_write_out  = true;
+  int m_tower      = 16;
+
 
   evtbuilder::initVars();                                 // Initialize everything
-  evtbuilder::convert(sector);                            // Get the tracker module info
+  evtbuilder::convert(sector,m_tower);                    // Get the trigger tower module info
   evtbuilder::initTuple(filenameRAW,filenameTRG,outfile); // Initialize ROOT stuff
-  evtbuilder::get_stores(npatt-conc*npatt%8,conc);             // Prepare the data store where to pickup info
+  evtbuilder::get_stores(npatt-conc*npatt%8,conc);        // Prepare the data store where to pickup info
 }
 
 /////////////////////////////////////////////////////////
@@ -105,7 +108,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
   cout << "--> Entering loop 1, producing the big data stores for " 
        << store_size << " events..." << endl;
 
-  // for (int j=0;j<10;++j)
+  //for (int j=0;j<10;++j)
   for (int j=0;j<store_size;++j)
   {    
     if (j%20==0)
@@ -447,6 +450,20 @@ void evtbuilder::get_stores(int nevts, bool conc)
       m_chip_FIFOs.insert(std::make_pair(m_concs.at(i),m_digi_list));
     }
   }
+  else
+  {
+    for (unsigned int i=0;i<m_chips.size();++i)
+    {
+      m_digi_list.clear();
+      m_digi_list.push_back(-1);
+      m_raw_FIFO.insert(std::make_pair(m_chips.at(i),m_digi_list));
+      m_digi_list.clear();
+      m_digi_list.push_back(0);
+      m_digi_list.push_back(0);
+      m_chip_FIFOs.insert(std::make_pair(m_chips.at(i),m_digi_list));
+    }
+  }
+
 
   //
   // First of all one writes the L1 word, either at the FE of the concentrator level
@@ -465,12 +482,14 @@ void evtbuilder::get_stores(int nevts, bool conc)
 
       evtbuilder::initVars();
 
+
+
       if (raw_seq.at(i)!=-1) // Chip has received received a L1 A, we write the raw block
       {
 	++L1_id;
 	
 	m_chip_raw = m_data_raw.at(raw_seq.at(i)); // Pick up the event in the store
-	
+
 	for ( m_iter = m_chip_raw.begin(); m_iter != m_chip_raw.end();++m_iter )
 	{
 
@@ -478,6 +497,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  isPS            = false;
 	  m_raw_bx        = i;
 	  m_raw_FIFO_FULL = 0;
+	  m_raw_FIFO_SIZE = 0;
 	  m_raw_chip      = m_iter->first;
 	  m_raw_lay       = m_raw_chip/1000000;
 	  m_raw_lad       = (m_raw_chip-1000000*m_raw_lay)/10000;
@@ -485,20 +505,18 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  m_raw_np        = 0;
 	  m_raw_ns        = 0;
 
-
-	  //	  if (m_raw_lay>10) cout << m_raw_lay << " / " <<  m_raw_lad << " /  " << m_raw_chip << endl;
-
 	  if (m_raw_lay<8 || (m_raw_lay>10 && m_raw_lad<9)) isPS = true; 
 
 	  // Now, we get the digis contained in the event, and fill the block
 	  m_digi_list = m_iter->second;
 	  
 	  // We have the info, we now write the word, making a difference bet. CIC and FE chip words
-	  
+
 	  (conc)
 	    ? evtbuilder::fill_CONC_RAW_block(m_digi_list,isPS,L1_id)
 	    : evtbuilder::fill_RAW_block(m_digi_list,isPS,L1_id);
 	  
+
 	  // The word is written, we now emulate the FIFO behavior for the CIC 
 
 	  m_raw_size  = m_raw_data->size();
@@ -507,7 +525,11 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  
 	  int FIFO_size = 0.;
 
-	  if (conc) // From now on it's only for the CIC
+	  int extracted_bit_per_BX = (m_npblock/m_CICsize);
+
+	  if (!conc) extracted_bit_per_BX = 16/2;
+
+	  if (conc || isPS) // It's only for the CIC and MPA chips
 	  {
 	    // Find the chip FIFO footprint
 	    // defined as follows:
@@ -524,11 +546,12 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	    if (FIFO_size==0) // Empty FIFO, initialize it!
 	    {
 	      FIFO_new.push_back(i);                                    // BXin is the current BX, the L1 event enters the CIC
-	      FIFO_new.push_back(i+m_raw_size/(m_npblock/m_CICsize)+1); // BXout = BXin + numb of BXs to extract the event (if FIFO is empty it's simple) 
+	      FIFO_new.push_back(i+m_raw_size/(extracted_bit_per_BX)+1); // BXout = BXin + numb of BXs to extract the event (if FIFO is empty it's simple) 
 	      m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;                  // Number of events in the FIFO (1)
 	      FIFO_size=m_raw_size;
+	      m_raw_FIFO_SIZE=m_raw_size;
 
-	      last_BX=i+m_raw_size/(m_npblock/m_CICsize)+1;
+	      last_BX=i+m_raw_size/(extracted_bit_per_BX)+1;
 	    }
 	    else  // FIFO not empty, one need to increment
 	    {
@@ -547,9 +570,10 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	      // Here we compute the size of the current FIFO
 
 	      last_rank=0;
-	      if (FIFO_new.size()>1) last_rank = (last_BX-i)*(m_npblock/m_CICsize);
+	      if (FIFO_new.size()>1) last_rank = (last_BX-i)*(extracted_bit_per_BX);
 
 	      FIFO_size=m_raw_size+last_rank;
+	      m_raw_FIFO_SIZE=m_raw_size+last_rank;
 
 	      //if (last_rank+m_raw_size>34048)   // The new event cannot fit in, we raise an error... 
 	      if (last_rank+m_raw_size>100000000) // ...or not, as here, as we want to study the FIFO divergence 
@@ -559,10 +583,10 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	      else // OK, come in!
 	      {
 		FIFO_new.push_back(i);                                          // BXin is the current BX, the L1 event enters the CIC
-		FIFO_new.push_back(last_BX+m_raw_size/(m_npblock/m_CICsize)+1); // BXout tells us when the event really goes out
+		FIFO_new.push_back(last_BX+m_raw_size/(extracted_bit_per_BX)+1); // BXout tells us when the event really goes out
 		m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;
 
-		last_BX=last_BX+m_raw_size/(m_npblock/m_CICsize)+1;
+		last_BX=last_BX+m_raw_size/(extracted_bit_per_BX)+1;
 	      }
 	    }
 
@@ -628,7 +652,9 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	  }
 	
 	  // And we write the word
-	  // std::cout << m_tri_bx << " / " << m_tri_chip << " -> ";
+	  
+	  if (m_write_out) std::cout << i << " / " << m_tri_bx << " / " << m_tri_chip << " -> ";
+
 	  evtbuilder::fill_TRG_block(trig_sequence,isPS,conc,m_CICsize*i);
 	}
       }
@@ -717,7 +743,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
   
   float x,z;
 
-  if (m_write_raw && conc)
+  if (m_write_raw)
   {    	
     for ( m_iter = m_chip_FIFOs.begin(); m_iter != m_chip_FIFOs.end();++m_iter )
     {
@@ -745,6 +771,13 @@ void evtbuilder::get_stores(int nevts, bool conc)
       FIFO_cnt.clear();
       m_raw_chip  = m_iter->first;
       FIFO_cnt    = m_iter->second;
+
+      // Chip FIFO footprint
+      // defined as follows:
+      // < m_raw_chip , FIFO >
+      // FIFO.push_back(i); // BX where the L1 event enters the FIFO
+      // FIFO.push_back(last_BX-i); // Time spent by L1 in the FIFO
+
 
       for (unsigned int j=1;j<(FIFO_cnt.size())/2;++j)	    
       {
@@ -878,6 +911,7 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
   m_raw_tree->Branch("RAW_SIZE",       &m_raw_size,    "RAW_SIZE/I");
   m_raw_tree->Branch("RAW_MBITS",      &m_raw_mbits,   "RAW_MBITS/I");
   m_raw_tree->Branch("RAW_FIFULL",     &m_raw_FIFO_FULL,"RAW_FIFULL/I");
+  m_raw_tree->Branch("RAW_FISIZE",     &m_raw_FIFO_SIZE,"RAW_FISIZE/I");
 
   m_raw_tree->Branch("RAW_NPCLUS",     &m_raw_np);
   m_raw_tree->Branch("RAW_NSCLUS",     &m_raw_ns);
@@ -1050,15 +1084,17 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
 //
 // Here we retrieve info from the TKLayout CSV file containing the sector definition
 //
-// This file contains, for each sector, the ids of the modules and chips contained in the sector
+// This file contains, for each sector, the ids of the modules and chips contained in the sector sec_num
 //
 // The role of this method is to create the opposite, ie a vector containing, for every module the list of sectors belonging to it
 //
 /////////////////////////////////////////////////////////////////////////////////
 
-bool evtbuilder::convert(std::string sectorfilename) 
+bool evtbuilder::convert(std::string sectorfilename, int sec_num) 
 {
   std::vector<int> module;
+
+  std::cout << "Convert in" << std::endl;
 
   m_modules.clear();
   m_chips.clear();
@@ -1088,6 +1124,7 @@ bool evtbuilder::convert(std::string sectorfilename)
     getline(in,STRING);
 
     if (m_sec_mult<2) continue;
+    if (m_sec_mult-2!=sec_num && sec_num!=-1) continue;
 
     std::istringstream ss(STRING);
     npar = 0;
@@ -1107,6 +1144,7 @@ bool evtbuilder::convert(std::string sectorfilename)
 
   in.close();
 
+  std::cout << "Convert out" << std::endl;
 
   for (int i=0;i<230000;++i)
   {
@@ -1122,13 +1160,10 @@ bool evtbuilder::convert(std::string sectorfilename)
 
 //
 // List of method writing the data blocks, according to the format defined in
-// the following presentation:
+// the following document:
 //
-// CBC specifications: 
-// https://indico.cern.ch/event/332678/session/1/contribution/5/material/slides/0.pdf
+// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v2.pdf
 //
-// MPA/CIC specifications:
-// https://indico.cern.ch/event/332678/session/4/contribution/14/material/slides/0.pdf
 
 
 //
@@ -1140,7 +1175,7 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
   m_raw_data->clear();
 
   // First write the headers
-
+  
   (spars)
     ? evtbuilder::fill_RAW_header_MPA(BXid)
     : evtbuilder::fill_RAW_header_CBC(BXid);
@@ -1152,8 +1187,12 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
   if (!spars) // CBC (unsparsified), slide 9 of the presentation cited
   {
-    for (int j=0;j<252;++j)   m_raw_data->push_back(0);
-    for (int j=0;j<ndata;++j) m_raw_data->at(digis.at(3*j+2)+hsize) = 1; 
+    for (int j=0;j<256;++j)   m_raw_data->push_back(0);
+    
+    for (int j=0;j<ndata;++j)
+    {
+      m_raw_data->at(digis.at(3*j+2)+hsize) = 1;
+    }
   }
   else // MPA
   {
@@ -1269,8 +1308,6 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
       }
     }
 
-    //    std::cout << "This MPA chip contains " << clus_p.size()/3 << " pixels clusters and " 
-    //	      << clus_s.size()/2 << " strip clusters" << std::endl; 
 
     // Now encode them 
     np = clus_p.size()/3 ;
@@ -1706,7 +1743,13 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
 
   std::vector<int> stublist;
 
-  if (conc) evtbuilder::fill_CONC_TRG_header(BXid%3564);
+  if (conc) 
+  {
+    (spars)
+      ? evtbuilder::fill_CONC_TRG_header(BXid%3564,1)
+      : evtbuilder::fill_CONC_TRG_header(BXid%3564,0);
+  }
+
 
   if (!conc) // Put a specific header for FE words  
   {
@@ -1858,20 +1901,37 @@ void evtbuilder::fill_TRG_block(std::vector< std::vector<int> > stubs, bool spar
     if (sequence.at(i)==0) ++nzeros;
   }
 
+  if (conc) 
+  {
+    if (m_tri_nstubs_s>15) 
+    {
+      m_tri_data->at(9) = 1; // Raise the CIC error bit if the number of stubs is in overflow
+
+      for (int j=0;j<4;++j) m_tri_data->at(22+j) = 1;
+    }
+    else
+    {
+      std::bitset<4> nst = m_tri_nstubs_s;
+      for (int j=0;j<4;++j) m_tri_data->at(22+j) = nst[3-j];
+    }
+  }
+
+
   m_tri_size=m_tri_data->size();
   m_tri_size_anders=m_tri_data->size()-2*m_tri_nstubs_s+nzeros;
   m_tri_tree->Fill();
 
 
   //  std::cout << "Size of the trigger word / " << spars << " / " << conc << " / " << m_tri_size << std::endl;
-  /*
-  for (int j=0;j<m_tri_data->size();++j)
+  if (m_write_out) 
   {
-    std::cout << m_tri_data->at(j);
-  }
+    for (unsigned int j=0;j<m_tri_data->size();++j)
+    {
+      std::cout << m_tri_data->at(j);
+    }
  
-  std::cout << std::endl;
-  */
+    std::cout << std::endl;
+  }
 
 }
 
@@ -1947,16 +2007,20 @@ void evtbuilder::fill_CONC_RAW_header(int L1id)
 
 }
 
-void evtbuilder::fill_CONC_TRG_header(int BXid)
+void evtbuilder::fill_CONC_TRG_header(int BXid,int MPA)
 {
   // Format of the CONC TRIGGER word header
   //
   // CSSSSSSSSSCCCCCCCCCCCC : SS..SS (status) CC..CC (BX ID bet 0 and 3564)
   //
 
-  for (int j=0;j<10;++j) m_tri_data->push_back(0); 
+  m_tri_data->push_back(MPA); 
+
+  for (int j=0;j<9;++j) m_tri_data->push_back(0); // Status bits
 
   std::bitset<12> BX_ID = BXid;
 
   for (int j=0;j<12;++j) m_tri_data->push_back(BX_ID[11-j]); // CC..CC
+
+  for (int j=0;j<4;++j) m_tri_data->push_back(0); // Let room for the number of stubs
 }

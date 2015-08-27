@@ -61,7 +61,7 @@ class evtbuilder
   void  initVars();
   void  initTuple(std::string inRAW,std::string inTRG,std::string out);
   void  get_stores(int nevts,bool conc);
-  bool  convert(std::string sectorfilename); 
+  bool  convert(std::string sectorfilename, int sec_num); 
 
 
   void  fill_TRG_block(std::vector< std::vector<int> > stubs, bool spars, bool conc, int BXid);
@@ -73,7 +73,7 @@ class evtbuilder
   void  fill_RAW_header_CBC(int L1id);
   void  fill_RAW_header_MPA(int L1id);
 
-  void  fill_CONC_TRG_header(int BXid);
+  void  fill_CONC_TRG_header(int BXid, int MPA);
   void  fill_CONC_RAW_header(int L1id);
 
 
@@ -201,11 +201,11 @@ class evtbuilder
   int m_tri_nstubs_gs;
 
   int m_raw_bx;
-  int m_raw_bits;
   int m_raw_chip;
   int m_raw_size;
   int m_raw_mbits;
   int m_raw_FIFO_FULL;
+  int m_raw_FIFO_SIZE;
   int m_npblock;
   int m_tri_lay;
   int m_tri_lad;
@@ -221,6 +221,8 @@ class evtbuilder
 
   bool m_write_raw;
   bool m_write_trg;
+  bool m_write_out;
+
 };
 
 #endif

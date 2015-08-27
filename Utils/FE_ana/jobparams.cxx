@@ -46,6 +46,10 @@ jobparams::jobparams(int argc, char** argv){
 				false, "/scratch/viret/data.root", "string");
      cmd.add(inputfileTRG);
 
+     ValueArg<int> prop("k","kprop","Proportion of 4 top events in the trg block (in %)",
+			false, 0, "int");
+     cmd.add(prop);
+
      ValueArg<int> l1size("l","l1size","size of L1 conc block in bits",
 			false, 64, "int");
      cmd.add(l1size);
@@ -53,8 +57,6 @@ jobparams::jobparams(int argc, char** argv){
      ValueArg<int> mpabend("m","mpabend","number of bits for the mpa bend",
 			false, 5, "int");
      cmd.add(mpabend);
-
-
 
      ValueArg<int> nevt("n","nevt","number of events for the eff test?",
 			false, 0, "int");
@@ -72,17 +74,25 @@ jobparams::jobparams(int argc, char** argv){
 			  false, 0.1, "float");
      cmd.add(qmax);
 
-     ValueArg<int> type("t","type","PDG id of the particle to analyze",
-			false, 13, "int");
-     cmd.add(type);
-
      ValueArg<int> rate("r","rate","L1 rate (for pattern gen, in kHz)",
 			false, 100, "int");
      cmd.add(rate);
 
-     ValueArg<int> prop("k","kprop","Proportion of 4 top events in the trg block (in %)",
+     ValueArg<int> type("t","type","PDG id of the particle to analyze",
+			false, 13, "int");
+     cmd.add(type);
+
+     ValueArg<int> lay("u","lay","layer/disk number, for stimulus file generation)",
+			false, 5, "int");
+     cmd.add(lay);
+
+     ValueArg<int> lad("v","lad","ladder/ring number, for stimulus file generation)",
 			false, 0, "int");
-     cmd.add(prop);
+     cmd.add(lad);
+
+     ValueArg<int> mod("w","mod","module number, for stimulus file generation)",
+			false, 25, "int");
+     cmd.add(mod);
 
      // parse
      cmd.parse(argc, argv);
@@ -104,6 +114,9 @@ jobparams::jobparams(int argc, char** argv){
      m_mpabend      = mpabend.getValue();
      m_prop         = prop.getValue();
      m_cicsize      = cicsize.getValue();
+     m_lay          = lay.getValue();
+     m_lad          = lad.getValue();
+     m_mod          = mod.getValue();
    }
    catch (ArgException &e){ // catch exception from parse
      std::cerr << "ERROR: " << e.error() << " for arg " << e.argId()  << std::endl;
