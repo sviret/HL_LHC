@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
   if (params.option()=="build_stim_TRG")
   {
-    stim_builder* my_stim = new stim_builder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.lay(),params.lad(),params.mod(),-1,params.testfile(),params.prop(),256);
+    stim_builder* my_stim = new stim_builder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.lay(),params.lad(),params.mod(),-1,params.testfile(),params.prop(),params.cicsize());
     delete my_stim;
   }
     
