@@ -503,6 +503,7 @@ void l1_builder::get_stores(int nevts)
       m_digi_list.clear();
       m_digi_list.push_back(-1);
       m_digi_list.push_back(-1);
+      m_digi_list.push_back(-1);
       m_chip_FIFOs.insert(std::make_pair(m_chips.at(i),m_digi_list));
     }
 
@@ -609,7 +610,7 @@ void l1_builder::get_stores(int nevts)
 
                 FIFO_new.clear();
                 FIFO      = m_iter2->second;
-                FIFO_size = (FIFO.size()-1)/2; // How many L1 events are in the FIFO (depth)?
+                FIFO_size = (FIFO.size()-1)/3; // How many L1 events are in the FIFO (depth)?
                 FIFO_new.push_back(-1);
 
                 if (FIFO_size==0) // Empty FIFO, initialize it!
@@ -617,10 +618,11 @@ void l1_builder::get_stores(int nevts)
                     // BXin is BX for for the event starts to be extractible from the chip
                     // BXout = BXin + numb of BXs to extract the event (if FIFO is empty it's simple)
                     
+                    FIFO_new.push_back(L1_id);
                     FIFO_new.push_back(i+delay);
                     FIFO_new.push_back(i+delay+m_raw_size/(extracted_bit_per_BX)+1);
                     
-                    m_raw_FIFO_FULL = (FIFO_new.size()-1)/2; // New FIFO size
+                    m_raw_FIFO_FULL = (FIFO_new.size()-1)/3; // New FIFO size
                     m_raw_FIFO_SIZE = i+delay;
                     last_BX         = i+delay+m_raw_size/(extracted_bit_per_BX)+1;
                     
@@ -641,33 +643,35 @@ void l1_builder::get_stores(int nevts)
                 {
                     last_BX=i+delay;
                     
-                    for (unsigned int j=0;j<(FIFO.size()-1)/2;++j)
+                    for (unsigned int j=0;j<(FIFO.size()-1)/3;++j)
                     {
-                        if (FIFO.at(2*j+2)<i) continue; // Time to go out for this event (BXo(j)<i)
+                        if (FIFO.at(3*j+3)<i) continue; // Time to go out for this event (BXo(j)<i)
 
-                        FIFO_new.push_back(FIFO.at(2*j+1)); // Otherwise event stays there
-                        FIFO_new.push_back(FIFO.at(2*j+2));
+                        FIFO_new.push_back(FIFO.at(3*j+1)); // Otherwise event stays there
+                        FIFO_new.push_back(FIFO.at(3*j+2)); 
+                        FIFO_new.push_back(FIFO.at(3*j+3));
                         
                         // The last BXo fixes the time where we can start to extract the next event
-                        last_BX=std::max(FIFO.at(2*j+2),i+delay);
+                        last_BX=std::max(FIFO.at(3*j+3),i+delay);
                     }
 
                     // FIFO has been updated, check if it is FULL or not
                     
-                    if (static_cast<int>((FIFO_new.size()-1)/2)==m_MPA_FIFO_depth)
+                    if (static_cast<int>((FIFO_new.size()-1)/3)==m_MPA_FIFO_depth)
                     {
                         cout << "SIZE ERROR" << endl;
                     }
                     
                     // Put the latest event
                     
+		    FIFO_new.push_back(L1_id);
                     FIFO_new.push_back(i+delay);
                     FIFO_new.push_back(last_BX+m_raw_size/(extracted_bit_per_BX)+1);
                     
                     // Here we compute the size of the current FIFO
 
                     m_raw_FIFO_SIZE = last_BX;
-                    m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;
+                    m_raw_FIFO_FULL = (FIFO_new.size()-1)/3;
 
                     m_iter2 = m_words.find(m_raw_chip);
                     word=m_iter2->second;
@@ -694,6 +698,7 @@ void l1_builder::get_stores(int nevts)
                 m_iter2 = m_chip_FIFOs.find(m_raw_chip);
                 FIFO=m_iter2->second;
                 
+		FIFO.push_back(L1_id);
                 FIFO.push_back(i+delay);
                 FIFO.push_back(last_BX-i-delay);
                 m_chip_FIFOs.erase(m_iter2->first);
@@ -741,30 +746,24 @@ void l1_builder::get_stores(int nevts)
                 
                 //std::cout << "L1A was received at BX " << i << " in CIC chip " << m_raw_chip << std::endl;
                 
-                int delay                = 0;
-                
-                (isPS)
-                ? delay = m_MPA_L1_delay
-                : delay = m_CBC_L1_delay;
-                
                 for (int ii=0;ii<8;++ii)
                 {
                     m_iter2 = m_chip_FIFOs.find(m_raw_chip+ii);
                     FIFO=m_iter2->second;
 
-                    for (unsigned int ij=0;ij<FIFO.size()/2;++ij)
+                    for (unsigned int ij=0;ij<FIFO.size()/3;++ij)
                     {
-                        if (FIFO.at(2*ij)==i+delay)
+                        if (FIFO.at(3*ij)==L1_id)
                         {
-                            //std::cout << "FE chip " << m_raw_chip+ii << " ends up extraction at BX " << FIFO.at(2*ij+1)+FIFO.at(2*ij) << std::endl;
-                            if (FIFO.at(2*ij+1)+FIFO.at(2*ij)>=bx_in) bx_in = FIFO.at(2*ij+1)+FIFO.at(2*ij);
+			  //std::cout << "FE chip " << m_raw_chip+ii << " ends up extraction at BX " << FIFO.at(3*ij+2)+FIFO.at(3*ij+1) << std::endl;
+                            if (FIFO.at(3*ij+2)+FIFO.at(3*ij+1)>=bx_in) bx_in = FIFO.at(3*ij+2)+FIFO.at(3*ij+1);
                             break;
                         }
                     }
                 }
                 
                 
-                //std::cout << "L1 event will start to be extractible at BX " << bx_in << std::endl;
+		//                std::cout << "L1 event will start to be extractible at BX " << bx_in << std::endl;
                 
                 m_raw_size  = m_raw_data->size();
             
