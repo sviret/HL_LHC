@@ -30,9 +30,9 @@ l1_builder::l1_builder(std::string filenameRAW, std::string outfile, std::string
     m_rate       = rate;
     m_npblock    = npblock;
     
-    m_MPA_L1_delay = 10; // The minimal delay between L1A reception by the MPA and transmission to the CIC
+    m_MPA_L1_delay = 7;  // The minimal delay between L1A reception by the MPA and transmission to the CIC
     m_CBC_L1_delay = 20; // The minimal delay between L1A reception by the CBC and transmission to the CIC
-    m_CIC_L1_delay = 0; // The minimal delay between L1A reception by the CIC and transmission to the GBT
+    m_CIC_L1_delay = 0;  // The minimal delay between L1A reception by the CIC and transmission to the GBT
 
     m_MPA_FIFO_depth = 4;
     m_CIC_FIFO_depth = 1000;
@@ -597,7 +597,7 @@ void l1_builder::get_stores(int nevts)
                 int delay                = 0;
                 
                 (isPS)
-                ? delay = m_MPA_L1_delay
+                ? delay = m_MPA_L1_delay+m_raw_np+m_raw_ns // From D.Ceresa
                 : delay = m_CBC_L1_delay;
                 
                 // Find the chip FIFO footprint
