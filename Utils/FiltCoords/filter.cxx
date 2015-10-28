@@ -216,7 +216,7 @@ bool filter::convert(std::string sectorfilename)
       ///////
       // This hack is temporary and is due to a numbering problem in the TkLayout tool
       if (lay<=10) lad = (lad+n_rods[lay-5]/4)%(n_rods[lay-5]);
-      if (lay<=7)  mod = mod/2;
+     // if (lay<=7)  mod = mod/2;
       ///////
 
       modid = 10000*lay+100*lad+mod;
