@@ -1447,7 +1447,7 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
             for (int k=0;k<4;++k) m_raw_data->push_back(col[3-k]);
         }
 
-        m_raw_data->push_back(1); // Trailer
+        m_raw_data->push_back(0); // Trailer
     }
 
     // Here we put a common trailer (if needed)
