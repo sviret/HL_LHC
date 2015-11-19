@@ -44,8 +44,8 @@ evtbuilder::evtbuilder(std::string filenameRAW, std::string filenameTRG, std::st
   bend_bit_MPA = BMPA;
   bend_bit_CBC = BCBC;
 
-  m_write_out  = true;
-  int m_tower      = 16;
+  m_write_out  = false;
+  int m_tower      = -1;
 
 
   evtbuilder::initVars();                                 // Initialize everything
