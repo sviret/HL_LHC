@@ -1301,8 +1301,8 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
         int row,col;
 
         // The sparsification is done at the MPA level
-        // Strips 0 to 127 belong to the pixel layer
-        // 128 to 253 belong to the strip layer
+        // Strips 0 to 120 belong to the pixel layer
+        // 120 to 239 belong to the strip layer
 
         for (int j=0;j<128;++j)
         {
@@ -1314,9 +1314,9 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
             row = digis.at(3*j+2);
             col = digis.at(3*j+3);
     
-            (row<128)
+            (row<120)
             ? data_MPA[row][col]    = 1
-            : data_MPA[row%128][16] = 1;
+            : data_MPA[row%120][16] = 1;
         }
 
         int np = 0;
@@ -1341,7 +1341,7 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
                 {
                     if (start_r==-1) // new clus
                     {
-                        start_r=i;
+                        start_r=i+1;
                         compt=0;
                     }
                     else
@@ -1423,9 +1423,9 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
         std::bitset<5> N_S = ns;
         std::bitset<5> N_P = np;
 
+	for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
         for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
-        for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
-        m_raw_data->push_back(0);
+	m_raw_data->push_back(0);
 
         for (int j=0;j<ns;++j)
         {
@@ -1537,7 +1537,7 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
                 {
                     if (start_r==-1) // new clus
                     {
-                        start_r=i;
+                        start_r=i+1;
                         compt=0;
                     }
                     else
@@ -1669,7 +1669,7 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
               {
                   if (start_r==-1) // new clus
                   {
-                      start_r=i;
+                      start_r=i+1;
                       compt=0;
                   }
                   else

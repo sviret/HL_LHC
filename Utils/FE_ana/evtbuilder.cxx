@@ -108,8 +108,8 @@ void evtbuilder::get_stores(int nevts, bool conc)
   cout << "--> Entering loop 1, producing the big data stores for " 
        << store_size << " events..." << endl;
 
-  //for (int j=0;j<10;++j)
-  for (int j=0;j<store_size;++j)
+  for (int j=0;j<100;++j)
+    //for (int j=0;j<store_size;++j)
   {    
     if (j%20==0)
       cout << "Processing event " <<  j << "/" << store_size << endl;
@@ -167,7 +167,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
       {
 	isPS  = false;
 	layer = m_pix_layer[i]; 
-	
+	if (layer<5) continue;
 	if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
 	ladder= m_pix_ladder[i]-1;
@@ -197,8 +197,13 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	
 	if (m_iter == m_chip_raw.end()) // Unknown chip, this can happen because csv file is only considering chips involved in TRG
 	{
-	  continue; // We don't consider them for the moment...
+	  //	  continue; // We don't consider them for the moment...
 	  m_digi_list.clear();
+
+	  (conc) 
+	    ? m_concs.push_back(B_id)
+	    : m_chips.push_back(B_id);
+
 	  m_digi_list.push_back(-1);
 	  m_chip_raw.insert(std::make_pair(B_id,m_digi_list));
 	  m_chip_trig.insert(std::make_pair(B_id,m_digi_list));
@@ -1200,8 +1205,8 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
     int row,col;
 
     // The sparsification is done at the MPA level
-    // Strips 0 to 127 belong to the pixel layer 
-    // 128 to 253 belong to the strip layer
+    // Strips 0 to 120 belong to the pixel layer 
+    // 121 to 239 belong to the strip layer
 
     for (int j=0;j<128;++j)
     {
@@ -1213,9 +1218,9 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
       row = digis.at(3*j+2);
       col = digis.at(3*j+3);
     
-      (row<128)
+      (row<120)
 	? data_MPA[row][col]    = 1
-	: data_MPA[row%128][16] = 1;
+	: data_MPA[row%120][16] = 1;
     }
 
     int np = 0;
@@ -1244,7 +1249,7 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
 	{
 	  if (start_r==-1) // new clus
 	  {
-	    start_r=i;
+	    start_r=i+1; // 0000000 forbiden
 	    compt=0;
 	  }
 	  else 
@@ -1322,8 +1327,8 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
     std::bitset<5> N_S = ns;
     std::bitset<5> N_P = np;
 
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
     for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
+    for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
     m_raw_data->push_back(0);
 
     for (int j=0;j<ns;++j)
@@ -1443,7 +1448,7 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
 	{
 	  if (start_r==-1) // new clus
 	  {
-	    start_r=i;
+	    start_r=i+1;
 	    compt=0;
 	  }
 	  else 
@@ -1511,8 +1516,8 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     int row,col,chip;
 
     // The sparsification is done at the MPA level
-    // Strips 0 to 127 belong to the pixel layer 
-    // 128 to 253 belong to the strip layer
+    // Strips 0 to 120 belong to the pixel layer 
+    // 120 to 239 belong to the strip layer
  
     for (int k=0;k<8;++k)
     {
@@ -1530,9 +1535,9 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
      
       //      std::cout << chip << "," << row << "," << col << " / "; 
  
-      (row<128)
+      (row<120)
 	? data_MPA[chip][row][col]    = 1
-	: data_MPA[chip][row%128][16] = 1;
+	: data_MPA[chip][row%120][16] = 1;
     }
     //    if (ndata!=0) std::cout << std::endl;
 
@@ -1564,7 +1569,7 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
 	  {
 	    if (start_r==-1) // new clus
 	    {
-	      start_r=i;
+	      start_r=i+1;
 	      compt=0;
 	    }
 	    else 
@@ -1643,16 +1648,16 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     ns = clus_s.size()/3; 
     m_raw_np        = np;
     m_raw_ns        = ns;
-    np = std::min(31,np);
-    ns = std::min(31,ns);
+    np = std::min(63,np);
+    ns = std::min(63,ns);
 
-    std::bitset<5> N_S = ns;
-    std::bitset<5> N_P = np;
+    std::bitset<6> N_S = ns;
+    std::bitset<6> N_P = np;
 
     //    std::cout << "This MPA chip contains
 
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
+    for (int j=0;j<6;++j) m_raw_data->push_back(N_S[5-j]);
+    for (int j=0;j<6;++j) m_raw_data->push_back(N_P[5-j]);
 
     for (int j=0;j<ns;++j)
     {
@@ -1696,7 +1701,7 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
   }
 
   m_raw_mbits = max_bits;
-
+  
   if (m_raw_mbits>17)
   {
     std::cout << "This chip contains " << np << " pixels clusters and " 
