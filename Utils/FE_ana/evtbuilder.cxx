@@ -108,8 +108,8 @@ void evtbuilder::get_stores(int nevts, bool conc)
   cout << "--> Entering loop 1, producing the big data stores for " 
        << store_size << " events..." << endl;
 
-  for (int j=0;j<100;++j)
-    //for (int j=0;j<store_size;++j)
+  //for (int j=0;j<100;++j)
+  for (int j=0;j<store_size;++j)
   {    
     if (j%20==0)
       cout << "Processing event " <<  j << "/" << store_size << endl;
