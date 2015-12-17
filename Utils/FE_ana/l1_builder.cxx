@@ -1434,6 +1434,14 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
             for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
             for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
+
+	    //////////////
+	    // SV 17/12/2015
+	    // Adding the MIP flag (for the moment at 0 by default)
+	    // Neew to update this when the new digitizer will be in CMSSW
+	    m_raw_data->push_back(0);
+	    //
+	    //////////////
         }
 
         for (int j=0;j<np;++j)
@@ -1583,18 +1591,18 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
         ns = clus_s.size()/3;
         m_raw_ns        = ns;
 
-        if (ns>31)
+        if (ns>127)
         {
             cout << "OVERFLOW ERROR IN CIC 2S" << endl;
             m_raw_data->at(24) = 1;
         }
         
-        ns = std::min(31,ns);
+        ns = std::min(127,ns);
 
         
-        std::bitset<5> N_S = ns;
+        std::bitset<7> N_S = ns;
 
-        for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
+        for (int j=0;j<7;++j) m_raw_data->push_back(N_S[6-j]);
 
         for (int j=0;j<ns;++j)
         {
@@ -1747,7 +1755,7 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     np = clus_p.size()/4 ;
     ns = clus_s.size()/3;
         
-    if (np>31 || ns>31)
+    if (np>127 || ns>127)
     {
         cout << "OVERFLOW ERROR IN CIC/PS" << endl;
         m_raw_data->at(24) = 1;
@@ -1755,16 +1763,16 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
         
     m_raw_np        = np;
     m_raw_ns        = ns;
-    np = std::min(31,np);
-    ns = std::min(31,ns);
+    np = std::min(127,np);
+    ns = std::min(127,ns);
 
-    std::bitset<5> N_S = ns;
-    std::bitset<5> N_P = np;
+    std::bitset<7> N_S = ns;
+    std::bitset<7> N_P = np;
 
     //    std::cout << "This MPA chip contains
 
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
+    for (int j=0;j<7;++j) m_raw_data->push_back(N_S[6-j]);
+    for (int j=0;j<7;++j) m_raw_data->push_back(N_P[6-j]);
 
     for (int j=0;j<ns;++j)
     {
@@ -1775,6 +1783,14 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
       for (int k=0;k<3;++k) m_raw_data->push_back(chp[2-k]);
       for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
       for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
+
+      //////////////
+      // SV 17/12/2015
+      // Adding the MIP flag (for the moment at 0 by default)
+      // Neew to update this when the new digitizer will be in CMSSW
+      m_raw_data->push_back(0);
+      //
+      //////////////
     }
 
     for (int j=0;j<np;++j)
