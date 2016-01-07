@@ -626,8 +626,8 @@ void l1_builder::get_stores(int nevts)
                     m_raw_FIFO_SIZE = i+delay;
                     last_BX         = i+delay+m_raw_size/(extracted_bit_per_BX)+1;
                     
-                    m_iter2 = m_words.find(m_raw_chip);
-                    word    = m_iter2->second;
+                    m_iter3 = m_words.find(m_raw_chip);
+                    word    = m_iter3->second;
                     
                     for (int k=extracted_bit_per_BX*(i+delay);k<extracted_bit_per_BX*(i+delay)+m_raw_size;++k)
                     {
@@ -635,7 +635,7 @@ void l1_builder::get_stores(int nevts)
                         word.at(k) = m_raw_data->at(k-extracted_bit_per_BX*(i+delay));
                     }
                     
-                    m_words.erase(m_iter2->first);
+                    m_words.erase(m_iter3->first);
                     m_words.insert(std::make_pair(m_raw_chip,word));
                         
                 }
@@ -673,8 +673,8 @@ void l1_builder::get_stores(int nevts)
                     m_raw_FIFO_SIZE = last_BX;
                     m_raw_FIFO_FULL = (FIFO_new.size()-1)/3;
 
-                    m_iter2 = m_words.find(m_raw_chip);
-                    word=m_iter2->second;
+                    m_iter3 = m_words.find(m_raw_chip);
+                    word=m_iter3->second;
                     
                    // cout << last_BX << endl;
                     
@@ -684,7 +684,7 @@ void l1_builder::get_stores(int nevts)
                         word.at(k) = m_raw_data->at(k-extracted_bit_per_BX*last_BX);
                     }
                     
-                    m_words.erase(m_iter2->first);
+                    m_words.erase(m_iter3->first);
                     m_words.insert(std::make_pair(m_raw_chip,word));
                     
                     last_BX=last_BX+m_raw_size/(extracted_bit_per_BX)+1;
@@ -795,8 +795,8 @@ void l1_builder::get_stores(int nevts)
                     m_raw_FIFO_SIZE=bx_in;
                     last_BX=bx_in+m_raw_size/(extracted_bit_per_BX)+1;
                     
-                    m_iter2 = m_c_words.find(m_raw_chip);
-                    word=m_iter2->second;
+                    m_iter3 = m_c_words.find(m_raw_chip);
+                    word=m_iter3->second;
                     
                     for (int k=m_npblock*bx_in;k<m_npblock*bx_in+m_raw_size;++k)
                     {
@@ -804,7 +804,7 @@ void l1_builder::get_stores(int nevts)
                         word.at(k) = m_raw_data->at(k-m_npblock*bx_in);
                     }
                     
-                    m_c_words.erase(m_iter2->first);
+                    m_c_words.erase(m_iter3->first);
                     m_c_words.insert(std::make_pair(m_raw_chip,word));
                     
                 }
@@ -835,8 +835,8 @@ void l1_builder::get_stores(int nevts)
                     m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;
                 
                     
-                    m_iter2 = m_c_words.find(m_raw_chip);
-                    word=m_iter2->second;
+                    m_iter3 = m_c_words.find(m_raw_chip);
+                    word=m_iter3->second;
                     
                     for (int k=m_npblock*last_BX;k<m_npblock*last_BX+m_raw_size;++k)
                     {
@@ -844,7 +844,7 @@ void l1_builder::get_stores(int nevts)
                         word.at(k) = m_raw_data->at(k-m_npblock*last_BX);
                     }
                     
-                    m_c_words.erase(m_iter2->first);
+                    m_c_words.erase(m_iter3->first);
                     m_c_words.insert(std::make_pair(m_raw_chip,word));
 
                     
