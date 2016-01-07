@@ -111,6 +111,7 @@ class l1_builder
     std::multimap< int, std::vector<int> > m_chip_raw;  //
     std::multimap< int, std::vector<int> >::const_iterator m_iter;
     std::multimap< int, std::vector<int> >::const_iterator m_iter2;
+    std::multimap< int, std::vector<int> >::const_iterator m_iter3;
 
     std::vector<std::multimap< int, std::vector<int> > > m_data_raw;
 
