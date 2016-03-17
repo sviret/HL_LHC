@@ -35,9 +35,12 @@ void efficiencies::get_efficiencies()
   int stub_i;
   
   int i_lay;
+  int i_lad;
   int i_mod;
   int i_seg;
   float i_eta;
+
+  int ladval,layval;
 
   int evtID;
   std::vector<int> stID;
@@ -45,9 +48,9 @@ void efficiencies::get_efficiencies()
   std::vector<int> pix_evtID;
   std::vector<int> pix_stID;
 
-  int hit_on_lay[20];
-  int stub_on_lay_pri[20];
-  int stub_on_lay_off[20];
+  int hit_on_lay[11][15];
+  int stub_on_lay_pri[11][15];
+  int stub_on_lay_off[11][15];
 
   int n_entries = L1TT_P->GetEntries();
   bool inTP;
@@ -57,7 +60,7 @@ void efficiencies::get_efficiencies()
   bool m_dbg =false;
 
   for (int j=0;j<n_entries;++j)
-    //for (int j=0;j<10;++j)
+    //for (int j=0;j<50000;++j)
   {
     efficiencies::reset();
 
@@ -90,6 +93,17 @@ void efficiencies::get_efficiencies()
 
     for (int k=0;k<m_part_n;++k) // Loop over TPs
     {
+
+      for (int i=0;i<11;++i)
+      {
+	for (int kk=0;kk<15;++kk)
+	{
+	  hit_on_lay[i][kk]=0;
+	  stub_on_lay_off[i][kk]=0;
+	  stub_on_lay_pri[i][kk]=0;
+	}
+      }
+
       if (abs(m_part_pdg->at(k)) != m_type) continue;
 
       // Thie TP corresponds to what we are looking for
@@ -102,16 +116,11 @@ void efficiencies::get_efficiencies()
       PTGEN = sqrt(m_part_px->at(k)*m_part_px->at(k)+m_part_py->at(k)*m_part_py->at(k));
       if (PTGEN < 0.5) continue; // Not an interesting
 
+      stID.clear();
 
       evtID = m_part_evtId->at(k);
       stID  = m_part_stId->at(k);
 
-      for (int i=0;i<20;++i)
-      {
-	hit_on_lay[i]=0;
-	stub_on_lay_off[i]=0;
-	stub_on_lay_pri[i]=0;
-      }
 
       if (m_dbg)
       {
@@ -129,9 +138,14 @@ void efficiencies::get_efficiencies()
       {	
 	if (m_pixclus_layer->at(l)<5) continue; // Don't care about pixel hits
 
+	pix_evtID.clear();
+	pix_stID.clear();
+
 	pix_evtID = m_pixclus_evtID->at(l);
 
+
 	inTP=false;
+	m_dbg =false;
 
 	for (unsigned int ll=0;ll<pix_evtID.size();++ll) 
 	{
@@ -148,11 +162,12 @@ void efficiencies::get_efficiencies()
 	if (m_dbg) cout << "In the same evt ID" << endl;
 	
 	inTP=false;
-	pix_stID = m_pixclus_simhitID->at(l);
 
-	//	cout << pix_stID.size() << "/" << stID.size() << endl;
+	//	pix_stID = m_pixclus_simhitID->at(l);
+	//cout <<  pix_stID.size() << "/" << stID.size() << endl;
 
-	for (unsigned int ll=0;ll<pix_stID.size();++ll) 
+
+	for (unsigned int ll=0;ll<m_pixclus_simhitID->at(l).size();++ll) 
 	{
 	  if (inTP) break;
 
@@ -160,30 +175,48 @@ void efficiencies::get_efficiencies()
 	  {
 	    //	    cout << pix_stID.at(ll) << "/" << stID.at(lll) << endl; 
 
-	    if (pix_stID.at(ll) == stID.at(lll)) inTP=true;
+	    if (m_pixclus_simhitID->at(l).at(ll) == stID.at(lll)) inTP=true;
 	  }
 	}
+
+
 
 	if (!inTP) continue;
 
 	// This pixel digi comes from the TP 
 	
-	i_lay = m_pixclus_layer->at(l);
-	i_mod = m_pixclus_module->at(l)-1;
+	(m_pixclus_layer->at(l)<=15) 
+	  ? layval = m_pixclus_layer->at(l)-5
+	  : layval = m_pixclus_layer->at(l)-12;
 
-	++hit_on_lay[i_lay-5];
+	i_mod = m_pixclus_module->at(l)-1;
+	i_lad = m_pixclus_ladder->at(l);
+	i_lay = m_pixclus_layer->at(l);
+
+	(layval<=5) 
+	  ? ladval = 0
+	  : ladval = i_lad-1;
+	
+
+
+
+	//	if (layval==6 && ladval==0) m_dbg=true;
+	++hit_on_lay[layval][ladval];
+
 
 	if (m_dbg)
 	{
 	  cout << endl;	
 	  cout << "   DIGI    " << endl;	
 	  cout << "   Coords " << i_lay 
-	       << " / " << m_pixclus_ladder->at(l) 
+	       << " / " << i_lad 
 	       << " / " << i_mod+1 << endl;
 	}
 
-	if (PTGEN<20) entries_pt[i_lay-5][static_cast<int>(5*PTGEN)]+=1;   
-	if (fabs(i_eta)<2.5 && PTGEN>10) entries_eta[i_lay-5][static_cast<int>(25+10*i_eta)]+=1;   
+	if (PTGEN<20) entries_pt[layval][ladval][static_cast<int>(5*PTGEN)]+=1;   
+	if (fabs(i_eta)<2.5 && PTGEN>10) entries_eta[layval][ladval][static_cast<int>(25+10*i_eta)]+=1;   
+
+
 
 	pix_i  = l; // The index of the induced DIGI
 	clus_i = -1; // The index of the induced CLUSTER
@@ -191,9 +224,10 @@ void efficiencies::get_efficiencies()
 
 	i_seg = m_pixclus_column->at(pix_i);
 
-	if (PTGEN<20) digi_pt[i_lay-5][static_cast<int>(5*PTGEN)]+=1;   
-	if (fabs(i_eta)<2.5 && PTGEN>10) digi_eta[i_lay-5][static_cast<int>(25+10*i_eta)]+=1;   
-	
+	if (PTGEN<20) digi_pt[layval][ladval][static_cast<int>(5*PTGEN)]+=1;   
+	if (fabs(i_eta)<2.5 && PTGEN>10) digi_eta[layval][ladval][static_cast<int>(25+10*i_eta)]+=1;   
+
+
 	// We have the digis, now look at the clusters
 
 	// Private tool first
@@ -204,7 +238,7 @@ void efficiencies::get_efficiencies()
 	  if (m_clus_layer->at(i)!=i_lay) continue;
 	  if (m_clus_module->at(i)!=i_mod+1) continue;	
 	  if (m_clus_seg->at(i)!=i_seg) continue;
-	  if (m_clus_ladder->at(i)!=m_pixclus_ladder->at(l)) continue;
+	  if (m_clus_ladder->at(i)!= i_lad) continue;
 	  if (fabs(m_clus_strip->at(i)-m_pixclus_row->at(pix_i))>m_clus_nstrips->at(i)) continue;
 
 	  if (m_dbg)
@@ -214,6 +248,7 @@ void efficiencies::get_efficiencies()
 
 	  clus_i = i;
 	}
+      
 
 	if (clus_i!=-1) 
 	{
@@ -222,8 +257,8 @@ void efficiencies::get_efficiencies()
 	    cout << "   Matched with CLUS " << clus_i << endl;	
 	  }
 
-	  if (PTGEN<20) clus_pri_pt[i_lay-5][static_cast<int>(5*PTGEN)]+=1;   
-	  if (fabs(i_eta)<2.5 && PTGEN>10) clus_pri_eta[i_lay-5][static_cast<int>(25+10*i_eta)]+=1;  
+	  if (PTGEN<20) clus_pri_pt[layval][ladval][static_cast<int>(5*PTGEN)]+=1;   
+	  if (fabs(i_eta)<2.5 && PTGEN>10) clus_pri_eta[layval][ladval][static_cast<int>(25+10*i_eta)]+=1;  
 	  
 	  // We have the clusters, now look at the stubs
 	  for (int i=0;i<m_stub;++i)
@@ -237,7 +272,7 @@ void efficiencies::get_efficiencies()
 	  
 	  if (stub_i!=-1) 
 	  {
-	    ++stub_on_lay_pri[i_lay-5];
+	    ++stub_on_lay_pri[layval][ladval];
 	    if (m_dbg)
 	    {
 	      cout << "   Matched with STUB " << stub_i << " / "	
@@ -245,8 +280,8 @@ void efficiencies::get_efficiencies()
 		   << k  << endl;	
 	    }
 
-	    if (PTGEN<20) stub_pri_pt[i_lay-5][static_cast<int>(5*PTGEN)]+=1;   
-	    if (fabs(i_eta)<2.5 && PTGEN>10) stub_pri_eta[i_lay-5][static_cast<int>(25+10*i_eta)]+=1;  
+	    if (PTGEN<20) stub_pri_pt[layval][ladval][static_cast<int>(5*PTGEN)]+=1;   
+	    if (fabs(i_eta)<2.5 && PTGEN>10) stub_pri_eta[layval][ladval][static_cast<int>(25+10*i_eta)]+=1;  
 	  }	  
 	}
       
@@ -261,15 +296,17 @@ void efficiencies::get_efficiencies()
 	  if (m_tkclus_layer->at(i)!=i_lay) continue;
 	  if (m_tkclus_module->at(i)!=i_mod+1) continue;	
 	  if (m_tkclus_seg->at(i)!=i_seg) continue;
-	  if (m_tkclus_ladder->at(i)!=m_pixclus_ladder->at(l)) continue;
+	  if (m_tkclus_ladder->at(i)!=i_lad) continue;
 	  if (fabs(m_tkclus_strip->at(i)-m_pixclus_row->at(pix_i))>m_tkclus_nstrips->at(i)) continue;
 	  clus_i = i;
 	}
 
+
+
 	if (clus_i!=-1) 
 	{
-	  if (PTGEN<20) clus_off_pt[i_lay-5][static_cast<int>(5*PTGEN)]+=1;   
-	  if (fabs(i_eta)<2.5 && PTGEN>10) clus_off_eta[i_lay-5][static_cast<int>(25+10*i_eta)]+=1;  
+	  if (PTGEN<20) clus_off_pt[layval][ladval][static_cast<int>(5*PTGEN)]+=1;   
+	  if (fabs(i_eta)<2.5 && PTGEN>10) clus_off_eta[layval][ladval][static_cast<int>(25+10*i_eta)]+=1;  
 
 	  // We have the clusters, now look at the stubs
 	  for (int i=0;i<m_tkstub;++i)
@@ -281,35 +318,44 @@ void efficiencies::get_efficiencies()
 	    if (m_tkstub_clust2->at(i)==clus_i) stub_i = i;
 	  }
 
+
+
 	  if (stub_i!=-1) 
 	  {
-	    ++stub_on_lay_off[i_lay-5];
+	    // cout << layval << " / " << ladval << " / " << stub_on_lay_off[layval][ladval] << endl;
+	    ++stub_on_lay_off[layval][ladval];
 
-	    if (PTGEN<20) stub_off_pt[i_lay-5][static_cast<int>(5*PTGEN)]+=1;   
-	    if (fabs(i_eta)<2.5 && PTGEN>10) stub_off_eta[i_lay-5][static_cast<int>(25+10*i_eta)]+=1;  
+	    //	    continue;
+
+	    if (PTGEN<20) stub_off_pt[layval][ladval][static_cast<int>(5*PTGEN)]+=1;   
+	    if (fabs(i_eta)<2.5 && PTGEN>10) stub_off_eta[layval][ladval][static_cast<int>(25+10*i_eta)]+=1;  
 	  }
 	}
        
       } // End of loop over SimHits
 
-      for (int i=0;i<20;++i)
+
+      for (int i=0;i<11;++i)
       {
-	if (hit_on_lay[i]!=0)
+	for (int j=0;j<15;++j)
 	{
-	  if (PTGEN<20) entries_pt_lay[i][static_cast<int>(5*PTGEN)]+=1;   
-	  if (fabs(i_eta)<2.5 && PTGEN>10) entries_eta_lay[i][static_cast<int>(25+10*i_eta)]+=1;   
-	}
+	  if (hit_on_lay[i][j]!=0)
+	  {
+	    if (PTGEN<20) entries_pt_lay[i][j][static_cast<int>(5*PTGEN)]+=1;   
+	    if (fabs(i_eta)<2.5 && PTGEN>10) entries_eta_lay[i][j][static_cast<int>(25+10*i_eta)]+=1;   
+	  }
 
-	if (stub_on_lay_pri[i]!=0)
-	{
-	  if (PTGEN<20) stub_pri_pt_lay[i][static_cast<int>(5*PTGEN)]+=1;   
-	  if (fabs(i_eta)<2.5 && PTGEN>10) stub_pri_eta_lay[i][static_cast<int>(25+10*i_eta)]+=1; 
-	}
+	  if (stub_on_lay_pri[i][j]!=0)
+	  {
+	    if (PTGEN<20) stub_pri_pt_lay[i][j][static_cast<int>(5*PTGEN)]+=1;   
+	    if (fabs(i_eta)<2.5 && PTGEN>10) stub_pri_eta_lay[i][j][static_cast<int>(25+10*i_eta)]+=1; 
+	  }
 
-	if (stub_on_lay_off[i]!=0)
-	{
-	  if (PTGEN<20) stub_off_pt_lay[i][static_cast<int>(5*PTGEN)]+=1;   
-	  if (fabs(i_eta)<2.5 && PTGEN>10) stub_off_eta_lay[i][static_cast<int>(25+10*i_eta)]+=1; 
+	  if (stub_on_lay_off[i][j]!=0)
+	  {
+	    if (PTGEN<20) stub_off_pt_lay[i][j][static_cast<int>(5*PTGEN)]+=1;   
+	    if (fabs(i_eta)<2.5 && PTGEN>10) stub_off_eta_lay[i][j][static_cast<int>(25+10*i_eta)]+=1; 
+	  }
 	}
       }
     } // End of loop over TPs
@@ -320,42 +366,45 @@ void efficiencies::get_efficiencies()
 
   // Finally get the efficiencies
 
-  for (int i=0;i<20;++i) 
+  for (int i=0;i<11;++i) 
   {
-    for (int j=0;j<100;++j) 
+    for (int j=0;j<15;++j) 
     {
-      if (entries_pt[i][j]!=0.)
+      for (int k=0;k<100;++k) 
       {
-	digi_pt[i][j]     = digi_pt[i][j]/entries_pt[i][j]; 
-	clus_off_pt[i][j] = clus_off_pt[i][j]/entries_pt[i][j];
-	stub_off_pt[i][j] = stub_off_pt[i][j]/entries_pt[i][j];
-	clus_pri_pt[i][j] = clus_pri_pt[i][j]/entries_pt[i][j];
-	stub_pri_pt[i][j] = stub_pri_pt[i][j]/entries_pt[i][j];
-      }  
+	if (entries_pt[i][j][k]!=0.)
+	{
+	  digi_pt[i][j][k]     = digi_pt[i][j][k]/entries_pt[i][j][k]; 
+	  clus_off_pt[i][j][k] = clus_off_pt[i][j][k]/entries_pt[i][j][k];
+	  stub_off_pt[i][j][k] = stub_off_pt[i][j][k]/entries_pt[i][j][k];
+	  clus_pri_pt[i][j][k] = clus_pri_pt[i][j][k]/entries_pt[i][j][k];
+	  stub_pri_pt[i][j][k] = stub_pri_pt[i][j][k]/entries_pt[i][j][k];
+	}  
 
-      if (entries_pt_lay[i][j]!=0.)
-      {
-   	stub_pri_pt_lay[i][j] = stub_pri_pt_lay[i][j]/entries_pt_lay[i][j];
-   	stub_off_pt_lay[i][j] = stub_off_pt_lay[i][j]/entries_pt_lay[i][j];
+	if (entries_pt_lay[i][j][k]!=0.)
+	{
+	  stub_pri_pt_lay[i][j][k] = stub_pri_pt_lay[i][j][k]/entries_pt_lay[i][j][k];
+	  stub_off_pt_lay[i][j][k] = stub_off_pt_lay[i][j][k]/entries_pt_lay[i][j][k];
+	}
       }
-    }
 
-    for (int j=0;j<50;++j) 
-    {
-      if (entries_eta[i][j]!=0.)
+      for (int k=0;k<50;++k) 
       {
-	digi_eta[i][j]     = digi_eta[i][j]/entries_eta[i][j]; 
-	clus_off_eta[i][j] = clus_off_eta[i][j]/entries_eta[i][j];
-	stub_off_eta[i][j] = stub_off_eta[i][j]/entries_eta[i][j];
-	clus_pri_eta[i][j] = clus_pri_eta[i][j]/entries_eta[i][j];
-	stub_pri_eta[i][j] = stub_pri_eta[i][j]/entries_eta[i][j];
-      } 
+	if (entries_eta[i][j][k]!=0.)
+	{
+	  digi_eta[i][j][k]     = digi_eta[i][j][k]/entries_eta[i][j][k]; 
+	  clus_off_eta[i][j][k] = clus_off_eta[i][j][k]/entries_eta[i][j][k];
+	  stub_off_eta[i][j][k] = stub_off_eta[i][j][k]/entries_eta[i][j][k];
+	  clus_pri_eta[i][j][k] = clus_pri_eta[i][j][k]/entries_eta[i][j][k];
+	  stub_pri_eta[i][j][k] = stub_pri_eta[i][j][k]/entries_eta[i][j][k];
+	} 
 
-      if (entries_eta_lay[i][j]!=0.)
-      {
-   	stub_pri_eta_lay[i][j] = stub_pri_eta_lay[i][j]/entries_eta_lay[i][j];
-   	stub_off_eta_lay[i][j] = stub_off_eta_lay[i][j]/entries_eta_lay[i][j];
-      }    
+	if (entries_eta_lay[i][j][k]!=0.)
+	{
+	  stub_pri_eta_lay[i][j][k] = stub_pri_eta_lay[i][j][k]/entries_eta_lay[i][j][k];
+	  stub_off_eta_lay[i][j][k] = stub_off_eta_lay[i][j][k]/entries_eta_lay[i][j][k];
+	}    
+      }
     }
   }
 
@@ -373,39 +422,41 @@ void efficiencies::initVars()
   for (int j=0;j<100;++j) pt_val[j]=0.2*j;
   for (int j=0;j<50;++j)  eta_val[j]=-2.5+0.1*j;
 
-  for (int i=0;i<20;++i) 
+  for (int i=0;i<11;++i) 
   {
-    for (int j=0;j<100;++j) 
+    for (int j=0;j<15;++j) 
     {
-      digi_pt[i][j]=0.;
-      entries_pt[i][j]=0.;     
-      entries_pt_lay[i][j]=0.;     
+      for (int k=0;k<100;++k) 
+      {
+	digi_pt[i][j][k]=0.;
+	entries_pt[i][j][k]=0.;     
+	entries_pt_lay[i][j][k]=0.;     
+	
+	clus_off_pt[i][j][k]=0.;
+	clus_pri_pt[i][j][k]=0.;
+	
+	stub_off_pt[i][j][k]=0.;
+	stub_pri_pt[i][j][k]=0.;
+	stub_off_pt_lay[i][j][k]=0.;
+	stub_pri_pt_lay[i][j][k]=0.;
+      }
 
-      clus_off_pt[i][j]=0.;
-      clus_pri_pt[i][j]=0.;
-
-      stub_off_pt[i][j]=0.;
-      stub_pri_pt[i][j]=0.;
-      stub_off_pt_lay[i][j]=0.;
-      stub_pri_pt_lay[i][j]=0.;
-    }
-
-    for (int j=0;j<50;++j) 
-    {
-      digi_eta[i][j]=0.;
-      entries_eta[i][j]=0.;     
-      entries_eta_lay[i][j]=0.;     
-
-      clus_off_eta[i][j]=0.;
-      clus_pri_eta[i][j]=0.;
-
-      stub_off_eta[i][j]=0.;
-      stub_pri_eta[i][j]=0.;
-      stub_off_eta_lay[i][j]=0.;
-      stub_pri_eta_lay[i][j]=0.;
+      for (int k=0;k<50;++k) 
+      {
+	digi_eta[i][j][k]=0.;
+	entries_eta[i][j][k]=0.;     
+	entries_eta_lay[i][j][k]=0.;     
+	
+	clus_off_eta[i][j][k]=0.;
+	clus_pri_eta[i][j][k]=0.;
+	
+	stub_off_eta[i][j][k]=0.;
+	stub_pri_eta[i][j][k]=0.;
+	stub_off_eta_lay[i][j][k]=0.;
+	stub_pri_eta_lay[i][j][k]=0.;
+      }
     }
   }
-
 }
 
 void efficiencies::reset()
@@ -631,20 +682,20 @@ void efficiencies::initTuple(std::string in,std::string out)
   m_tree->Branch("pt_val",&pt_val,"pt_val[100]");
   m_tree->Branch("eta_val",&eta_val,"eta_val[50]");
 
-  m_tree->Branch("digi_pt",&digi_pt,"digi_pt[20][100]");
-  m_tree->Branch("digi_eta",&digi_eta,"digi_eta[20][50]");
-  m_tree->Branch("clus_off_pt",&clus_off_pt,"clus_off_pt[20][100]");
-  m_tree->Branch("clus_off_eta",&clus_off_eta,"clus_off_eta[20][50]");
-  m_tree->Branch("clus_pri_pt",&clus_pri_pt,"clus_pri_pt[20][100]");
-  m_tree->Branch("clus_pri_eta",&clus_pri_eta,"clus_pri_eta[20][50]");
+  m_tree->Branch("digi_pt",&digi_pt,"digi_pt[11][15][100]");
+  m_tree->Branch("digi_eta",&digi_eta,"digi_eta[11][15][50]");
+  m_tree->Branch("clus_off_pt",&clus_off_pt,"clus_off_pt[11][15][100]");
+  m_tree->Branch("clus_off_eta",&clus_off_eta,"clus_off_eta[11][15][50]");
+  m_tree->Branch("clus_pri_pt",&clus_pri_pt,"clus_pri_pt[11][15][100]");
+  m_tree->Branch("clus_pri_eta",&clus_pri_eta,"clus_pri_eta[11][15][50]");
 
-  m_tree->Branch("stub_off_pt",&stub_off_pt,"stub_off_pt[20][100]");
-  m_tree->Branch("stub_off_eta",&stub_off_eta,"stub_off_eta[20][50]");
-  m_tree->Branch("stub_pri_pt",&stub_pri_pt,"stub_pri_pt[20][100]");
-  m_tree->Branch("stub_pri_eta",&stub_pri_eta,"stub_pri_eta[20][50]");
+  m_tree->Branch("stub_off_pt",&stub_off_pt,"stub_off_pt[11][15][100]");
+  m_tree->Branch("stub_off_eta",&stub_off_eta,"stub_off_eta[11][15][50]");
+  m_tree->Branch("stub_pri_pt",&stub_pri_pt,"stub_pri_pt[11][15][100]");
+  m_tree->Branch("stub_pri_eta",&stub_pri_eta,"stub_pri_eta[11][15][50]");
 
-  m_tree->Branch("stub_off_pt_lay",&stub_off_pt_lay,"stub_off_pt_lay[20][100]");
-  m_tree->Branch("stub_off_eta_lay",&stub_off_eta_lay,"stub_off_eta_lay[20][50]");
-  m_tree->Branch("stub_pri_pt_lay",&stub_pri_pt_lay,"stub_pri_pt_lay[20][100]");
-  m_tree->Branch("stub_pri_eta_lay",&stub_pri_eta_lay,"stub_pri_eta_lay[20][50]");
+  m_tree->Branch("stub_off_pt_lay",&stub_off_pt_lay,"stub_off_pt_lay[11][15][100]");
+  m_tree->Branch("stub_off_eta_lay",&stub_off_eta_lay,"stub_off_eta_lay[11][15][50]");
+  m_tree->Branch("stub_pri_pt_lay",&stub_pri_pt_lay,"stub_pri_pt_lay[11][15][100]");
+  m_tree->Branch("stub_pri_eta_lay",&stub_pri_eta_lay,"stub_pri_eta_lay[11][15][50]");
 }

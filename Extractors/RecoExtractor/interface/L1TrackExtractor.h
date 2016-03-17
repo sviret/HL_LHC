@@ -70,7 +70,7 @@ class L1TrackExtractor
 
  public:
 
-  L1TrackExtractor(edm::InputTag  STUB_tag, edm::InputTag  PATT_tag, edm::InputTag  TRCK_tag, bool doTree);
+  L1TrackExtractor(edm::InputTag  STUB_tag, edm::InputTag  PATT_tag, edm::InputTag  TC_tag, edm::InputTag  TRCK_tag, bool doTree);
   L1TrackExtractor(TFile *a_file);
   ~L1TrackExtractor();
 
@@ -94,6 +94,7 @@ class L1TrackExtractor
 
   edm::InputTag m_STUB_tag;
   edm::InputTag m_PATT_tag;
+  edm::InputTag m_TC_tag;
   edm::InputTag m_TRCK_tag;
 
   TTree* m_tree;
@@ -116,6 +117,19 @@ class L1TrackExtractor
   std::vector< std::vector<int> > *m_patt_links; // Links to the stubs making the patterns in L1TkStubs tree
   std::vector<int>                *m_patt_secid; // Sector number
   std::vector<int>                *m_patt_miss;  // Number of missed SStrips
+
+
+  // Size of the following vectors is m_tc
+
+  int m_tc;  // Number of L1TCs in the event
+  
+  std::vector<float>               *m_tc_pt;    // pt calculated for track i (in GeV/c) 
+  std::vector<float>               *m_tc_eta;   // eta calculated for track i 
+  std::vector<float>               *m_tc_phi;   // phi calculated for track i (in rad)
+  std::vector<float>               *m_tc_z;     // z0 calculated for track i (in mm)
+  std::vector< std::vector<int> >  *m_tc_links; // Links to the stubs making the tracks in L1TkStubs tree
+  std::vector<int>                 *m_tc_secid; // Sector number
+
 
   // Size of the following vectors is m_trk
 

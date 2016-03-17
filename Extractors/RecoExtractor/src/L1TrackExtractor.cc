@@ -1,13 +1,14 @@
 #include "../interface/L1TrackExtractor.h"
 
 
-L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_tag, edm::InputTag TRCK_tag, bool doTree)
+L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_tag, edm::InputTag TC_tag, edm::InputTag TRCK_tag, bool doTree)
 {
   m_OK = false;
   n_tot_evt=0;
 
   m_STUB_tag   = STUB_tag;
   m_PATT_tag   = PATT_tag;
+  m_TC_tag     = TC_tag;
   m_TRCK_tag   = TRCK_tag;
 
   // Tree definition
@@ -15,6 +16,13 @@ L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_ta
   m_patt_links   = new  std::vector< std::vector<int> >;
   m_patt_secid   = new  std::vector<int>;
   m_patt_miss    = new  std::vector<int>;
+
+  m_tc_pt        = new  std::vector<float>;
+  m_tc_eta       = new  std::vector<float>;
+  m_tc_phi       = new  std::vector<float>;
+  m_tc_z         = new  std::vector<float>;
+  m_tc_links     = new  std::vector< std::vector<int> >;
+  m_tc_secid     = new  std::vector<int>;
 
   m_trk_pt       = new  std::vector<float>;
   m_trk_eta      = new  std::vector<float>;
@@ -40,6 +48,14 @@ L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_ta
     m_tree->Branch("L1PATT_secid",       &m_patt_secid);
     m_tree->Branch("L1PATT_nmiss",       &m_patt_miss);
 
+    m_tree->Branch("L1TC_n",             &m_tc);
+    m_tree->Branch("L1TC_links",         &m_tc_links);
+    m_tree->Branch("L1TC_secid",         &m_tc_secid);
+    m_tree->Branch("L1TC_pt",            &m_tc_pt);
+    m_tree->Branch("L1TC_phi",           &m_tc_phi);
+    m_tree->Branch("L1TC_z",             &m_tc_z);
+    m_tree->Branch("L1TC_eta",           &m_tc_eta);
+
     m_tree->Branch("L1TRK_n",            &m_trk);
     m_tree->Branch("L1TRK_links",        &m_trk_links);
     m_tree->Branch("L1TRK_secid",        &m_trk_secid);
@@ -57,7 +73,14 @@ L1TrackExtractor::L1TrackExtractor(TFile *a_file)
   m_patt_links   = new  std::vector< std::vector<int> >;
   m_patt_secid   = new  std::vector<int>;
   m_patt_miss    = new  std::vector<int>;
-  
+   
+  m_tc_pt        = new  std::vector<float>;
+  m_tc_eta       = new  std::vector<float>;
+  m_tc_phi       = new  std::vector<float>;
+  m_tc_z         = new  std::vector<float>;
+  m_tc_links     = new  std::vector< std::vector<int> >;
+  m_tc_secid     = new  std::vector<int>;
+
   m_trk_pt       = new  std::vector<float>;
   m_trk_eta      = new  std::vector<float>;
   m_trk_phi      = new  std::vector<float>;
@@ -89,7 +112,15 @@ L1TrackExtractor::L1TrackExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1PATT_links",       &m_patt_links);
   m_tree->SetBranchAddress("L1PATT_secid",       &m_patt_secid);
   m_tree->SetBranchAddress("L1PATT_miss",        &m_patt_miss);
-  
+ 
+  m_tree->SetBranchAddress("L1TC_n",             &m_tc);
+  m_tree->SetBranchAddress("L1TC_links",         &m_tc_links);
+  m_tree->SetBranchAddress("L1TC_secid",         &m_tc_secid);
+  m_tree->SetBranchAddress("L1TC_pt",            &m_tc_pt);
+  m_tree->SetBranchAddress("L1TC_phi",           &m_tc_phi);
+  m_tree->SetBranchAddress("L1TC_z",             &m_tc_z);
+  m_tree->SetBranchAddress("L1TC_eta",           &m_tc_eta);
+ 
   m_tree->SetBranchAddress("L1TRK_n",            &m_trk);
   m_tree->SetBranchAddress("L1TRK_links",        &m_trk_links);
   m_tree->SetBranchAddress("L1TRK_secid",        &m_trk_secid);
@@ -134,10 +165,14 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
   /// Get the Stubs already stored away
   edm::Handle< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > > > TTStubHandle;
   edm::Handle< std::vector< TTTrack< Ref_PixelDigi_ > > > TTPatternHandle;
+  edm::Handle< std::vector< TTTrack< Ref_PixelDigi_ > > > TTTCHandle;
   edm::Handle< std::vector< TTTrack< Ref_PixelDigi_ > > > TTTrackHandle;
 
   event->getByLabel( m_STUB_tag, TTStubHandle );
   event->getByLabel( m_PATT_tag, TTPatternHandle );
+
+  if (m_TC_tag.label()!="" && m_TC_tag.instance()!="") // Do this to run extractor only on PR info
+    event->getByLabel( m_TC_tag, TTTCHandle );
 
   if (m_TRCK_tag.label()!="" && m_TRCK_tag.instance()!="") // Do this to run extractor only on PR info
     event->getByLabel( m_TRCK_tag, TTTrackHandle );
@@ -220,10 +255,84 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
     m_patt =  patCnt;
   }
 
-  //  std::cout << "STEP 2 " << std::endl;
-
   /// STEP 2
-  /// Loop over tracks
+  /// Loop over TCs
+
+  /// Go on only if there are TCs from Patterns
+
+  if (m_TC_tag.label()!="" && m_TC_tag.instance()!="")
+  {
+    if ( TTTCHandle->size() > 0 )
+    {
+      /// Loop over TCs
+      unsigned int tkCnt = 0;
+
+      //      std::cout << TTTCHandle->size() << std::endl;
+
+      for ( iterTTTrack = TTTCHandle->begin();
+	    iterTTTrack != TTTCHandle->end();
+	    ++iterTTTrack )
+      {
+	edm::Ptr< TTTrack< Ref_PixelDigi_ > > tempTrackPtr( TTTCHandle, tkCnt++ );
+	
+	/// Get everything is relevant
+	
+	//	std::cout << tkCnt << "/" << TTTrackHandle->size() << std::endl;
+	
+	std::vector< edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_  > >, TTStub< Ref_PixelDigi_  > > > trackStubs = tempTrackPtr->getStubRefs();
+
+	// Loop over stubs contained in the pattern to recover the info
+	// and match them with the stubs in the STUB_extractor container
+	
+	m_tc_secid->push_back(tempTrackPtr->getSector());
+	m_tc_pt->push_back(tempTrackPtr->getMomentum(5).perp() );
+	m_tc_eta->push_back(tempTrackPtr->getMomentum(5).eta());
+	m_tc_phi->push_back(tempTrackPtr->getMomentum(5).phi());
+	m_tc_z->push_back(tempTrackPtr->getPOCA(5).z());
+	
+	stub_list.clear();
+	
+	for(unsigned int i=0;i<trackStubs.size();i++)
+	{
+	  edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > >, TTStub< Ref_PixelDigi_ > > tempStubRef = trackStubs.at(i);
+
+	  /// Calculate average coordinates col/row for inner/outer Cluster
+	  /// These are already corrected for being at the center of each pixel
+
+	  GlobalPoint posStub  = theStackedGeometry->findGlobalPosition( &(*tempStubRef) );
+	  
+	  StackedTrackerDetId detIdStub( tempStubRef->getDetId() );
+	
+	  // Here we rearrange the numbers
+	  if ( detIdStub.isBarrel() )
+	  {
+	    layer  = detIdStub.iLayer()+4;
+	    ladder = detIdStub.iPhi()-1;
+	    module = detIdStub.iZ()-1;
+	  }
+	  else if ( detIdStub.isEndcap() )
+	  {
+	    layer  = 10+detIdStub.iZ()+abs(detIdStub.iSide()-2)*7;
+	    ladder = detIdStub.iRing()-1;
+	    module = detIdStub.iPhi()-1;
+	  }
+
+	  double SW = tempStubRef->getTriggerDisplacement();
+
+	  stub_list.push_back(stub->get_id(layer,ladder,module,posStub.x(),posStub.y(),posStub.z(),SW));
+
+	} /// End of loop over track stubs	
+	
+	m_tc_links->push_back(stub_list);
+
+      } // End of loop over patterns
+      
+      m_tc =  tkCnt;
+    }
+  }      
+
+  /// STEP 3
+  /// Loop over fitted tracks
 
   /// Go on only if there are Tracks from Patterns
 
@@ -234,7 +343,7 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
       /// Loop over Patterns
       unsigned int tkCnt = 0;
 
-      std::cout << TTTrackHandle->size() << std::endl;
+      //      std::cout << TTTrackHandle->size() << std::endl;
 
       for ( iterTTTrack = TTTrackHandle->begin();
 	    iterTTTrack != TTTrackHandle->end();
@@ -256,12 +365,6 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 	m_trk_eta->push_back(tempTrackPtr->getMomentum(5).eta());
 	m_trk_phi->push_back(tempTrackPtr->getMomentum(5).phi());
 	m_trk_z->push_back(tempTrackPtr->getPOCA(5).z());
-	
-	//	std::cout << tempTrackPtr->getMomentum(5).perp() << " / " 
-	//	  << tempTrackPtr->getMomentum(5).eta() << " / " 
-	//		  << tempTrackPtr->getPOCA(5).z() << " / " 
-	//	  << trackStubs.size()
-	//	  << std::endl;
 	
 	stub_list.clear();
 	
@@ -323,11 +426,19 @@ void L1TrackExtractor::reset()
 {
   m_patt = 0;
   m_trk  = 0;
- 
+  m_tc  = 0; 
+
   m_patt_links->clear(); 
   m_patt_secid->clear(); 
   m_patt_miss->clear(); 
   
+  m_tc_pt->clear();    
+  m_tc_eta->clear();   
+  m_tc_phi->clear();   
+  m_tc_z->clear();     
+  m_tc_links->clear(); 
+  m_tc_secid->clear();
+ 
   m_trk_pt->clear();    
   m_trk_eta->clear();   
   m_trk_phi->clear();   

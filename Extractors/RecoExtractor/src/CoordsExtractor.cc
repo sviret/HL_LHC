@@ -2,19 +2,21 @@
 #include "../interface/CoordsExtractor.h"
 
 
-CoordsExtractor::CoordsExtractor()
+CoordsExtractor::CoordsExtractor(bool doTree)
 {
-  m_tree      = new TTree("StripCoords","") ;
+  if (doTree)
+  {
+    m_tree      = new TTree("StripCoords","") ;
 
-  m_tree->Branch("layer",     &m_c_layer);
-  m_tree->Branch("module",    &m_c_module);
-  m_tree->Branch("ladder",    &m_c_ladder);
-  m_tree->Branch("strip",     &m_c_row);
-  m_tree->Branch("segment",   &m_c_column);
-  m_tree->Branch("x",         &m_c_x);
-  m_tree->Branch("y",         &m_c_y);
-  m_tree->Branch("z",         &m_c_z);
-
+    m_tree->Branch("layer",     &m_c_layer);
+    m_tree->Branch("module",    &m_c_module);
+    m_tree->Branch("ladder",    &m_c_ladder);
+    m_tree->Branch("strip",     &m_c_row);
+    m_tree->Branch("segment",   &m_c_column);
+    m_tree->Branch("x",         &m_c_x);
+    m_tree->Branch("y",         &m_c_y);
+    m_tree->Branch("z",         &m_c_z);
+  }
 }
 
 CoordsExtractor::~CoordsExtractor()

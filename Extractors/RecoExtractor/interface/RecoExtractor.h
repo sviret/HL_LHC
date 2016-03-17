@@ -82,6 +82,7 @@ class RecoExtractor : public edm::EDAnalyzer{
   edm::InputTag MC_tag_;  // 
   edm::InputTag L1_STUB_tag_;
   edm::InputTag L1_PATT_tag_;
+  edm::InputTag L1_TC_tag_;
   edm::InputTag L1_TRCK_tag_;
 
   //

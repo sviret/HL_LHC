@@ -37,6 +37,7 @@ MIBextraction = cms.EDAnalyzer("RecoExtractor",
   doL1TRK          = cms.untracked.bool(False),          # Extract the official L1track information
   L1stub_tag       = cms.InputTag( "TTStubsFromPixelDigis", "StubAccepted"), 
   L1pattern_tag    = cms.InputTag( "MergePROutput", "AML1Patterns"),
+  L1tc_tag         = cms.InputTag( "MergeTCOutput", "AML1TCs"), 
   L1track_tag      = cms.InputTag( "MergeFITOutput", "AML1Tracks"), 
                                
   # Add Pixel information                              

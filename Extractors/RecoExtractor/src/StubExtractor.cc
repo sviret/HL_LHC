@@ -936,7 +936,7 @@ int  StubExtractor::getClust1Idx(float x, float y, float z)
     return i;
   }
 
-  std::cout << "STRANGE: a stub without matching 1 cluster..." << std::endl;
+  //  std::cout << "STRANGE: a stub without matching 1 cluster..." << std::endl;
 
   return -1;
 }
@@ -964,8 +964,8 @@ int  StubExtractor::getClust2Idx(int idx1, float dist)
     }
   }
 
-  if (idx2==-1)
-    std::cout << "STRANGE: a stub without matching 2 cluster..." << std::endl;
+  //  if (idx2==-1)
+  //    std::cout << "STRANGE: a stub without matching 2 cluster..." << std::endl;
 
   return idx2;
 }

@@ -72,31 +72,31 @@ class efficiencies
 
   float pt_val[100];
   float eta_val[50];
-  float entries_pt[20][100];
-  float entries_eta[20][50];
-  float entries_pt_lay[20][100];
-  float entries_eta_lay[20][50];
+  float entries_pt[11][15][100];
+  float entries_eta[11][15][50];
+  float entries_pt_lay[11][15][100];
+  float entries_eta_lay[11][15][50];
 
-  float digi_pt[20][100]; // Digi efficiencies as function of pT (between 0 and 20 GeV/c)
-  float digi_eta[20][50]; // Digi efficiencies as function of eta (between -2.5 and 2.5)
+  float digi_pt[11][15][100]; // Digi efficiencies as function of pT (between 0 and 20 GeV/c)
+  float digi_eta[11][15][50]; // Digi efficiencies as function of eta (between -2.5 and 2.5)
 
   // Module efficiencies
-  float clus_off_pt[20][100]; // Official cluster efficiencies as function of pT
-  float stub_off_pt[20][100]; // Official stub efficiencies as function of pT
-  float clus_off_eta[20][50]; // Official cluster efficiencies as function of eta
-  float stub_off_eta[20][50]; // Official stub efficiencies as function of eta
+  float clus_off_pt[11][15][100]; // Official cluster efficiencies as function of pT
+  float stub_off_pt[11][15][100]; // Official stub efficiencies as function of pT
+  float clus_off_eta[11][15][50]; // Official cluster efficiencies as function of eta
+  float stub_off_eta[11][15][50]; // Official stub efficiencies as function of eta
 
-  float clus_pri_pt[20][100]; // Private cluster efficiencies as function of pT
-  float stub_pri_pt[20][100]; // Private stub efficiencies as function of pT
-  float clus_pri_eta[20][50]; // Private cluster efficiencies as function of eta
-  float stub_pri_eta[20][50]; // Private stub efficiencies as function of eta
+  float clus_pri_pt[11][15][100]; // Private cluster efficiencies as function of pT
+  float stub_pri_pt[11][15][100]; // Private stub efficiencies as function of pT
+  float clus_pri_eta[11][15][50]; // Private cluster efficiencies as function of eta
+  float stub_pri_eta[11][15][50]; // Private stub efficiencies as function of eta
 
   // Layer efficiencies (only for stubs)
-  float stub_off_pt_lay[20][100]; // Official stub efficiencies as function of pT
-  float stub_off_eta_lay[20][50]; // Official stub efficiencies as function of eta
+  float stub_off_pt_lay[11][15][100]; // Official stub efficiencies as function of pT
+  float stub_off_eta_lay[11][15][50]; // Official stub efficiencies as function of eta
 
-  float stub_pri_pt_lay[20][100]; // Private stub efficiencies as function of pT
-  float stub_pri_eta_lay[20][50]; // Private stub efficiencies as function of eta
+  float stub_pri_pt_lay[11][15][100]; // Private stub efficiencies as function of pT
+  float stub_pri_eta_lay[11][15][50]; // Private stub efficiencies as function of eta
 
 
   // Here are the parameters needed from the data
@@ -107,7 +107,6 @@ class efficiencies
 
   int                 m_type;
   int    	      m_part_n;
-  int    	      m_part_nhit;
   int                 m_pclus;
   int                 m_clus;            
   int                 m_stub;  

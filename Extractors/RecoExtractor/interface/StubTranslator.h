@@ -48,6 +48,11 @@ class StubTranslator
   std::vector<float>  *m_stub_y;      // x coord of stub i 
   std::vector<float>  *m_stub_z;      // x coord of stub i 
   std::vector<float>  *m_stub_bend;   // bend of stub i 
+  std::vector<float>  *m_stub_X0;
+  std::vector<float>  *m_stub_Y0;
+  std::vector<float>  *m_stub_Z0;
+  std::vector<float>  *m_stub_PHI0;
+  std::vector<int>    *m_stub_pdg;
 
 };
 

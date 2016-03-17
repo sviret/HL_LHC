@@ -34,10 +34,10 @@
 // secfilename : the name and directory of the input csv file  containing the sectors definition
 // outfile     : the name of the output ROOT file containing the efficiency results 
 // ptmin       : the minimal pt of the tracks to be tested
-// d0max       : the maximal d0 of the tracks to be tested
+// d0max       : the maximal |d0| of the tracks to be tested
 //           
 // nevt        : the number of particles to test
-// dbg         : debug mode (true if the pattern file comes from the standalone preco, false otherwise) 
+// dbg         : not used anymore
 //
 // Info about the code:
 //
@@ -45,6 +45,7 @@
 //
 //  Author: viret@in2p3_dot_fr
 //  Date: 25/02/2014
+//  Maj. rev: 08/03/2016
 //
 ///////////////////////////////////
 
@@ -65,19 +66,13 @@ class track_eff
     
  private:
 
-  bool do_patt;
   bool m_dbg;
   bool has_patt;
   float m_pt_min;
   float m_d0_min;
 
-  TFile  *m_infile;
-  TFile  *m_testfile;
   TFile  *m_outfile;
   TChain *m_L1TT;
-  TChain *data;
-
-  TTree  *m_efftree;
   TTree  *m_finaltree;
   TChain *m_PATT;
 
@@ -85,7 +80,6 @@ class track_eff
   // for a given event 
 
   std::vector< std::vector<int> >   m_primaries;
-
 
   // Coding conventions for barrel and endcap module IDs
   
@@ -111,6 +105,7 @@ class track_eff
   std::vector<int>   m_stub_module;
   std::vector<int>   m_stub_segment;
   std::vector<float> m_stub_strip;
+  std::vector<float> m_stub_sw;
   std::vector<int>   m_stub_tp;
   std::vector<int>   m_stub_pdg;
   std::vector<float> m_stub_pxGEN;
@@ -125,6 +120,7 @@ class track_eff
   std::vector<float> m_clus_x;
   std::vector<float> m_clus_y;
   std::vector<float> m_clus_z;
+  std::vector<int>   m_stub_clust1;
   std::vector<int>   m_stub_clust2;
 
 
@@ -133,6 +129,7 @@ class track_eff
   std::vector<int>   *pm_stub_module;
   std::vector<int>   *pm_stub_segment;
   std::vector<float> *pm_stub_strip;
+  std::vector<float> *pm_stub_sw;
   std::vector<int>   *pm_stub_tp;
   std::vector<int>   *pm_stub_pdg;
   std::vector<float> *pm_stub_pxGEN;
@@ -147,10 +144,11 @@ class track_eff
   std::vector<float> *pm_clus_x;
   std::vector<float> *pm_clus_y;
   std::vector<float> *pm_clus_z;
+  std::vector<int>   *pm_stub_clust1;
   std::vector<int>   *pm_stub_clust2;
 
 
-  // The output tree has one entry per primary track. 
+  // The output tree has one entry per event
 
   int   evt;        // Event number (for PU event, where there is more than 1 primary)
   int   pdg;        // The pdg ID of the particle
@@ -164,22 +162,15 @@ class track_eff
   float d0;         // The origin radius
   float z0;         // The origin z
   float z0_f;       // The origin z
-  int   npatt;      // The number of patterns containing at least 5 stubs of the prim. track
-  int   ntotpatt;   // The total number of patterns 
-  int   ntrack;     // 
-  int   ttrack;     // 
 
   int nstubs;
   int nstubs_f;
 
-  int   mult[500];  // The total number of stubs per sector 
-  int   nhits;      // The total number of layers/disks hit by the prim track
-  int   nplay[20];  // The total number of prim stubs per layer 
 
-
-  int n_stub_total; // The total number of stubs in the event
-  int n_stub;       // The total number of stubs contained in matched patterns in the event
-  int n_stub_t;     // The total number of stubs contained in reco tracks in the event
+  int n_stub_total;   // The total number of stubs in the event
+  int n_stub_patt;    // The total number of stubs contained in matched patterns in the event
+  int n_stub_tc;      // The total number of stubs contained in tcs in the event
+  int n_stub_trk;     // The total number of stubs contained in reco tracks in the event
 
   std::vector<float>   *stub_x;      // x coordinates of ALL the stubs |
   std::vector<float>   *stub_y;      // y coordinates of ALL the stubs |-> Bottom cluster
@@ -189,14 +180,18 @@ class track_eff
   std::vector<int>     *stub_module; // module number of ALL the stubs
   std::vector<int>     *stub_seg;    // segment number of ALL the stubs
   std::vector<float>   *stub_strip;  // strip number of ALL the stubs
+  std::vector<float>   *stub_sw;     // stub width of ALL the stubs
   std::vector<int>     *stub_tp;     // tp index of ALL the stubs (in part_*** vectors of this tree!!!!)
   std::vector<float>   *stub_ptGEN;  // PT gen of the particle inducing the stub (-1 if bad)
   std::vector<float>   *stub_d0GEN;  // d0 gen of the particle inducing the stub (-1 if bad)
-  std::vector<int>     *stub_inpatt; // is the stub in a pattern (1) of not (0)?
-  std::vector<int>     *stub_intrk;  // is the stub in a track (1) of not (0)?
+  std::vector<float>   *stub_r0GEN;  // r0 gen of the particle inducing the stub (-1 if bad)
+  std::vector<float>   *stub_etaGEN; // eta gen of the particle inducing the stub (-1 if bad)
+  std::vector<float>   *stub_z0GEN;  // z0 gen of the particle inducing the stub (-1 if bad)
+  std::vector<int>     *stub_insec;  // is the stub in trigger towers (1,2,...) or not (0)?
+  std::vector<int>     *stub_inpatt; // is the stub in a pattern (1) or not (0)?
+  std::vector<int>     *stub_intc;   // is the stub in a tc (1) or not (0)?
+  std::vector<int>     *stub_intrk;  // is the stub in a track (1) or not (0)?
   std::vector< std::vector<int> >     *stub_sec;    // the list of sectors in which the stub is
-
-
 
   int n_part;                        // The total number of particles inducing at least one stub in the event
 
@@ -204,17 +199,44 @@ class track_eff
   std::vector<int>     *part_nsec;   // In how many trigger towers this particle hit more than 4 different layers/disks?
   std::vector<int>     *part_nhits;  // How many different layers/disks are hit by the particle?
   std::vector<int>     *part_npatt;  // How many patterns contains more than 4 stubs of the particle (in 4 different layers/disks)?
-  std::vector<int>     *part_ntrk;   // How many tracks contains more than 4 stubs of the particle (in 4 different layers/disks)?
+  std::vector<int>     *part_ntc;    // How many tcs of size N contains more than N-1 stubs of the particle?
+  std::vector<int>     *part_ntrk;   // How many tracks of size N contains more than N-1 stubs of the particle?
   std::vector<float>   *part_pt;     // pt of the particles
   std::vector<float>   *part_rho;    // rho0 of the particles
+  std::vector<float>   *part_d0;     // IP of the particles
   std::vector<float>   *part_z0;     // z0 of the particles
   std::vector<float>   *part_eta;    // eta of the particles 
   std::vector<float>   *part_phi;    // phi of the particles
+  std::vector<float>   *part_dist;   // Isolation (min r/phi dist of the particle wrt another high pt (>3 GeV/c) primary)
+  std::vector< std::vector<int> >     *part_sec;    // the list of sectors in which the particle is
 
   int n_patt;                        // The total number of patterns matched in the event
-  std::vector<int>                  *patt_sec;   // Sector id of all the patterns
+  int n_patt_comb;                   // The total number of combinations from the matched patterns
+  std::vector<int>                  *patt_sec;        // Sector id of all the patterns
+  std::vector<int>                  *patt_miss;       // Number of superstrip missing on the pattern (max 1)
+  std::vector<int>                  *patt_insec;      // Total number of matched roads in the tower containing the pattern
+  std::vector<int>                  *patt_insec_full; // Total number of complete matched roads (no missing strip)
+  std::vector<int>                  *patt_comb;       // Number of combinations (if running PCA without TCB)
+  std::vector<int>                  *patt_gcomb;      //
   std::vector< std::vector<int> >   *patt_parts; // tp index of ALL the particles contained in the pattern (in part_*** vectors of this tree!!!!)
-  std::vector< std::vector<int> >   *patt_stubs; // index of ALL the stubs contained in the pattern (in stub_*** vectors of this tree!!!!) 
+  std::vector< std::vector<int> >   *patt_stubs; // index of ALL the stubs contained in the pattern (in stub_*** vectors of this tree!!!!)
+  std::vector<int>                  *patt_rank;
+  std::vector<int>                  *patt_rank_full;
+
+
+  int n_tc;                        // The total number of TCs in the event
+  std::vector<int>                  *tc_sec;    // Sector id of all the TCs
+  std::vector< std::vector<int> >   *tc_parts;  // tp index of ALL the particles contained in the TC (in part_*** vectors of this tree!!!!)
+  std::vector< std::vector<int> >   *tc_stubs;  // index of ALL the stubs contained in the TC (in stub_*** vectors of this tree!!!!)
+  std::vector<float>                *tc_pt;     // pt of the tc
+  std::vector<float>                *tc_eta;    // eta of the tc
+  std::vector<float>                *tc_z;      // z0 of the tc
+  std::vector<float>                *tc_phi;    // phi of the tc
+  std::vector<float>                *tc_pt_t;     // pt of the tc (TRUTH)
+  std::vector<float>                *tc_eta_t;    // eta of the tc (TRUTH)
+  std::vector<float>                *tc_z_t;      // z0 of the tc (TRUTH)
+  std::vector<float>                *tc_phi_t;    // phi of the tc (TRUTH)
+  std::vector<int>                  *tc_PDG_t;    // PDG id of the tc (TRUTH) (0 if unmatched) 
 
   int n_track;                        // The total number of L1 tracks matched in the event
   std::vector<int>                  *trk_sec;    // Sector id of all the tracks
@@ -224,11 +246,18 @@ class track_eff
   std::vector<float>                *trk_eta;    // eta of the track
   std::vector<float>                *trk_z;      // z0 of the track
   std::vector<float>                *trk_phi;    // phi of the track
-  
+  std::vector<float>                *trk_pt_t;     // pt of the track
+  std::vector<float>                *trk_eta_t;    // eta of the track
+  std::vector<float>                *trk_z_t;      // z0 of the track
+  std::vector<float>                *trk_phi_t;    // phi of the track 
+  std::vector<int>                  *trk_PDG_t;    // PDG id of the track 
+
   // Informations contained in the pattern file
 
   int nb_patterns; // Number of patterns in event evtID
-  int event_id;    // Event ID
+  int nb_tcs; // Number of patterns in event evtID
+
+//  int event_id;    // Event ID
 
 
   // Info id dbg==false (CMSSW fast mode)
@@ -236,8 +265,8 @@ class track_eff
   std::vector< std::vector<int> > m_links; // Links to the stub ids of the pattern 
   std::vector<int>                m_secid; // Link to the sector ids of the pattern 
 
-  std::vector< std::vector<int> > *pm_links; 
-  std::vector<int>                *pm_secid;
+//  std::vector< std::vector<int> > *pm_links;
+//  std::vector<int>                *pm_secid;
 
   // Informations contained in the pattern tree of official file
 
@@ -245,6 +274,14 @@ class track_eff
 
   std::vector< std::vector<int> > m_pattlinks; // Links to the stub ids of the pattern 
   std::vector<int>                m_pattsecid; // Link to the sector ids of the pattern
+  std::vector<int>                m_pattmiss;
+  std::vector< std::vector<int> > m_pattsmult;
+  std::vector< std::vector<int> > m_tclinks;  // Links to the stub ids of the track 
+  std::vector<int>                m_tcsecid;  // Link to the sector ids of the track
+  std::vector<float>              m_tcpt; 
+  std::vector<float>              m_tceta; 
+  std::vector<float>              m_tcz; 
+  std::vector<float>              m_tcphi; 
   std::vector< std::vector<int> > m_trklinks;  // Links to the stub ids of the track 
   std::vector<int>                m_trksecid;  // Link to the sector ids of the track
   std::vector<float>              m_trkpt; 
@@ -252,15 +289,22 @@ class track_eff
   std::vector<float>              m_trkz; 
   std::vector<float>              m_trkphi; 
 
-
   std::vector< std::vector<int> > *pm_pattlinks; 
   std::vector<int>                *pm_pattsecid;
+  std::vector<int>                *pm_pattmiss;
+  std::vector< std::vector<int> > *pm_pattsmult;
   std::vector< std::vector<int> > *pm_trklinks;
   std::vector<int>                *pm_trksecid; 
   std::vector<float>              *pm_trkpt; 
   std::vector<float>              *pm_trketa; 
   std::vector<float>              *pm_trkz; 
   std::vector<float>              *pm_trkphi; 
+  std::vector< std::vector<int> > *pm_tclinks;
+  std::vector<int>                *pm_tcsecid; 
+  std::vector<float>              *pm_tcpt; 
+  std::vector<float>              *pm_tceta; 
+  std::vector<float>              *pm_tcz; 
+  std::vector<float>              *pm_tcphi;
 
 };
 

@@ -45,7 +45,7 @@ class CoordsExtractor
 
  public:
 
-  CoordsExtractor();
+  CoordsExtractor(bool doTree);
   ~CoordsExtractor();
 
   void init(const edm::EventSetup *setup);

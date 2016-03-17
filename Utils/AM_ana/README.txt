@@ -69,9 +69,9 @@ Note: You need to have the tracker digis in, and the TP information
 ## L1 track reco efficiency
 #
  
-Command line: ./AM_ana -c L1track_eff -i SECTORFILE -f TESTFILE -o OUTPUTFILE -q D0MAX -p PTMIN -n 1000
+Command line: ./AM_ana -c L1track_eff -i SECTORFILE -f TESTFILE -o OUTPUTFILE -q D0MAX -p PTMIN -n 1000 -g FULLINFO
 
-where SECTORFILE denotes the name of the csv file obtained from the TkLayout tool. TESTFILE the name of the extracted root file you want to analyze (6.2.1 output), OUTPUTFILE the name of the root file which will contain the result, D0MAX the maximum impact parameter of the tracks you want to select, and PTMIN the minimum pT. n denotes the number of events you want to test, and is automatically truncated to the size of the input file if necessary.
+where SECTORFILE denotes the name of the csv file obtained from the TkLayout tool. TESTFILE the name of the extracted root file you want to analyze (6.2.1 output), OUTPUTFILE the name of the root file which will contain the result, D0MAX the maximum impact parameter of the tracks you want to select, and PTMIN the minimum pT. n denotes the number of events you want to test, and is automatically truncated to the size of the input file if necessary. FULLINFO is a boolean, namely 0 or 1. If set to 0 only a small part of the info will be produced, sufficient to make simple analysis. If set to 1, size of the output ROOT file will be roughly 100 times larger. 
 
 The code is proceeding as follows:
 

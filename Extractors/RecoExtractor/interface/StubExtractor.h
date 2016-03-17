@@ -104,6 +104,11 @@ class StubExtractor
   float getStub_y(int i) {return m_stub_y->at(i);}
   float getStub_z(int i) {return m_stub_z->at(i);}
   float getStub_bend(int i) {return m_stub_deltas->at(i);}
+  float getStub_X0(int i) {return m_stub_X0->at(i);}
+  float getStub_Y0(int i) {return m_stub_Y0->at(i);}
+  float getStub_Z0(int i) {return m_stub_Z0->at(i);}
+  float getStub_PHI0(int i) {return m_stub_PHI0->at(i);}
+  float getStub_pdg(int i) {return m_stub_pdg->at(i);}
 
   int getStub_ID(int i) {return 1000000*m_stub_layer->at(i)+10000*m_stub_ladder->at(i)
       +100*m_stub_module->at(i)+m_stub_seg->at(i);}
