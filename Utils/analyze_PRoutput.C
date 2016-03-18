@@ -312,14 +312,14 @@ void fake_ana(std::string filename, float ptmin, float d0max)
   L1TT->SetBranchAddress("patt_parts",   &patt_parts); 
   L1TT->SetBranchAddress("patt_stubs",   &patt_stubs); 
 
-  L1TT->SetBranchAddress("n_track",      &n_track); 
-  L1TT->SetBranchAddress("trk_sec",      &trk_sec); 
-  L1TT->SetBranchAddress("trk_parts",    &trk_parts); 
-  L1TT->SetBranchAddress("trk_stubs",    &trk_stubs); 
-  L1TT->SetBranchAddress("trk_pt",       &trk_pt); 
-  L1TT->SetBranchAddress("trk_phi",      &trk_phi); 
-  L1TT->SetBranchAddress("trk_z",        &trk_z); 
-  L1TT->SetBranchAddress("trk_eta",      &trk_eta); 
+  L1TT->SetBranchAddress("n_tc",      &n_track);
+  L1TT->SetBranchAddress("tc_sec",      &trk_sec);
+  L1TT->SetBranchAddress("tc_parts",    &trk_parts);
+  L1TT->SetBranchAddress("tc_stubs",    &trk_stubs);
+  L1TT->SetBranchAddress("tc_pt",       &trk_pt);
+  L1TT->SetBranchAddress("tc_phi",      &trk_phi);
+  L1TT->SetBranchAddress("tc_z",        &trk_z);
+  L1TT->SetBranchAddress("tc_eta",      &trk_eta);
 
   int n_entries = L1TT->GetEntries();
   
@@ -400,8 +400,8 @@ void fake_ana(std::string filename, float ptmin, float d0max)
   int range;
 
 
-  for (int j=0;j<n_entries ;++j)
-    //for (int j=0;j<5 ;++j)
+//  for (int j=0;j<n_entries ;++j)
+  for (int j=0;j<150 ;++j)
   {
     L1TT->GetEntry(j);
 
@@ -418,51 +418,51 @@ void fake_ana(std::string filename, float ptmin, float d0max)
 
       if (patt_parts->at(k).size()==0) 
       {
-	sec_patt_fake[patt_sec->at(k)] += 1.;
-	eta_patt_fake[range]           += 1.;
+          sec_patt_fake[patt_sec->at(k)] += 1.;
+          eta_patt_fake[range]           += 1.;
       }
       else
       {
-	for (int kk=0;kk<patt_parts->at(k).size();++kk)
-	{
-	  idx_p = patt_parts->at(k).at(kk);
+          for (int kk=0;kk<patt_parts->at(k).size();++kk)
+          {
+              idx_p = patt_parts->at(k).at(kk);
 
-	  if (part_pt->at(idx_p)>ptmin && part_rho->at(idx_p)<d0max) ++ngp; 
-	}
+              if (part_pt->at(idx_p)>ptmin && part_rho->at(idx_p)<d0max) ++ngp;
+          }
 
-	if (ngp==0) 
-        {
-	  sec_patt_fake[patt_sec->at(k)] += 1.;
-	  eta_patt_fake[range]           += 1.;
-	}
+          if (ngp==0)
+          {
+              sec_patt_fake[patt_sec->at(k)] += 1.;
+              eta_patt_fake[range]           += 1.;
+          }
       }
 
 
       for (int kk=0;kk<patt_stubs->at(k).size();++kk)
       {
-	idx_s = patt_stubs->at(k).at(kk);
-	idx_p = stub_tp->at(idx_s);
+          idx_s = patt_stubs->at(k).at(kk);
+          idx_p = stub_tp->at(idx_s);
 
-	if (stub_used.at(idx_s)!=0) continue;
-	stub_used.at(idx_s)=1;	
+          if (stub_used.at(idx_s)!=0) continue;
+          stub_used.at(idx_s)=1;
 
-	sec_stubs[patt_sec->at(k)] += 1.;
-	eta_stubs[range]           += 1.;
+          sec_stubs[patt_sec->at(k)] += 1.;
+          eta_stubs[range]           += 1.;
 
-	if (idx_p<0)
-	{
-	  sec_stubs_fake[patt_sec->at(k)] += 1.;
-	  eta_stubs_fake[range]           += 1.;
-	}
-	else
-	{  
-	  if (part_pt->at(idx_p)<ptmin || part_rho->at(idx_p)>d0max)
-	  {
-	    sec_stubs_fake[patt_sec->at(k)] += 1.;
-	    eta_stubs_fake[range]           += 1.;
-	  }
-	}
-      }
+          if (idx_p<0)
+          {
+              sec_stubs_fake[patt_sec->at(k)] += 1.;
+              eta_stubs_fake[range]           += 1.;
+          }
+          else
+          {
+              if (part_pt->at(idx_p)<ptmin || part_rho->at(idx_p)>d0max)
+              {
+                  sec_stubs_fake[patt_sec->at(k)] += 1.;
+                  eta_stubs_fake[range]           += 1.;
+              }
+          }
+        }
     }
     
     stub_used.clear();  

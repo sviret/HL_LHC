@@ -1,3 +1,15 @@
+#include <vector>
+#include <list>
+#ifdef __MAKECINT__
+#pragma link C++ class vector<vector<int> >+;
+#pragma link C++ class vector<vector<float> >+;
+#endif
+
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+#include <fstream>
+
 /*
   ROOT macros for pattern reco efficiencies visualization
 
@@ -39,11 +51,8 @@
 
   Author: viret@in2p3_dot_fr
   Date: 26/06/2014
+  Maj. update: 18/03/2016
 */
-
-#include <iomanip>      // for std::setprecision
-
-
 
 //
 // Method plotting pattern efficiencies  
@@ -55,7 +64,7 @@
 // =>sec_num is the sector number
 
 
-void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, float ptcut=2., float ptmax=100., float d0cut=1.)
+void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, float ptcut=2., float ptmax=100., float d0cut=1.,float etamax=2.4)
 {
   // First get the data
   // by merging all the available files
@@ -63,54 +72,51 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
   gStyle->SetOptStat(0);
   gStyle->SetOptTitle(0);
  
-
-  int   evt;        // Event number (for PU event, where there is more than 1 primary)
-  int   nsec;       // The number of sectors containing at least 5 stubs of the prim. track
-  float pt;         // The pT of the prim. track
-  float d0;         // The d0 of the prim. track
-  float eta;        // The eta of the prim. track
-  float phi;        // The phi of the prim. track
-  int   pdg;        // The pdg id of the prim. track
-  int   npatt;      // The number of patterns containing at least 5 stubs of the prim. track
-  int   ntotpatt;   // The total number of patterns 
-  int   mult[500];  // The total number of stubs per sector 
-  int   nhits;      // The total number of layers/disks hit by the prim track
-
+    
+  int n_part;                        // The total number of particles inducing at least one stub in the event
+    
+  std::vector<int>     *part_pdg;    // PDG id of the particles
+  std::vector< std::vector<int> >     *part_sec;
+  std::vector<int>     *part_nsec;   // In how many trigger towers this particle hit more than 4 different layers/disks?
+  std::vector<int>     *part_nhits;  // How many different layers/disks are hit by the particle?
+  std::vector<int>     *part_npatt;  // How many patterns contains more than 4 stubs of the particle (in 4 different layers/disks)?
+    
+  std::vector<float>   *part_pt;     // pt of the particles
+  std::vector<float>   *part_d0;     // d0 of the particles
+  std::vector<float>   *part_z0;     // z0 of the particles
+  std::vector<float>   *part_eta;    // eta of the particles
+  std::vector<float>   *part_phi;    // phi of the particles
 
   TFile *file    = TFile::Open(filename.c_str());
-  TTree *newtree = (TTree*)file->Get("SectorEff");
-
-  newtree->SetBranchAddress("event",      &evt);
-  newtree->SetBranchAddress("nsec",       &nsec);
-  newtree->SetBranchAddress("nhits",      &nhits);
-  newtree->SetBranchAddress("npatt",      &npatt);
-  newtree->SetBranchAddress("tpatt",      &ntotpatt);
-  newtree->SetBranchAddress("pt",         &pt);
-  newtree->SetBranchAddress("d0",         &d0);
-  newtree->SetBranchAddress("eta",        &eta);
-  newtree->SetBranchAddress("pdgID",      &pdg);
-  newtree->SetBranchAddress("phi",        &phi);
-  newtree->SetBranchAddress("mult",       &mult);
+  TTree *newtree = (TTree*)file->Get("FullInfo");
+    
+  newtree->SetBranchAddress("n_part",       &n_part);
+  newtree->SetBranchAddress("part_pdg",     &part_pdg);
+  newtree->SetBranchAddress("part_nsec",    &part_nsec);
+  newtree->SetBranchAddress("part_nhits",   &part_nhits);
+  newtree->SetBranchAddress("part_npatt",   &part_npatt);
+  newtree->SetBranchAddress("part_pt",      &part_pt);
+  newtree->SetBranchAddress("part_d0",      &part_d0);
+  newtree->SetBranchAddress("part_z0",      &part_z0);
+  newtree->SetBranchAddress("part_eta",     &part_eta);
+  newtree->SetBranchAddress("part_phi",     &part_phi);
+  newtree->SetBranchAddress("part_sec",     &part_sec);
 
   char buffer[80];
-
-
+    
   const int nbin_eta = 200;
   const int nbin_phi = 200;
 
-
-  TH2F *tracks     = new TH2F("tracks","tracks",nbin_eta,-2.2,2.2,nbin_phi,-3.15.,3.15);
-  TH2F *eff_pat    = new TH2F("eff_p","eff_p",nbin_eta,-2.2,2.2,nbin_phi,-3.15.,3.15);
+  TH2F *tracks     = new TH2F("tracks","tracks",nbin_eta,-2.4,2.4,nbin_phi,-3.15.,3.15);
+  TH2F *eff_pat    = new TH2F("eff_p","eff_p",nbin_eta,-2.4,2.4,nbin_phi,-3.15.,3.15);
   TH2F *pt_eff     = new TH2F("eff_pt","eff_pt",100,0.,100.,100,0.,1.1);
   TH2F *pt_eff_z   = new TH2F("eff_pt_z","eff_pt_z",50,0.,10.,100,0.,1.1);
 
   float eff_stub[nbin_phi][nbin_eta];
   float eff_sector[nbin_phi][nbin_eta];
   float entries_stub[nbin_phi][nbin_eta];
-
   float eff_pat_m[nbin_phi][nbin_eta];
   float eff_sec_m[nbin_phi][nbin_eta];
-
   float entries_stub[nbin_phi][nbin_eta];
 
   for (int i=0;i<nbin_phi;++i)
@@ -127,9 +133,9 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
 
   float tot_in_sec    = 0.;
   float tot_match     = 0.;
-  float tot_patts     = 0.;
-  float tot_goodpatts = 0.;
 
+  float pt, eta, phi;
+    
   int i_bin;
   int j_bin;
 
@@ -137,8 +143,6 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
 
   float pt_in_sec[100];
   float pt_in_pat[100];
-  float good_patt[100];
-  float tot_patt[100];
 
   float pt_in_sec_z[50];
   float pt_in_pat_z[50];
@@ -149,34 +153,18 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
   {
     pt_in_sec[i]=0.;
     pt_in_pat[i]=0.;
-    good_patt[i]=0.;
-    tot_patt[i]=0.;
   }
   
   for (int i=0;i<50;++i)
   {
     pt_in_sec_z[i]=0.;
     pt_in_pat_z[i]=0.;
-    good_patt_z[i]=0.;
-    tot_patt_z[i]=0.;
   }
 
   int pt_bin, pt_bin_z;
-  int n_sec=0;
-  int n_sec_in_range=0;
-
-  std::vector<int> overlap_evt;
-  std::vector<int> overlap_evt_good;
-
-  overlap_evt.clear();
-  overlap_evt_good.clear();
+  int n_sec=0,in_sec=0;
 
   int n_entries = newtree->GetEntries();
-  
-  // First loop to get the sector eta/phi acceptance
-  
-  bool already_known;
-  bool already_found;
   
   // Loop over all the interesting particles found in the event
 
@@ -187,78 +175,75 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
     if (i%10000==0) 
       cout << "Processed  event " << i << "/" << n_entries << endl;
 
+    if (n_part==0) continue;
 
-    if (pdg!=pdgid && pdgid!=-1) continue;
-    if (fabs(pt)>ptmax) continue;
-    //    if (fabs(eta)>2.2) continue;
-    if (nhits<nh) continue;
-    if (fabs(pt)<ptcut) continue;
-    if (fabs(d0)>d0cut) continue;
-    
-    //    if (fabs(eta)>2.15) continue;
-    //    if (fabs(pt)<2) continue;
-    
-    pt_bin=static_cast<int>(pt);
-    pt_bin_z=static_cast<int>(5*pt);
-
-    i_bin = static_cast<int>(nbin_phi*(phi+PI)/(2*PI));
-    j_bin = static_cast<int>(nbin_eta*(eta+2.2)/4.4);
-
-    // Check that the track is in the sector acceptance 
-    if (mult[sec_num]<nh) continue;
-    
-    n_sec=0;
-    
-    for (int j=0;j<100;++j)
+    for (int j=0;j<n_part;++j)
     {
-      if (mult[j]>4 && j!=sec_num)	++n_sec; 
-    }
+      pt    = part_pt->at(j);
+      eta   = part_eta->at(j);
+      phi   = part_phi->at(j);
+
+      if (abs(part_pdg->at(j))!=pdgid && pdgid!=-1) continue;
+      if (fabs(pt)>ptmax) continue;
+      if (fabs(eta)>etamax) continue;
+      if (part_nhits->at(j)<nh) continue;
+      if (fabs(pt)<ptcut) continue;
+      if (fabs(part_d0->at(j))>d0cut) continue;
     
-    // If n_sec is different from 0, it means that the 
-    // track is in the acceptance of other trigger towers
-    // 
-    // This could bias the efficiency calculation so we don't account for it
-    //
+      pt_bin=static_cast<int>(pt);
+      pt_bin_z=static_cast<int>(5*pt);
 
-    if (n_sec!=0) continue;
+      i_bin = static_cast<int>(nbin_phi*(phi+PI)/(2*PI));
+      j_bin = static_cast<int>(nbin_eta*(eta+2.2)/4.4);
 
-    ++pt_in_sec[pt_bin];
-      
-    eff_sec_m[i_bin][j_bin]+=1.;
-      
-    ++tot_in_sec;
-      
-    if (ntotpatt==-1) ntotpatt=0; 
+      // Check that the track is in the sector acceptance 
+      if (part_nsec->at(j)<1) continue;
+    
+      n_sec=0;
+      in_sec=0;
 
-    tot_patts+=ntotpatt;
-      
-    tot_patt[pt_bin]+=ntotpatt;
-      
-    if (pt<10) ++pt_in_sec_z[pt_bin_z];
-    if (pt<10) tot_patt_z[pt_bin_z]+=ntotpatt;
-      
-    if (npatt!=0) // A pattern was matched for this track
-    {
-      ++pt_in_pat[pt_bin];
-      
-      eff_pat_m[i_bin][j_bin]+=1.;
-      tot_match+=1;
-      tot_goodpatts+=npatt;
-      good_patt[pt_bin]+=npatt;
-      
-      if (pt<10) 
+      for (unsigned int jj=0;jj<part_sec->at(j).size();++jj)
       {
-	++pt_in_pat_z[pt_bin_z];
-	++good_patt_z[pt_bin_z];
+          if (part_sec->at(j).at(jj)!=sec_num)	++n_sec;
+          if (part_sec->at(j).at(jj)==sec_num)	++in_sec;
       }
-    }
-  }	
+    
+      // If n_sec is different from 0, it means that the 
+      // track is in the acceptance of other trigger towers
+      // 
+      // This could bias the efficiency calculation so we don't account for it
+      //
+
+      if (in_sec==0) continue;
+      if (n_sec!=0) continue;
+
+      ++pt_in_sec[pt_bin];
+      
+      eff_sec_m[i_bin][j_bin]+=1.;
+      
+      ++tot_in_sec;
+        
+      if (pt<10) ++pt_in_sec_z[pt_bin_z];
+        
+      if (part_npatt->at(j)!=0) // A pattern was matched for this track
+      {
+          ++pt_in_pat[pt_bin];
+      
+          eff_pat_m[i_bin][j_bin]+=1.;
+          tot_match+=1;
+      
+          if (pt<10)
+          {
+              ++pt_in_pat_z[pt_bin_z];
+          }
+      }
+    }	
+  }
 
   cout << tot_in_sec << " tracks of sector " << sec_num << " have more than " << nh 
-       << " hits in the sector and no more than 5 hits in any other sector" << endl;
+       << " hits in the sector and no more than " << nh << " hits in any other sector" << endl;
   cout << tot_match << " were matched in a pattern..." << endl;
   cout << " Efficiency is " << 100*tot_match/tot_in_sec << "%" << endl;
- // cout << " Fake rate is " << 100*(tot_patts-tot_goodpatts)/tot_patts << "%" << endl;
   
   for (int i=0;i<nbin_phi;++i)
   {
@@ -268,8 +253,8 @@ void do_pattern_effs(std::string filename, int sec_num, int nh, int pdgid=-1, fl
 
       if (eff_sec_m[i][j]!=0.)
       {
-	eff_pat_m[i][j] /= eff_sec_m[i][j];
-	eff_pat->Fill(-2.2+(j+0.5)*4.4/nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,eff_pat_m[i][j]);
+          eff_pat_m[i][j] /= eff_sec_m[i][j];
+          eff_pat->Fill(-2.2+(j+0.5)*4.4/nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,eff_pat_m[i][j]);
       }
     }
   }
@@ -436,9 +421,29 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
   // by merging all the available files
 
   //  gStyle->SetOptStat(0);
-  gStyle->SetOptTitle(0);
+    gStyle->SetOptTitle(0);
 
-  int   evt;        // Event number (for PU event, where there is more than 1 primary)
+    
+    
+    int n_part;                        // The total number of particles inducing at least one stub in the event
+    
+    std::vector<int>     *part_pdg;    // PDG id of the particles
+    std::vector< std::vector<int> >     *part_sec;
+    std::vector<int>     *part_nsec;   // In how many trigger towers this particle hit more than 4 different layers/disks?
+    std::vector<int>     *part_nhits;  // How many different layers/disks are hit by the particle?
+    std::vector<int>     *part_npatt;  // How many patterns contains more than 4 stubs of the particle (in 4 different layers/disks)?
+    std::vector<int>     *part_ntc;    // How many TCs contains more than 4 stubs of the particle (in 4 different layers/disks)?
+    
+    
+    std::vector<float>   *part_pt;     // pt of the particles
+    std::vector<float>   *part_rho;    // rho0 of the particles
+    std::vector<float>   *part_d0;     // d0 of the particles
+    std::vector<float>   *part_z0;     // z0 of the particles
+    std::vector<float>   *part_eta;    // eta of the particles
+    std::vector<float>   *part_phi;    // phi of the particles
+    std::vector<float>   *part_dist;   // isolation wrt other primaries with pT>3GeV
+    
+    int   evt;        // Event number (for PU event, where there is more than 1 primary)
   int   nsec;       // The number of sectors containing at least 5 stubs of the prim. track
   float pt;         // The pT of the prim. track
   float d0;         // The d0 of the prim. track
@@ -457,29 +462,26 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
   int   mult[500];  // The total number of stubs per sector 
   int   nhits;      // The total number of layers/disks hit by the prim track
 
-
-  TFile *file    = TFile::Open(filename.c_str());
-  TTree *newtree = (TTree*)file->Get("SectorEff");
-
-  newtree->SetBranchAddress("event",      &evt);
-  newtree->SetBranchAddress("nsec",       &nsec);
-  newtree->SetBranchAddress("nhits",      &nhits);
-  newtree->SetBranchAddress("npatt",      &npatt);
-  newtree->SetBranchAddress("tpatt",      &ntotpatt);
-  newtree->SetBranchAddress("ntrack",     &ntrck);
-  newtree->SetBranchAddress("ttrack",     &ntottrck);
-  newtree->SetBranchAddress("pt",         &pt);
-  newtree->SetBranchAddress("z0",         &z0);
-  newtree->SetBranchAddress("eta",        &eta);
-  newtree->SetBranchAddress("phi",        &phi);
-  newtree->SetBranchAddress("d0",         &d0);
-  newtree->SetBranchAddress("pt_f",       &pt_f);
-  newtree->SetBranchAddress("z0_f",       &z0_f);
-  newtree->SetBranchAddress("eta_f",      &eta_f);
-  newtree->SetBranchAddress("phi_f",      &phi_f);
-  newtree->SetBranchAddress("pdgID",      &pdg);
-  newtree->SetBranchAddress("mult",       &mult);
-
+    
+    
+    TFile *file    = TFile::Open(filename.c_str());
+    TTree *newtree = (TTree*)file->Get("FullInfo");
+    
+    newtree->SetBranchAddress("n_part",       &n_part);
+    newtree->SetBranchAddress("part_pdg",     &part_pdg);
+    newtree->SetBranchAddress("part_nsec",    &part_nsec);
+    newtree->SetBranchAddress("part_nhits",   &part_nhits);
+    newtree->SetBranchAddress("part_npatt",   &part_npatt);
+    newtree->SetBranchAddress("part_ntc",     &part_ntc);
+    newtree->SetBranchAddress("part_pt",      &part_pt);
+    newtree->SetBranchAddress("part_rho",     &part_rho);
+    newtree->SetBranchAddress("part_d0",      &part_d0);
+    newtree->SetBranchAddress("part_z0",      &part_z0);
+    newtree->SetBranchAddress("part_eta",     &part_eta);
+    newtree->SetBranchAddress("part_phi",     &part_phi);
+    newtree->SetBranchAddress("part_sec",     &part_sec);
+    newtree->SetBranchAddress("part_dist",    &part_dist);
+    
   int n_entries = newtree->GetEntries();
 
   const int nbin_eta = 50;
@@ -538,208 +540,150 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
   float eta_res[nbin_pt][4];
   float z0_res[nbin_pt][4];
 
-  for (int k=0;k<4;++k) 
-  {
+    for (int k=0;k<4;++k)
+    {
+        for (int i=0;i<nbin_phi;++i)
+        {
+            for (int j=0;j<nbin_eta;++j)
+            {
+                e_p_eff[i][j][k] = 0.;
+            }
+        }
+
+        for (int i=0;i<nbin_eta;++i) eta_eff[i][k]  = 0.;
+        for (int i=0;i<nbin_pt;++i)  pt_eff[i][k]   = 0.;
+        for (int i=0;i<nbin_pt;++i)  pt_eff_z[i][k] = 0.;
+        for (int i=0;i<nbin_z0;++i)  z0_eff[i][k]   = 0.;
+
+        for (int i=0;i<nbin_pt;++i)  pt_res[i][k]   = 0.;
+        for (int i=0;i<nbin_pt;++i) eta_res[i][k]  = 0.;
+        for (int i=0;i<nbin_pt;++i) phi_res[i][k]  = 0.;
+        for (int i=0;i<nbin_pt;++i)  z0_res[i][k]   = 0.;
+
+    }
+
+    int tot_prims     = 0;
+    int tot_in_sec    = 0;
+    int tot_match     = 0;
+    int tot_patts     = 0;
+    int tot_goodpatts = 0;
+    int tot_match_t   = 0;
+    int tot_trcks     = 0;
+    int tot_goodtrcks = 0;
+
+    int prev_evt = -1;
+
+    int i_bin;
+    int j_bin;
+    
+    float PI=4.*atan(1.);
+
+    int eta_bin,phi_bin,z0_bin,pt_bin, pt_bin_z;
+    int n_sec=0;
+  
+    // First loop to get the sector eta/phi acceptance
+
+    for (int i=0;i<n_entries;++i)
+    //for (int i=0;i<1000;++i)
+    {
+
+        if (i%10000==0)
+            cout << "Processed " << i << "/" << n_entries << endl;
+
+        newtree->GetEntry(i);
+
+        for (int j=0;j<n_part;++j)
+        {
+        pdg   = part_pdg->at(j);
+        pt    = part_pt->at(j);
+        eta   = part_eta->at(j);
+        phi   = part_phi->at(j);
+        nhits = part_nhits->at(j);
+        d0    = part_d0->at(j);
+        z0    = part_z0->at(j);
+        
+        if (pdg!=pdgid && pdgid!=-1) continue;
+        if (fabs(pt)>100) continue;
+        if (fabs(eta)>2.5) continue;
+        if (nhits<nh) continue;
+        if (fabs(pt)<ptcut) continue;
+        if (fabs(d0)>d0cut) continue;
+        if (fabs(z0)>20) continue;
+
+        pt_bin  = static_cast<int>(nbin_pt*pt/100);
+        pt_bin_z= static_cast<int>(nbin_pt*pt/10);
+        z0_bin  = static_cast<int>(nbin_z0*(z0+20.)/40.);
+        eta_bin = static_cast<int>(nbin_eta*(eta+2.5)/5.);
+        phi_bin = static_cast<int>(nbin_phi*(phi+PI)/(2*PI));
+
+        n_sec   = part_nsec->at(j);
+
+        tot_prims++;
+        ++pt_eff[pt_bin][0];
+        if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][0];
+        ++eta_eff[eta_bin][0];
+        ++z0_eff[z0_bin][0];
+        ++e_p_eff[phi_bin][eta_bin][0];
+
+        if (n_sec==0) continue; // The track is not in the acceptance
+
+        ++tot_in_sec;
+        ++pt_eff[pt_bin][1];
+        if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][1];
+        ++eta_eff[eta_bin][1];
+        ++z0_eff[z0_bin][1];
+        ++e_p_eff[phi_bin][eta_bin][1];
+  
+        if (part_npatt->at(j)!=0) // This prim is in at least one pattern
+        {
+            ++tot_match;
+            ++pt_eff[pt_bin][2];
+            if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][2];
+            ++eta_eff[eta_bin][2];
+            ++z0_eff[z0_bin][2];
+            ++e_p_eff[phi_bin][eta_bin][2];
+        }
+
+        if (part_ntc->at(j)!=0) // This prim is in at least one TC
+        {
+            ++tot_match_t;
+            ++pt_eff[pt_bin][3];
+            if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][3];
+            ++eta_eff[eta_bin][3];
+            ++z0_eff[z0_bin][3];
+            ++e_p_eff[phi_bin][eta_bin][3];
+        }
+    }
+    }
+  
+    cout << tot_in_sec << "/" << tot_prims << " tracks have more than " << nh << " hits in the full tracker" << endl;
+    cout << tot_match << " were matched in a pattern..." << endl;
+    cout << tot_match_t << " were matched in a TC..." << endl;
+
     for (int i=0;i<nbin_phi;++i)
     {
-      for (int j=0;j<nbin_eta;++j)
-      {
-	e_p_eff[i][j][k] = 0.; 
-      }
+        for (int j=0;j<nbin_eta;++j)
+        {
+            if (e_p_eff[i][j][0]!=0.) eff_sec->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][1]/e_p_eff[i][j][0]);
+            if (e_p_eff[i][j][1]!=0.) eff_pat->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][2]/e_p_eff[i][j][1]);
+            if (e_p_eff[i][j][2]!=0.)
+            {
+                if (e_p_eff[i][j][3]/e_p_eff[i][j][2] > 1)
+                {
+                    eff_trk->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,1.);
+                }
+                else
+                {
+                    eff_trk->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][3]/e_p_eff[i][j][2]);
+                }
+            }
+
+            if (e_p_eff[i][j][1]!=0.) eff_tot->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][3]/e_p_eff[i][j][1]);
+        }
     }
 
-    for (int i=0;i<nbin_eta;++i) eta_eff[i][k]  = 0.;
-    for (int i=0;i<nbin_pt;++i)  pt_eff[i][k]   = 0.;
-    for (int i=0;i<nbin_pt;++i)  pt_eff_z[i][k] = 0.;
-    for (int i=0;i<nbin_z0;++i)  z0_eff[i][k]   = 0.;
-
-    for (int i=0;i<nbin_pt;++i)  pt_res[i][k]   = 0.;
-    for (int i=0;i<nbin_pt;++i) eta_res[i][k]  = 0.;
-    for (int i=0;i<nbin_pt;++i) phi_res[i][k]  = 0.;
-    for (int i=0;i<nbin_pt;++i)  z0_res[i][k]   = 0.;
-
-  }
-
-  int tot_prims     = 0;
-  int tot_in_sec    = 0;
-  int tot_match     = 0;
-  int tot_patts     = 0;
-  int tot_goodpatts = 0;
-  int tot_match_t   = 0;
-  int tot_trcks     = 0;
-  int tot_goodtrcks = 0;
-
-  int prev_evt = -1;
-
-  int i_bin;
-  int j_bin;
-
-  float PI=4.*atan(1.);
-
-  int eta_bin,phi_bin,z0_bin,pt_bin, pt_bin_z;
-  int n_sec=0;
-  
-  // First loop to get the sector eta/phi acceptance
-
-  for (int i=0;i<n_entries;++i)
-    //for (int i=0;i<1000;++i)
-  {
-
-    if (i%10000==0) 
-      cout << "Processed " << i << "/" << n_entries << endl;
-
-    newtree->GetEntry(i);
-
-    if (pdg!=pdgid && pdgid!=-1) continue;
-    if (fabs(pt)>100) continue;
-    if (fabs(eta)>2.5) continue;
-    if (nhits<nh) continue;
-    if (fabs(pt)<ptcut) continue;
-    if (fabs(d0)>d0cut) continue;
-    if (fabs(z0)>20) continue;
-
-//    if (mult[35]<nh) continue; 
-
-
-
-    pt_bin  = static_cast<int>(nbin_pt*pt/100);
-    pt_bin_z= static_cast<int>(nbin_pt*pt/10);
-    z0_bin  = static_cast<int>(nbin_z0*(z0+20.)/40.);
-    eta_bin = static_cast<int>(nbin_eta*(eta+2.5)/5.);
-    phi_bin = static_cast<int>(nbin_phi*(phi+PI)/(2*PI));
-
-    n_sec   = 0;
-
-    tot_prims++;
-    ++pt_eff[pt_bin][0];
-    if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][0];
-    ++eta_eff[eta_bin][0];
-    ++z0_eff[z0_bin][0];
-    ++e_p_eff[phi_bin][eta_bin][0];
-
-    // Check in how sector the hits threshold is passed
-
-
-
-    for (int j=0;j<60;++j)
+    for (int i=0;i<nbin_pt;++i)
     {
-      if (mult[j]>=nh) ++n_sec; 
-    }
-
-//    if (n_sec>1) continue;
-
-    if (n_sec==0) continue; // The track is not in the acceptance
-
-    ++tot_in_sec;
-    ++pt_eff[pt_bin][1];
-    if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][1];
-    ++eta_eff[eta_bin][1];
-    ++z0_eff[z0_bin][1];
-    ++e_p_eff[phi_bin][eta_bin][1];
-
-    if (ntotpatt==-1) ntotpatt=0;
-
-    if (evt!=prev_evt)
-    {
-      prev_evt = evt;
-      tot_patts+=ntotpatt;
-      tot_trcks+=ntottrck;
-    } 
-  
-    if (npatt!=0) // This prim is in at least one pattern
-    {
-      ++tot_match;
-      ++pt_eff[pt_bin][2];
-      if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][2];
-      ++eta_eff[eta_bin][2];
-      ++z0_eff[z0_bin][2];
-      ++e_p_eff[phi_bin][eta_bin][2];
-
-      tot_goodpatts+=npatt;
-    }
-
-    if (ntrck!=0) // This prim is in at least one track
-    {
-      ++tot_match_t;
-      ++pt_eff[pt_bin][3];
-      if (pt_bin_z<nbin_pt) ++pt_eff_z[pt_bin_z][3];
-      ++eta_eff[eta_bin][3];
-      ++z0_eff[z0_bin][3];
-      ++e_p_eff[phi_bin][eta_bin][3];
-
-      tot_goodtrcks+=ntrck;
-
-      pt_res[pt_bin][0]   += 1.;
-      eta_res[pt_bin][0] += 1.;
-      phi_res[pt_bin][0] += 1.;
-      z0_res[pt_bin][0]   += 1.;
-
-
-      pt_res[pt_bin][1]  += (pt-pt_f)*(pt-pt_f);
-      eta_res[pt_bin][1] += (eta-eta_f)*(eta-eta_f);
-      phi_res[pt_bin][1] += fmod(phi-phi_f,4*atan(1.))*fmod(phi-phi_f,4.*atan(1.));
-      z0_res[pt_bin][1]  += (z0-z0_f)*(z0-z0_f);
-
-      pt_d->Fill((pt_f-pt)/pt);
-      eta_d->Fill(eta_f-eta);
-      phi_d->Fill(fmod(phi_f-phi,4*atan(1.)));
-      z0_d->Fill((z0_f-z0));
-    }
-  }	
-
-  for (int i=0;i<nbin_pt;++i)
-  {
-    if (pt_res[i][0]<10) continue;
-
-    pt_res[i][2]   = sqrt(pt_res[i][1]/pt_res[i][0]);
-    eta_res[i][2]  = sqrt(eta_res[i][1]/eta_res[i][0]);
-    phi_res[i][2]  = sqrt(phi_res[i][1]/phi_res[i][0]);
-    z0_res[i][2]   = sqrt(z0_res[i][1]/z0_res[i][0]);
-
-    pt_resol->Fill((i+0.5)*100./nbin_pt,pt_res[i][2]/(i+0.5));
-    //pt_resol->Fill((i+0.5)*100./nbin_pt,pt_res[i][2]);
-    eta_resol->Fill((i+0.5)*100./nbin_pt,eta_res[i][2]);
-    phi_resol->Fill((i+0.5)*100./nbin_pt,phi_res[i][2]);
-    z0_resol->Fill((i+0.5)*100./nbin_pt,z0_res[i][2]);
-  }
-
-
-
-  
-  cout << tot_in_sec << "/" << tot_prims << " tracks have more than " << nh << " hits in the full tracker" << endl;
-  cout << tot_match << " were matched in a pattern..." << endl;
-  cout << tot_match_t << " were matched in a track..." << endl;
-  cout << tot_patts << " patterns were matched in total" << endl;
-  cout << tot_goodpatts << " patterns were containing at least " << nh << " good hits " << endl;
-  cout << " Fake pattern rate is " << float(tot_patts-tot_goodpatts)/float(tot_patts) << endl;
-  cout << tot_trcks << " tracks were fitted in total" << endl;
-  cout << tot_goodtrcks << " tracks were containing at least " << nh << " good hits " << endl;
-//  cout << " Fake track rate is " << float(tot_trcks-tot_goodtrcks)/float(tot_trcks) << endl;
-
-  for (int i=0;i<nbin_phi;++i)
-  {
-    for (int j=0;j<nbin_eta;++j)   
-    {
-      if (e_p_eff[i][j][0]!=0.) eff_sec->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][1]/e_p_eff[i][j][0]);
-      if (e_p_eff[i][j][1]!=0.) eff_pat->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][2]/e_p_eff[i][j][1]);
-      if (e_p_eff[i][j][2]!=0.)
-      {
-	if (e_p_eff[i][j][3]/e_p_eff[i][j][2] > 1) 
-	{
-	  eff_trk->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,1.);
-	}
-	else
-	{
-	  eff_trk->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][3]/e_p_eff[i][j][2]);
-	}
-      }
-
-      if (e_p_eff[i][j][1]!=0.) eff_tot->Fill(-2.5+(j+0.5)*5./nbin_eta,-PI+(i+0.5)*2*PI/nbin_phi,e_p_eff[i][j][3]/e_p_eff[i][j][1]);
-    }
-  }
-
-  for (int i=0;i<nbin_pt;++i)
-  {
     if (pt_eff[i][0]>10)
     {
       if (pt_eff[i][1]!=0.) pt_patt_eff->Fill((i+0.5)*100./nbin_pt,pt_eff[i][2]/pt_eff[i][1]);
@@ -1073,211 +1017,5 @@ void do_full_effs(std::string filename, int nh, int pdgid=-1, float ptcut=2., fl
   sprintf (buffer, "Track_eff_%d_hits_track.C",nh);
 
   c2->SaveSource(buffer);
-
-
-
-
-  c3 = new TCanvas("c3","Overall resolutions",6,102,1526,921);
-  gStyle->SetOptStat(0);
-  gStyle->SetOptTitle(0);
-  c3->Range(-1.833856,-0.1286626,21.1442,1.157964);
-  c3->Divide(2,2);
-  c3->SetFillColor(0);
-  c3->SetBorderMode(0);
-  c3->SetBorderSize(2);
-  c3->SetLeftMargin(0.08);
-  c3->SetRightMargin(0.05);
-  c3->SetFrameBorderMode(0);
-  c3->SetFrameBorderMode(0);
-
-  c3->cd(1); 
-  c3->cd(1)->SetGridx();
-  c3->cd(1)->SetGridy();
-  eta_resol->SetMinimum(0.);
-  eta_resol->SetMaximum(1.1);
-  eta_resol->SetMarkerStyle(3);
-  eta_resol->GetXaxis()->SetTitle("Particle p_{T} (in GeV/c)");
-  eta_resol->GetXaxis()->SetLabelFont(42);
-  eta_resol->GetXaxis()->SetLabelSize(0.035);
-  eta_resol->GetXaxis()->SetTitleSize(0.035);
-  eta_resol->GetXaxis()->SetTitleOffset(1.19);
-  eta_resol->GetXaxis()->SetTitleFont(42);
-  eta_resol->GetYaxis()->SetTitle("#eta resolution");
-  eta_resol->GetYaxis()->SetLabelFont(42);
-  eta_resol->GetYaxis()->SetLabelSize(0.035);
-  eta_resol->GetYaxis()->SetTitleSize(0.035);
-  eta_resol->GetYaxis()->SetTitleFont(42);
-  eta_resol->GetYaxis()->SetRangeUser(-0.1,1.1);
-  eta_resol->SetMarkerStyle(20);
-  eta_resol->Draw();
-
-
-  c3->cd(2); 
-  c3->cd(2)->SetGridx();
-  c3->cd(2)->SetGridy();
-  z0_resol->SetMinimum(0.);
-  z0_resol->SetMaximum(10.);
-  z0_resol->SetMarkerStyle(3);
-  z0_resol->GetXaxis()->SetTitle("Particle p_{T} (in GeV/c)");
-  z0_resol->GetXaxis()->SetLabelFont(42);
-  z0_resol->GetXaxis()->SetLabelSize(0.035);
-  z0_resol->GetXaxis()->SetTitleSize(0.035);
-  z0_resol->GetXaxis()->SetTitleOffset(1.19);
-  z0_resol->GetXaxis()->SetTitleFont(42);
-  z0_resol->GetYaxis()->SetTitle("z_{0} resolution (in mm)");
-  z0_resol->GetYaxis()->SetLabelFont(42);
-  z0_resol->GetYaxis()->SetLabelSize(0.035);
-  z0_resol->GetYaxis()->SetTitleSize(0.035);
-  z0_resol->GetYaxis()->SetTitleFont(42);
-  z0_resol->GetYaxis()->SetRangeUser(0.,10.);
-  z0_resol->SetMarkerStyle(20);
-  z0_resol->Draw();
-
-
-  c3->cd(3); 
-  c3->cd(3)->SetGridx();
-  c3->cd(3)->SetGridy();
-  phi_resol->SetMinimum(-0.1);
-  phi_resol->SetMaximum(1.1);
-  phi_resol->SetMarkerStyle(3);
-  phi_resol->GetXaxis()->SetTitle("Particle p_{T} (in GeV/c)");
-  phi_resol->GetXaxis()->SetLabelFont(42);
-  phi_resol->GetXaxis()->SetLabelSize(0.035);
-  phi_resol->GetXaxis()->SetTitleSize(0.035);
-  phi_resol->GetXaxis()->SetTitleOffset(1.19);
-  phi_resol->GetXaxis()->SetTitleFont(42);
-  phi_resol->GetYaxis()->SetTitle("#phi resolution (in rad)");
-  phi_resol->GetYaxis()->SetLabelFont(42);
-  phi_resol->GetYaxis()->SetLabelSize(0.035);
-  phi_resol->GetYaxis()->SetTitleSize(0.035);
-  phi_resol->GetYaxis()->SetTitleFont(42);
-  phi_resol->GetYaxis()->SetRangeUser(-0.1,1.1);
-  phi_resol->SetMarkerStyle(20);
-  phi_resol->Draw();
-
-
-  c3->cd(4); 
-  c3->cd(4)->SetGridx();
-  c3->cd(4)->SetGridy();
-  pt_resol->SetMinimum(-0.1);
-  pt_resol->SetMaximum(1.1);
-  pt_resol->SetMarkerStyle(3);
-  pt_resol->GetXaxis()->SetTitle("Particle p_{T} (in GeV/c)");
-  pt_resol->GetXaxis()->SetLabelFont(42);
-  pt_resol->GetXaxis()->SetLabelSize(0.035);
-  pt_resol->GetXaxis()->SetTitleSize(0.035);
-  pt_resol->GetXaxis()->SetTitleOffset(1.19);
-  pt_resol->GetXaxis()->SetTitleFont(42);
-  pt_resol->GetYaxis()->SetTitle("p_{T} resolution / p_{T}");
-  pt_resol->GetYaxis()->SetLabelFont(42);
-  pt_resol->GetYaxis()->SetLabelSize(0.035);
-  pt_resol->GetYaxis()->SetTitleSize(0.035);
-  pt_resol->GetYaxis()->SetTitleFont(42);
-  pt_resol->GetYaxis()->SetRangeUser(-0.1,1.1);
-  pt_resol->SetMarkerStyle(20);
-  pt_resol->Draw();
-
-
-  c3->Modified();
-  c3->Update();
-
-
-  sprintf (buffer, "Reso_%d_hits_track.png",nh);
-
-  c3->Print(buffer);
- 
-  sprintf (buffer, "Reso_%d_hits_track.C",nh);
-
-  c3->SaveSource(buffer);
-
-
-  
-
-
-  c4 = new TCanvas("c4","Overall differences",6,102,1526,921);
-  gStyle->SetOptFit();
-  gStyle->SetOptTitle(0);
-  c4->Range(-1.833856,-0.1286626,21.1442,1.157964);
-  c4->Divide(2,2);
-  c4->SetFillColor(0);
-  c4->SetBorderMode(0);
-  c4->SetBorderSize(2);
-  c4->SetLeftMargin(0.08);
-  c4->SetRightMargin(0.05);
-  c4->SetFrameBorderMode(0);
-  c4->SetFrameBorderMode(0);
-
-
-  c4->cd(1); 
-  eta_d->GetXaxis()->SetTitle("#eta^{fit}-#eta^{truth}");
-  eta_d->GetXaxis()->SetLabelFont(42);
-  eta_d->GetXaxis()->SetLabelSize(0.035);
-  eta_d->GetXaxis()->SetTitleSize(0.035);
-  eta_d->GetXaxis()->SetTitleOffset(1.19);
-  eta_d->GetXaxis()->SetTitleFont(42);
-  eta_d->GetYaxis()->SetTitle("");
-  eta_d->GetYaxis()->SetLabelFont(42);
-  eta_d->GetYaxis()->SetLabelSize(0.035);
-  eta_d->GetYaxis()->SetTitleSize(0.035);
-  eta_d->GetYaxis()->SetTitleFont(42);
-  eta_d->Draw();
-  eta_d->Fit("gaus");
-
-  c4->cd(2); 
-  z0_d->GetXaxis()->SetTitle("z_{0}^{fit}-z_{0}^{truth} (in cm)");
-  z0_d->GetXaxis()->SetLabelFont(42);
-  z0_d->GetXaxis()->SetLabelSize(0.035);
-  z0_d->GetXaxis()->SetTitleSize(0.035);
-  z0_d->GetXaxis()->SetTitleOffset(1.19);
-  z0_d->GetXaxis()->SetTitleFont(42);
-  z0_d->GetYaxis()->SetTitle("");
-  z0_d->GetYaxis()->SetLabelFont(42);
-  z0_d->GetYaxis()->SetLabelSize(0.035);
-  z0_d->GetYaxis()->SetTitleSize(0.035);
-  z0_d->GetYaxis()->SetTitleFont(42);
-  z0_d->Draw();
-  z0_d->Fit("gaus");
-
-  c4->cd(3); 
-  phi_d->GetXaxis()->SetTitle("#phi^{fit}-#phi^{truth} (in rad)");
-  phi_d->GetXaxis()->SetLabelFont(42);
-  phi_d->GetXaxis()->SetLabelSize(0.035);
-  phi_d->GetXaxis()->SetTitleSize(0.035);
-  phi_d->GetXaxis()->SetTitleOffset(1.19);
-  phi_d->GetXaxis()->SetTitleFont(42);
-  phi_d->GetYaxis()->SetTitle("");
-  phi_d->GetYaxis()->SetLabelFont(42);
-  phi_d->GetYaxis()->SetLabelSize(0.035);
-  phi_d->GetYaxis()->SetTitleSize(0.035);
-  phi_d->GetYaxis()->SetTitleFont(42);
-  phi_d->Draw();
-  phi_d->Fit("gaus");
-
-  c4->cd(4); 
-  pt_d->GetXaxis()->SetTitle("(p_{T}^{fit}-p_{Y}^{truth})/p_{T}^{truth}");
-  pt_d->GetXaxis()->SetLabelFont(42);
-  pt_d->GetXaxis()->SetLabelSize(0.035);
-  pt_d->GetXaxis()->SetTitleSize(0.035);
-  pt_d->GetXaxis()->SetTitleOffset(1.19);
-  pt_d->GetXaxis()->SetTitleFont(42);
-  pt_d->GetYaxis()->SetTitle("");
-  pt_d->GetYaxis()->SetLabelFont(42);
-  pt_d->GetYaxis()->SetLabelSize(0.035);
-  pt_d->GetYaxis()->SetTitleSize(0.035);
-  pt_d->GetYaxis()->SetTitleFont(42);
-  pt_d->Draw();
-  pt_d->Fit("gaus");
-
-  c4->Modified();
-  c4->Update();
-
-
-  sprintf (buffer, "Diff_%d_hits_track.png",nh);
-
-  c4->Print(buffer);
- 
-  sprintf (buffer, "Diff_%d_hits_track.C",nh);
-
-  c4->SaveSource(buffer);
 }
 
