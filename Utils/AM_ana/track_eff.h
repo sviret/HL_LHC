@@ -245,6 +245,7 @@ class track_eff
   std::vector<float>                *trk_pt;     // pt of the track
   std::vector<float>                *trk_eta;    // eta of the track
   std::vector<float>                *trk_z;      // z0 of the track
+  std::vector<float>                *trk_chi;    // chi2/dof of the track
   std::vector<float>                *trk_phi;    // phi of the track
   std::vector<float>                *trk_pt_t;     // pt of the track
   std::vector<float>                *trk_eta_t;    // eta of the track
@@ -288,6 +289,7 @@ class track_eff
   std::vector<float>              m_trketa; 
   std::vector<float>              m_trkz; 
   std::vector<float>              m_trkphi; 
+  std::vector<float>              m_trkchi; 
 
   std::vector< std::vector<int> > *pm_pattlinks; 
   std::vector<int>                *pm_pattsecid;
@@ -299,6 +301,7 @@ class track_eff
   std::vector<float>              *pm_trketa; 
   std::vector<float>              *pm_trkz; 
   std::vector<float>              *pm_trkphi; 
+  std::vector<float>              *pm_trkchi; 
   std::vector< std::vector<int> > *pm_tclinks;
   std::vector<int>                *pm_tcsecid; 
   std::vector<float>              *pm_tcpt; 

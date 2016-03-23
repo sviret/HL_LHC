@@ -69,6 +69,7 @@ trk_pt(new std::vector<float>),
 trk_eta(new std::vector<float>),
 trk_z(new std::vector<float>),
 trk_phi(new std::vector<float>),
+trk_chi(new std::vector<float>),
 trk_pt_t(new std::vector<float>),
 trk_eta_t(new std::vector<float>),
 trk_z_t(new std::vector<float>),
@@ -244,6 +245,7 @@ void track_eff::do_test(int nevt)
                 trk_z->push_back(m_trkz.at(kk));
                 trk_parts->push_back(parts);
                 trk_stubs->push_back(m_trklinks.at(kk));
+                trk_chi->push_back(m_trkchi.at(kk));
                 trk_pt_t->push_back(0);
                 trk_eta_t->push_back(0);
                 trk_phi_t->push_back(0);
@@ -722,6 +724,7 @@ void track_eff::initTuple(std::string test,std::string out)
   pm_trketa=&m_trketa;
   pm_trkphi=&m_trkphi;
   pm_trkz=&m_trkz;
+  pm_trkchi=&m_trkchi;
 
 
 
@@ -772,6 +775,7 @@ void track_eff::initTuple(std::string test,std::string out)
     m_PATT->SetBranchAddress("L1TRK_eta",          &pm_trketa);
     m_PATT->SetBranchAddress("L1TRK_phi",          &pm_trkphi);
     m_PATT->SetBranchAddress("L1TRK_z",            &pm_trkz);
+    m_PATT->SetBranchAddress("L1TRK_chi2",         &pm_trkchi);
   }
 
   // Output file definition (see the header)
@@ -861,7 +865,8 @@ void track_eff::initTuple(std::string test,std::string out)
   m_finaltree->Branch("trk_pt",       &trk_pt); 
   m_finaltree->Branch("trk_phi",      &trk_phi); 
   m_finaltree->Branch("trk_z",        &trk_z); 
-  m_finaltree->Branch("trk_eta",      &trk_eta); 
+  m_finaltree->Branch("trk_eta",      &trk_eta);
+  m_finaltree->Branch("trk_chi",      &trk_chi); 
   m_finaltree->Branch("trk_pt_t",     &trk_pt_t); 
   m_finaltree->Branch("trk_phi_t",    &trk_phi_t); 
   m_finaltree->Branch("trk_z_t",      &trk_z_t); 
@@ -1041,6 +1046,7 @@ void track_eff::reset()
   trk_pt->clear();   
   trk_phi->clear();   
   trk_z->clear();   
+  trk_chi->clear(); 
   trk_eta->clear();   
   trk_pt_t->clear();   
   trk_phi_t->clear();   

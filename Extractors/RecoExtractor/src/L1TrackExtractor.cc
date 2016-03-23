@@ -28,6 +28,7 @@ L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_ta
   m_trk_eta      = new  std::vector<float>;
   m_trk_phi      = new  std::vector<float>;
   m_trk_z        = new  std::vector<float>;
+  m_trk_chi      = new  std::vector<float>;
   m_trk_links    = new  std::vector< std::vector<int> >;
   m_trk_secid    = new  std::vector<int>;
 
@@ -63,6 +64,7 @@ L1TrackExtractor::L1TrackExtractor(edm::InputTag STUB_tag, edm::InputTag PATT_ta
     m_tree->Branch("L1TRK_phi",          &m_trk_phi);
     m_tree->Branch("L1TRK_z",            &m_trk_z);
     m_tree->Branch("L1TRK_eta",          &m_trk_eta);
+    m_tree->Branch("L1TRK_chi2",         &m_trk_chi);
   }
 }
 
@@ -85,6 +87,7 @@ L1TrackExtractor::L1TrackExtractor(TFile *a_file)
   m_trk_eta      = new  std::vector<float>;
   m_trk_phi      = new  std::vector<float>;
   m_trk_z        = new  std::vector<float>;
+  m_trk_chi      = new  std::vector<float>;
   m_trk_links    = new  std::vector< std::vector<int> >;
   m_trk_secid    = new  std::vector<int>;
 
@@ -128,6 +131,7 @@ L1TrackExtractor::L1TrackExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1TRK_phi",          &m_trk_phi);
   m_tree->SetBranchAddress("L1TRK_z",            &m_trk_z);
   m_tree->SetBranchAddress("L1TRK_eta",          &m_trk_eta);
+  m_tree->SetBranchAddress("L1TRK_chi2",         &m_trk_chi);
   
   std::cout << "This file contains " << m_n_events << " events..." << std::endl;
 }
@@ -365,7 +369,8 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 	m_trk_eta->push_back(tempTrackPtr->getMomentum(5).eta());
 	m_trk_phi->push_back(tempTrackPtr->getMomentum(5).phi());
 	m_trk_z->push_back(tempTrackPtr->getPOCA(5).z());
-	
+	m_trk_chi->push_back(tempTrackPtr->getChi2(5));
+
 	stub_list.clear();
 	
 	for(unsigned int i=0;i<trackStubs.size();i++)
@@ -445,6 +450,7 @@ void L1TrackExtractor::reset()
   m_trk_z->clear();     
   m_trk_links->clear(); 
   m_trk_secid->clear(); 
+  m_trk_chi->clear();
 }
 
 

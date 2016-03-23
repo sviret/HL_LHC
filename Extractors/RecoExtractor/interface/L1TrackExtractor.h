@@ -141,6 +141,7 @@ class L1TrackExtractor
   std::vector<float>               *m_trk_z;     // z0 calculated for track i (in mm)
   std::vector< std::vector<int> >  *m_trk_links; // Links to the stubs making the tracks in L1TkStubs tree
   std::vector<int>                 *m_trk_secid; // Sector number
+  std::vector<float>               *m_trk_chi;   // Chi2/dof of the track 
 
 };
 
