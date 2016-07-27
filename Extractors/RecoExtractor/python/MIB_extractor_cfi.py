@@ -27,22 +27,34 @@ MIBextraction = cms.EDAnalyzer("RecoExtractor",
 
   # Main stuff                        
   doMC             = cms.untracked.bool(False),          # Extract the MC information (MC tree)
+  GenParticles     = cms.InputTag("genParticles", ""),
+  TrkParticles     = cms.InputTag("mix" , "MergedTrackTruth"),
+
+
 
   doSTUB           = cms.untracked.bool(False),          # Extract the official STUB information (TkStub tree)
-  CLUS_container   = cms.string( "TTClustersFromPixelDigis" ),
-  STUB_container   = cms.string( "TTStubsFromPixelDigis" ),
+  TTClusters            = cms.InputTag("TTClustersFromPhase2TrackerDigis", "ClusterInclusive"),
+  TTClustersAssociators = cms.InputTag("TTClusterAssociatorFromPixelDigis", "ClusterInclusive"),
+  TTStubs               = cms.InputTag("TTStubsFromPhase2TrackerDigis", "StubAccepted"),
+  TTStubsAssociators    = cms.InputTag("TTStubAssociatorFromPixelDigis", "StubAccepted"),
+
+  CLUS_container   = cms.string( "TTClustersFromPhase2TrackerDigis" ),
+  STUB_container   = cms.string( "TTStubsFromPhase2TrackerDigis" ),
   CLUS_name        = cms.string( "ClusterInclusive" ),
   STUB_name        = cms.string( "StubAccepted" ),
 
   doL1TRK          = cms.untracked.bool(False),          # Extract the official L1track information
-  L1stub_tag       = cms.InputTag( "TTStubsFromPixelDigis", "StubAccepted"), 
+#  L1stub_tag       = cms.InputTag( "TTStubsFromPixelDigis", "StubAccepted"), 
   L1pattern_tag    = cms.InputTag( "MergePROutput", "AML1Patterns"),
   L1tc_tag         = cms.InputTag( "MergeTCOutput", "AML1TCs"), 
-  L1track_tag      = cms.InputTag( "MergeFITOutput", "AML1Tracks"), 
+  L1track_tag      = cms.InputTag( "MergeTCOutput", "AML1TCs"), 
+#  L1track_tag      = cms.InputTag( "MergeFITOutput", "AML1Tracks"), 
                                
   # Add Pixel information                              
   doPixel          = cms.untracked.bool(False),          # Extract the Tracker information (Pixel tree)
-  pixel_tag        = cms.InputTag( "simSiPixelDigis" ),  # The collection where to fing the pixel info
+  digi_tag         = cms.InputTag( "mix","Tracker" ),    # The collection where to find the pixel info
+  digisimlink_tag  = cms.InputTag( "mix","Tracker" ),    # The collection where to find the pixel info
+  PUinfo_tag       = cms.InputTag( "addPileupInfo","" ), # The collection where to find the PU stuff
   doMatch          = cms.untracked.bool(False),          # Add the simtrack index to each digi                             
 
                                

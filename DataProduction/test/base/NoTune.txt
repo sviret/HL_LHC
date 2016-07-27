@@ -1,7 +1,13 @@
 #No stub window tuning
 
-process.TTStubAlgorithm_tab2013_PixelDigi_.BarrelCut = cms.vdouble( 0, 10, 10, 10, 10., 10., 10. )
-process.TTStubAlgorithm_tab2013_PixelDigi_.EndcapCutSet = cms.VPSet(
+process.TTStubAlgorithm_official_Phase2TrackerDigi_.BarrelCut = cms.vdouble( 0, 10, 10, 10, 10., 10., 10. )
+process.TTStubAlgorithm_official_Phase2TrackerDigi_.TiltedCutSet = cms.VPSet(
+							cms.PSet( TiltedCut = cms.vdouble( 0 ) ),
+       				    		        cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
+    							cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
+      							cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
+   )
+process.TTStubAlgorithm_official_Phase2TrackerDigi_.EndcapCutSet = cms.VPSet(
 							cms.PSet( EndcapCut = cms.vdouble( 0 ) ), 
 							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
 							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),

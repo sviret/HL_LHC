@@ -2,10 +2,12 @@
 #include "../interface/PixelExtractor.h"
 
 
-PixelExtractor::PixelExtractor(edm::InputTag tag, bool doTree, bool doMatch)
+PixelExtractor::PixelExtractor(edm::EDGetTokenT< edm::DetSetVector< Phase2TrackerDigi> > pixToken, edm::EDGetTokenT< edm::DetSetVector< PixelDigiSimLink> > pixslToken, edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puToken, bool doTree, bool doMatch)
 {
   m_OK = false;
-  m_tag = tag;
+  m_pixToken   = pixToken;
+  m_pixslToken = pixslToken;
+  m_puToken    = puToken;
   
 
   m_matching = doMatch;
@@ -21,12 +23,14 @@ PixelExtractor::PixelExtractor(edm::InputTag tag, bool doTree, bool doMatch)
   m_pixclus_simhit   = new std::vector<int>;      
   m_pixclus_simhitID = new std::vector< std::vector<int> >;  
   m_pixclus_evtID    = new std::vector< std::vector<int> >;  
+  m_pixclus_bcID     = new std::vector< std::vector<int> >;  
 
   m_pixclus_layer    = new std::vector<int>;    
   m_pixclus_module   = new std::vector<int>; 
   m_pixclus_ladder   = new std::vector<int>;    
   m_pixclus_nrow     = new std::vector<int>;    
   m_pixclus_ncolumn  = new std::vector<int>;  
+  m_pixclus_bot      = new std::vector<int>;  
   m_pixclus_pitchx   = new std::vector<float>;  
   m_pixclus_pitchy   = new std::vector<float>; 
 
@@ -52,11 +56,13 @@ PixelExtractor::PixelExtractor(edm::InputTag tag, bool doTree, bool doMatch)
     m_tree->Branch("PIX_simhit",    &m_pixclus_simhit);
     m_tree->Branch("PIX_simhitID",  &m_pixclus_simhitID);
     m_tree->Branch("PIX_evtID",     &m_pixclus_evtID);
+    m_tree->Branch("PIX_bcID",      &m_pixclus_bcID);
     m_tree->Branch("PIX_layer",     &m_pixclus_layer);
     m_tree->Branch("PIX_module",    &m_pixclus_module);
     m_tree->Branch("PIX_ladder",    &m_pixclus_ladder);
     m_tree->Branch("PIX_nrow",      &m_pixclus_nrow);
     m_tree->Branch("PIX_ncolumn",   &m_pixclus_ncolumn);
+    m_tree->Branch("PIX_bottom",    &m_pixclus_bot);
     m_tree->Branch("PIX_pitchx",    &m_pixclus_pitchx);
     m_tree->Branch("PIX_pitchy",    &m_pixclus_pitchy);
   }
@@ -131,6 +137,7 @@ PixelExtractor::~PixelExtractor()
 void PixelExtractor::init(const edm::EventSetup *setup)
 {
   setup->get<TrackerDigiGeometryRecord>().get(theTrackerGeometry);
+  setup->get<TrackerTopologyRcd>().get(theTrackerTopology);
 }
 
 //
@@ -141,18 +148,15 @@ void PixelExtractor::writeInfo(const edm::Event *event)
 {
   PixelExtractor::reset();
 
+  event->getByToken(m_pixToken, pDigiColl);
 
-  edm::Handle< edm::DetSetVector<PixelDigi> > pDigiColl;
 
-  event->getByLabel(m_tag, pDigiColl);
-
-  edm::DetSetVector<PixelDigi>::const_iterator DSViterDigi = pDigiColl->begin();
+  const TrackerTopology* const tTopo = theTrackerTopology.product();
+  const TrackerGeometry* const theTrackerGeom = theTrackerGeometry.product();
 
   if (m_matching)
   {
-    edm::InputTag m_pileupcollection("addPileupInfo");
-    edm::Handle<std::vector<PileupSummaryInfo> > pileupinfos;
-    event->getByLabel(m_pileupcollection,pileupinfos);
+    event->getByToken(m_puToken,pileupinfos);
 
     std::vector<PileupSummaryInfo>::const_iterator PVI;
     
@@ -161,8 +165,9 @@ void PixelExtractor::writeInfo(const edm::Event *event)
       if (PVI->getBunchCrossing()==0) m_nPU = PVI->getPU_NumInteractions();      
     }
 
-    event->getByLabel(m_tag, pDigiLinkColl);
+    event->getByToken(m_pixslToken, pDigiLinkColl);
   }
+  
 
   bool barrel;
   bool endcap;
@@ -177,113 +182,98 @@ void PixelExtractor::writeInfo(const edm::Event *event)
   LocalPoint  clustlp;
   GlobalPoint pos;    
 
-  edm::DetSet<PixelDigi>::const_iterator begin;
-  edm::DetSet<PixelDigi>::const_iterator end;  
-  edm::DetSet<PixelDigi>::const_iterator iter;
-  
-  for( ; DSViterDigi != pDigiColl->end(); DSViterDigi++) 
+  for (auto gd=theTrackerGeom->dets().begin(); gd != theTrackerGeom->dets().end(); gd++) 
   {
-    begin             = DSViterDigi->data.begin(); 
-    end               = DSViterDigi->data.end();
+    DetId detid = (*gd)->geographicalId();
+    if(detid.subdetId()!=StripSubdetector::TOB && detid.subdetId()!=StripSubdetector::TID ) continue; // only run on OT
 
-    DetId detIdObject(DSViterDigi->detId());
-    
-    barrel = (detIdObject.subdetId() == static_cast<int>(PixelSubdetector::PixelBarrel));
-    endcap = (detIdObject.subdetId() == static_cast<int>(PixelSubdetector::PixelEndcap));
+    if (pDigiColl->find( detid ) == pDigiColl->end() ) continue;
 
+    barrel = (detid.subdetId()==StripSubdetector::TOB);
+    endcap = (detid.subdetId()==StripSubdetector::TID);
 
     if (!barrel && !endcap) continue;
 
-    const PixelGeomDetUnit* theGeomDet = dynamic_cast<const PixelGeomDetUnit*>(theTrackerGeometry->idToDet(detIdObject));      
-    const PixelTopology* topol         = &(theGeomDet->specificTopology());
-
+    /// Get the DetSets of the Digis
+    const edm::DetSet< Phase2TrackerDigi > digis = (*pDigiColl)[ detid ];
+    const GeomDetUnit* det0 = theTrackerGeom->idToDetUnit( detid );
+    const PixelGeomDetUnit* theGeomDet = dynamic_cast< const PixelGeomDetUnit* >( det0 );
+    const PixelTopology* topol = dynamic_cast< const PixelTopology* >( &(theGeomDet->specificTopology()) );
+    
     cols     = topol->ncolumns();
     rows     = topol->nrows();
-    pitchX = topol->pitch().first;
-    pitchY = topol->pitch().second;
-
+    pitchX   = topol->pitch().first;
+    pitchY   = topol->pitch().second;
+    
     if (m_matching)
     {
-      edm::DetSetVector<PixelDigiSimLink>::const_iterator isearch = pDigiLinkColl->find(DSViterDigi->id);
-
-      if(isearch != pDigiLinkColl->end())      //if it is not empty 
-	pDigiLinks = (*pDigiLinkColl)[DSViterDigi->id];	        
+      if (pDigiLinkColl->find( detid ) == pDigiLinkColl->end() ) continue;
+      pDigiLinks = (*pDigiLinkColl)[ detid ];	        
     }
+   
 
-    for (iter = begin; iter != end; ++iter)
+    for ( auto iter = digis.begin();iter != digis.end();++iter ) 
     {
+
       clustlp = topol->localPosition( MeasurementPoint(float((*iter).row())+0.5,float((*iter).column())+0.5));
       pos     =  theGeomDet->surface().toGlobal(clustlp);
 
       the_ids.clear();
       the_eids.clear();
+      the_bids.clear();
 
       m_pixclus_x->push_back(pos.x());
       m_pixclus_y->push_back(pos.y());
       m_pixclus_z->push_back(pos.z());
-      m_pixclus_e->push_back((*iter).adc());
+      m_pixclus_e->push_back(1);
       m_pixclus_row->push_back((*iter).row()); 
       m_pixclus_column->push_back((*iter).column());
+      m_pixclus_bot->push_back(static_cast<int>(tTopo->isLower(detid)));
+      
+      // std::cout << rows << "/" << cols << "/" << static_cast<int>(tTopo->isLower(detid)) << std::endl;
 
       if (m_matching)
       {
 	if (pDigiLinks.data.size() != 0)
 	{
-	  edm::DetSet<PixelDigiSimLink>::const_iterator it;
+	  //	  edm::DetSet<PixelDigiSimLink>::const_iterator it;
 	  // Loop over DigisSimLink in this det unit
 
-	  for(it = pDigiLinks.data.begin();  it != pDigiLinks.data.end(); it++) 
+	  for(auto it = pDigiLinks.data.begin();  it != pDigiLinks.data.end(); it++) 
 	  {         
 	    if (static_cast<int>(it->channel())!=static_cast<int>((*iter).channel()))
 	      continue;
 
-	    //std::cout << it->SimTrackId() << " ##### " << it->eventId().rawId() << std::endl;
+	    //	    std::cout << it->SimTrackId() << " ##### " << it->eventId().event() << std::endl;
 
 	    the_ids.push_back(it->SimTrackId()); 
-	    the_eids.push_back(it->eventId().rawId()); 
+	    the_eids.push_back(it->eventId().event()); 
+	    the_bids.push_back(it->eventId().bunchCrossing()); 
 	  }
 	}
       }
+      
 
       //      std::cout << the_ids.size() << " #///# " << the_eids.size() << std::endl;
 
       m_pixclus_simhit->push_back(the_ids.size());
       m_pixclus_simhitID->push_back(the_ids);
       m_pixclus_evtID->push_back(the_eids);
+      m_pixclus_bcID->push_back(the_bids);
 
       if (barrel)
       {
-	PXBDetId bdetid(detIdObject);
-	m_pixclus_layer->push_back(static_cast<int>(bdetid.layer())); 
-      	m_pixclus_module->push_back(static_cast<int>(bdetid.module())); 
-      	m_pixclus_ladder->push_back(static_cast<int>(bdetid.ladder())); 
+	m_pixclus_layer->push_back(static_cast<int>(tTopo->layer(detid))+4); 
+	m_pixclus_module->push_back(static_cast<int>(tTopo->module(detid))); 
+      	m_pixclus_ladder->push_back(static_cast<int>(tTopo->tobRod(detid))); 
       }
 
       if (endcap)
       {
-	PXFDetId fdetid(detIdObject);
-
-	//	std::cout << static_cast<int>(fdetid.disk()) << " / " << pos.z() 
-	//	  << " / " << rows << " / " << cols << std::endl;
-
-	// Disk 1 to 10 are Pixels, 11 to 15 Tracker
-
-	disk = (static_cast<int>(fdetid.side())*2-3)*static_cast<int>(fdetid.disk());
-
-	if (disk>=11)  m_pixclus_layer->push_back(disk); 
-	if (disk<=-11) m_pixclus_layer->push_back(7-disk); 
-	if (disk<11 && disk>-11) m_pixclus_layer->push_back(-1); 
-
-	if (static_cast<int>(fdetid.disk())<11)
-	{
-	  m_pixclus_ladder->push_back(static_cast<int>(fdetid.blade())); 
-	}
-	else
-	{
-	  m_pixclus_ladder->push_back(static_cast<int>(fdetid.ring())); 
-	}
-
-	m_pixclus_module->push_back(static_cast<int>(fdetid.module())); 
+	disk = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+	m_pixclus_layer->push_back(disk); 
+	m_pixclus_ladder->push_back(tTopo->tidRing(detid)); 
+	m_pixclus_module->push_back(tTopo->module(detid)); 
       }
 
       m_pixclus_nrow->push_back(rows);
@@ -324,11 +314,13 @@ void PixelExtractor::reset()
   m_pixclus_simhit->clear();
   m_pixclus_simhitID->clear();
   m_pixclus_evtID->clear();
+  m_pixclus_bcID->clear();
   m_pixclus_layer->clear();  
   m_pixclus_module->clear(); 
   m_pixclus_ladder->clear(); 
   m_pixclus_nrow->clear();   
   m_pixclus_ncolumn->clear();
+  m_pixclus_bot->clear();
   m_pixclus_pitchx->clear(); 
   m_pixclus_pitchy->clear(); 
 }

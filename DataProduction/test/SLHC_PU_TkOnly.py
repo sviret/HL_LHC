@@ -1,4 +1,22 @@
-flat=TILTEDORFLAT
+#########################
+#
+# Configuration file for PileUp events
+# production in tracker only 
+#
+#
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 21/06/2016
+#
+# Script tested with release CMSSW_8_1_0_pre7
+#
+#########################
+#
+# Here you choose if you want flat (True) or tilted (False) geometry
+#
+
+flat=False
+
+###################
 
 import FWCore.ParameterSet.Config as cms
 
@@ -20,45 +38,65 @@ process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
 process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.load("SimG4Core.Application.g4SimHits_cfi")
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(NEVTS)
+    input = cms.untracked.int32(20)
 )
 
 # Input source
 process.source = cms.Source("EmptySource")
 
-# The number of pileup events you want  
-process.mix.bunchspace=cms.int32(25)
-process.mix.minBunch = cms.int32(-12)
-process.mix.input.nbPileupEvents.averageNumber = cms.double(NPU)             
-process.mix.input.fileNames     = cms.untracked.vstring('file:PUFILEA')
-
-
-process.g4SimHits.TrackerSD = cms.PSet(
-        ZeroEnergyLoss = cms.bool(False),
-        PrintHits = cms.bool(False),
-        ElectronicSigmaInNanoSeconds = cms.double(12.06),
-        NeverAccumulate = cms.bool(False),
-        EnergyThresholdForPersistencyInGeV = cms.double(0.001),
-        EnergyThresholdForHistoryInGeV = cms.double(0.001)
-    )
+process.mix.input.nbPileupEvents.averageNumber = cms.double(30.0)  # The average number of pileup events you want  
+process.mix.input.fileNames     = cms.untracked.vstring('file:MBias_100.root') # The file where to pick them up
 
 # Additional output definition
 
 # Other statements
+# Global tag for PromptReco
+#
+# To find where upgradePLS3 is pointing, look here:
+#
+# https://github.com/cms-sw/cmssw/blob/CMSSW_6_2_X_SLHC_2014-06-16-0200/Configuration/AlCa/python/autoCond.py
+
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
+
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+
+process.RandomNumberGeneratorService.generator.initialSeed      = 20
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
+process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 178
+process.RandomNumberGeneratorService.mix.initialSeed            = 210
 
 
+# Generate particle gun events
+process.generator = cms.EDFilter("Pythia8PtGun",
+    PGunParameters = cms.PSet(
+        AddAntiParticle = cms.bool(True),
+        MaxEta = cms.double(2.5),
+        MaxPhi = cms.double(3.14159265359),
+        MaxPt = cms.double(200.0),
+        MinEta = cms.double(-2.5),
+        MinPhi = cms.double(-3.14159265359),
+        MinPt = cms.double(0.9),
+        ParticleID = cms.vint32(-13, -13)
+    ),
+    PythiaParameters = cms.PSet(
+        parameterSets = cms.vstring()
+    ),
+    Verbosity = cms.untracked.int32(0),
+    firstRun = cms.untracked.uint32(1),
+    psethack = cms.string('Four mu pt 1 to 200')
+)
+
+
+# Output definition
 
 process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_example.root'),
+    fileName = cms.untracked.string('PU_30_sample.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -68,9 +106,6 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     )
 )
 
-SWTUNING
-
-
 process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
 process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
@@ -79,36 +114,10 @@ process.RAWSIMoutput.outputCommands.append('drop  *_simSi*_*_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
 
-process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
-process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
-process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
-
-# Generate particle gun events
-process.generator = cms.EDFilter("Pythia8PtGun",
-    PGunParameters = cms.PSet(
-        AddAntiParticle = cms.bool(True),
-        MaxEta = cms.double(ETAMAX),
-        MaxPhi = cms.double(PHIMAX),
-        MaxPt = cms.double(PTMAX),
-        MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN),
-        MinPt = cms.double(PTMIN),
-        ParticleID = cms.vint32(PTYPE)
-    ),
-    PythiaParameters = cms.PSet(
-        parameterSets = cms.vstring()
-    ),
-    Verbosity = cms.untracked.int32(0),
-    firstRun = cms.untracked.uint32(1),
-    AddAntiParticle = cms.bool(True)
-#    psethack = cms.string('Four mu pt 1 to 200')
-)
-
 
 # Path and EndPath definitions
 process.generation_step         = cms.Path(process.pgen)
-process.simulation_step         = cms.Path(process.psim)
+process.simulationTkOnly_step   = cms.Path(process.psim)
 process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
 process.digitisationTkOnly_step = cms.Path(process.pdigi_valid)
 process.L1TrackTrigger_step     = cms.Path(process.TrackTriggerClustersStubs)
@@ -117,7 +126,7 @@ process.endjob_step             = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step       = cms.EndPath(process.RAWSIMoutput)
 
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulationTkOnly_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
@@ -139,3 +148,5 @@ else:
 	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
 
 # End of customisation functions
+
+

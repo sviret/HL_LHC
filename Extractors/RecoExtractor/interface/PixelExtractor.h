@@ -30,6 +30,10 @@
 #include "DataFormats/SiPixelDetId/interface/PixelBarrelName.h"
 #include "DataFormats/SiPixelDetId/interface/PixelEndcapName.h"
 
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
+
 //Include std C++
 #include <iostream>
 #include <vector>
@@ -45,7 +49,7 @@ class PixelExtractor
 
  public:
 
-  PixelExtractor(edm::InputTag tag,bool doTree,bool doMatch);
+  PixelExtractor(edm::EDGetTokenT< edm::DetSetVector< Phase2TrackerDigi> > pixToken,edm::EDGetTokenT< edm::DetSetVector< PixelDigiSimLink> > pixslToken,edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puToken,bool doTree,bool doMatch);
   PixelExtractor(TFile *a_file);
   ~PixelExtractor();
 
@@ -99,16 +103,26 @@ class PixelExtractor
   int column(int i) {return m_pixclus_column->at(i);}
   int nrow(int i)    {return m_pixclus_nrow->at(i);}
   int ncolumn(int i) {return m_pixclus_ncolumn->at(i);}
+  int bottom(int i) {return m_pixclus_bot->at(i);}
 
  private:
   
   TTree* m_tree;
 
+  edm::EDGetTokenT< edm::DetSetVector< Phase2TrackerDigi> > m_pixToken;
+  edm::EDGetTokenT< edm::DetSetVector< PixelDigiSimLink> > m_pixslToken;
+  edm::EDGetTokenT< std::vector<PileupSummaryInfo> > m_puToken;
+
+  edm::Handle< edm::DetSetVector<Phase2TrackerDigi> > pDigiColl;
   edm::Handle<TrackingParticleCollection>  TPCollection ;
   edm::Handle< edm::DetSetVector<PixelDigiSimLink> > pDigiLinkColl;
   edm::DetSet<PixelDigiSimLink> pDigiLinks;
 
+  edm::Handle<std::vector<PileupSummaryInfo> > pileupinfos;
+
   edm::ESHandle<TrackerGeometry> theTrackerGeometry;
+  edm::ESHandle<TrackerTopology> theTrackerTopology;
+
   edm::InputTag m_tag;
   bool m_OK;
   bool m_matching;
@@ -135,6 +149,7 @@ class PixelExtractor
     m_tree->Branch("PIX_ladder",    &m_pixclus_ladder);
     m_tree->Branch("PIX_nrow",      &m_pixclus_nrow);
     m_tree->Branch("PIX_ncolumn",   &m_pixclus_ncolumn);
+    m_tree->Branch("PIX_bottom",    &m_pixclus_bot);
     m_tree->Branch("PIX_pitchx",    &m_pixclus_pitchx);
     m_tree->Branch("PIX_pitchy",    &m_pixclus_pitchy);
   */
@@ -154,17 +169,20 @@ class PixelExtractor
   std::vector<int>                 *m_pixclus_simhit;   // Number of simhits making the digi
   std::vector< std::vector<int> >  *m_pixclus_simhitID; // Simtrack IDs of the corresponding simhits (stored as a vector)
   std::vector< std::vector<int> >  *m_pixclus_evtID;    // Encoded EvtIDs of the corresponding simhits (stored as a vector)
+  std::vector< std::vector<int> >  *m_pixclus_bcID;   
   std::vector<int>                 *m_pixclus_layer;    // Digi layer numbers 
   std::vector<int>                 *m_pixclus_module;   // Digi module numbers 
   std::vector<int>                 *m_pixclus_ladder;   // Digi ladder/ring numbers 
   std::vector<int>                 *m_pixclus_nrow;     // Number of strips of the sensor containing the digi
   std::vector<int>                 *m_pixclus_ncolumn;  // Number of columns of the sensor containing the digi
+  std::vector<int>                 *m_pixclus_bot;      // Bottom or top (1/0) layer of the pt module
   std::vector<float>               *m_pixclus_pitchx;   // Strip pitch
   std::vector<float>               *m_pixclus_pitchy;   // Column pitch
 
 
   std::vector<int>      the_ids;
   std::vector<int>      the_eids;
+  std::vector<int>      the_bids;
 };
 
 #endif 

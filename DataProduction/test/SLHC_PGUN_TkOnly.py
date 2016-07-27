@@ -1,8 +1,26 @@
-flat=TILTEDORFLAT
+#########################
+#
+# Configuration file for PGUN events
+# production in tracker only
+#
+# Switch between flat and tilted geometry if provided at the end
+#
+# Date  : 05/07/2016
+#
+# Script tested with release CMSSW_8_1_0_pre7
+#
+#########################
+#
+# Here you choose if you want flat (True) or tilted (False) geometry
+#
+
+flat=True
+
+###################
 
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('EXTR')
+process = cms.Process('STUBS')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -22,40 +40,12 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(NEVTS)
+    input = cms.untracked.int32(500)
 )
 
 # Input source
 process.source = cms.Source("EmptySource")
 
-
-# Additional output definition
-
-# Other statements
-process.genstepfilter.triggerConditions=cms.vstring("generation_step")
-from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
-
-
-process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
-process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
-process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
-
-
-process.generator = cms.EDProducer("FlatRandomOneOverPtGunProducer",
-    PGunParameters = cms.PSet(
-	MaxOneOverPt = cms.double(PTMAX),
-        MinOneOverPt = cms.double(PTMIN),
-        PartID = cms.vint32(PTYPE),
-        MaxEta = cms.double(ETAMAX),
-	MaxPhi = cms.double(PHIMAX),
-        MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN)
-    ),
-    Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(True),
-)
 
 # Output definition
 
@@ -66,17 +56,52 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     fileName = cms.untracked.string('PGun_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
-        dataTier = cms.untracked.string('GEN-SIM')
+        dataTier = cms.untracked.string('GEN-SIM-DIGI-RAW-FEVT')
     ),
     SelectEvents = cms.untracked.PSet(
         SelectEvents = cms.vstring('generation_step')
     )
 )
 
-SWTUNING
+# Additional output definition
+# Other statements
+process.genstepfilter.triggerConditions=cms.vstring("generation_step")
+process.mix.digitizers = cms.PSet(process.theDigitizersValid)
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+
+
+# Random seeds
+process.RandomNumberGeneratorService.generator.initialSeed      = 1
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
+process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
+process.RandomNumberGeneratorService.mix.initialSeed            = 4
+
+# Generate particle gun events
+process.generator = cms.EDFilter("Pythia8PtGun",
+    PGunParameters = cms.PSet(
+        AddAntiParticle = cms.bool(True),
+        MaxEta = cms.double(2.5),
+        MaxPhi = cms.double(3.14159265359),
+        MaxPt = cms.double(200.0),
+        MinEta = cms.double(-2.5),
+        MinPhi = cms.double(-3.14159265359),
+        MinPt = cms.double(0.9),
+        ParticleID = cms.vint32(-13, -13)
+    ),
+    PythiaParameters = cms.PSet(
+        parameterSets = cms.vstring()
+    ),
+    Verbosity = cms.untracked.int32(0),
+    firstRun = cms.untracked.uint32(1),
+    psethack = cms.string('Four mu pt 1 to 200')
+)
+
+
+# This line is necessary to keep track of the Tracking Particles
 
 process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_EXTR')
+process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
 process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
@@ -84,9 +109,17 @@ process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
 
 
+process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
+process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
+process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
+process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
+
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
-process.simulation_step      = cms.Path(process.psim)
+process.simulationTkOnly_step   = cms.Path(process.psim)
 process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
 process.digitisationTkOnly_step = cms.Path(process.pdigi_valid)
 process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
@@ -95,7 +128,7 @@ process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulationTkOnly_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
@@ -117,3 +150,4 @@ else:
 	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
 
 # End of customisation functions	
+

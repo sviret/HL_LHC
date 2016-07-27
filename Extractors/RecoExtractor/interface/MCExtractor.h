@@ -11,6 +11,12 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 
+
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+
 // Geometry info, needed for hit recovery
 
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
@@ -64,8 +70,10 @@ class MCExtractor
 {
  public:
   /// Constructor
-  MCExtractor(bool doTree);
+
+  MCExtractor(edm::EDGetTokenT< reco::GenParticleCollection > gtoken, edm::EDGetTokenT< TrackingParticleCollection > tToken,bool doTree);
   MCExtractor(TFile *a_file);
+  MCExtractor(){}
   /// Destructor
   virtual ~MCExtractor(){}
 
@@ -121,6 +129,15 @@ class MCExtractor
   bool m_OK;
   std::vector<int>      *m_part_used;
   std::vector<int>      *m_hits_used;
+
+  edm::EDGetTokenT< reco::GenParticleCollection > m_gtoken;
+  edm::EDGetTokenT< TrackingParticleCollection > m_ttoken;
+
+
+  edm::Handle<reco::GenParticleCollection> genParticles;
+  edm::Handle<TrackingParticleCollection>  TPCollection ;
+
+  edm::Handle< std::vector< TrackingParticle > > TrackingParticleHandle;
 
   /*
     List of the branches contained in the MC tree

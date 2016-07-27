@@ -12,6 +12,10 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHit.h"
@@ -19,32 +23,24 @@
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimDataFormats/Vertex/interface/SimVertex.h"
 #include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
-#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
-#include "MagneticField/Engine/interface/MagneticField.h"
-
 #include "SimDataFormats/TrackerDigiSimLink/interface/PixelDigiSimLink.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
-#include "SimDataFormats/SLHC/interface/StackedTrackerTypes.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
 
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/CommonTopologies/interface/PixelTopology.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
-
-#include "Geometry/Records/interface/StackedTrackerGeometryRecord.h"
-#include "Geometry/TrackerGeometryBuilder/interface/StackedTrackerGeometry.h"
-#include "Geometry/TrackerGeometryBuilder/interface/StackedTrackerDetUnit.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
 
 #include "DataFormats/L1TrackTrigger/interface/TTStub.h"
 #include "DataFormats/L1TrackTrigger/interface/TTCluster.h"
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
-#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
-#include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
 
-#include "DataFormats/SiPixelDetId/interface/StackedTrackerDetId.h"
 #include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
 #include "DataFormats/SiPixelDigi/interface/PixelDigi.h"
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
@@ -52,12 +48,19 @@
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiPixelDetId/interface/PixelBarrelName.h"
 #include "DataFormats/SiPixelDetId/interface/PixelEndcapName.h"
-#include "FWCore/Utilities/interface/InputTag.h"
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
+
+#include "L1Trigger/TrackTrigger/interface/TTStubAlgorithm.h"
+#include "L1Trigger/TrackTrigger/interface/TTStubAlgorithmRecord.h"
 
 //Include std C++
 #include <iostream>
 #include <vector>
 #include <boost/shared_ptr.hpp>
+#include <memory>
+#include <map>
 
 #include "TMath.h"
 #include "TTree.h"
@@ -66,18 +69,25 @@
 #include "TClonesArray.h"
 #include "MCExtractor.h"
 
+
 class StubExtractor
 {
 
  public:
 
-  StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::string STUB_tag,std::string STUB_name, bool doTree);
+  StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > ctoken,
+		edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stoken, 
+		edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > cttoken, 
+		edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > sttoken, 
+		bool doTree);
+
   StubExtractor(TFile *a_file);
   ~StubExtractor();
 
 
   void init(const edm::EventSetup *setup);
-  void writeInfo(const edm::Event *event, MCExtractor *mc); 
+
+  void writeInfo(const edm::Event *event, MCExtractor *mc, bool MCinfo); 
   void getInfo(int ievt); 
 
   void reset();
@@ -117,12 +127,14 @@ class StubExtractor
 
  private:
   
-  std::string m_CLUS_tag;
-  std::string m_STUB_tag;
+  edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > m_ctoken;
+  edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > m_cttoken;
 
-  std::string m_CLUS_name;
-  std::string m_STUB_name;
+  edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > m_stoken;
+  edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > m_sttoken;
 
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  edm::ESHandle<TrackerGeometry> tGeomHandle;
 
   int n_tot_evt;
   int m_nstubs;
@@ -153,23 +165,17 @@ class StubExtractor
   double mMagneticFieldStrength ;
 
   /// Geometry handles etc
-  edm::ESHandle< TrackerGeometry >                theTrackerGeometry;
-  edm::ESHandle< StackedTrackerGeometry >         theStackedTrackerGeometry;
-  const StackedTrackerGeometry*                   theStackedGeometry;
-  StackedTrackerGeometry::StackContainerIterator  StackedTrackerIterator;
+ 
+  edm::Handle< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > PixelDigiL1TkClusterHandle;
+  edm::Handle< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > PixelDigiL1TkStubHandle;
 
-  edm::Handle< edmNew::DetSetVector< TTCluster< Ref_PixelDigi_ > > > PixelDigiL1TkClusterHandle;
-  edm::Handle< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > > > PixelDigiL1TkStubHandle;
-  edm::Handle< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > > > PixelDigiL1TkFailedStubHandle;
-
-  edm::Handle< TTClusterAssociationMap< Ref_PixelDigi_ > > MCTruthTTClusterHandle;
-  edm::Handle< TTStubAssociationMap< Ref_PixelDigi_ > >    MCTruthTTStubHandle;
+  edm::Handle< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > MCTruthTTClusterHandle;
+  edm::Handle< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > >    MCTruthTTStubHandle;
 
   edm::Handle< std::vector< TrackingParticle > > TrackingParticleHandle;
   edm::Handle< std::vector< TrackingVertex > > TrackingVertexHandle;
 
   std::vector<int>                 *m_clus_used;   
-
 
   int m_clus;
 
@@ -182,24 +188,20 @@ class StubExtractor
   std::vector<int>    *m_clus_module; // module of cluster i
   std::vector<int>    *m_clus_ladder; // ladder/ring of cluster i
   std::vector<int>    *m_clus_seg;    // segment (column) of cluster i
+  std::vector<int>    *m_clus_type;   // module type 0/1/2/3 <-> DISK/TILT-/TILT+/FLAT
   std::vector<float>  *m_clus_strip;  // strip position of cluster i (in half-strip unit) 
   std::vector<int>    *m_clus_sat;    // number of saturating strips in cluster i (digis>255 ADC)
   std::vector<int>    *m_clus_nstrips;// number of strips in cluster i
   std::vector<int>    *m_clus_matched;// number of simhits matched to the cluster
   std::vector<int>    *m_clus_PS;     // number of segments in the corresponding module
   std::vector<int>    *m_clus_nrows;  // number of strips in the corresponding module
+  std::vector<int>    *m_clus_bot;    // is the cluster from the bottom or top sensor (1 or 0)
   std::vector<int>    *m_clus_pdgID;  // list of tracking particles inducing cluster i
   std::vector<float>  *m_clus_ptGEN;  // list of simhits inducing cluster i
-  std::vector<int>    *m_clus_pid;    // process id inducing cluster i (see MCExtractor.h)
-  std::vector<int>    *m_clus_rank_PIX;   // Number of pixel clusters in the chip (no size limit)  
-  std::vector<int>    *m_clus_rank_STR;   // Number of strip clusters in the chip (no size limit)  
-  std::vector<int>    *m_clus_rank_PIX_4; // Number of pixel clusters in the chip (4 strips limit)    
-  std::vector<int>    *m_clus_rank_STR_4; // Number of strip clusters in the chip (4 strips limit)    
-  std::vector<int>    *m_clus_rank_PIX_8; // Number of pixel clusters in the chip (8 strips limit)      
-  std::vector<int>    *m_clus_rank_STR_8; // Number of strip clusters in the chip (8 strips limit)    
+  std::vector<int>    *m_clus_pid;    // process id inducing cluster i (see MCExtractor.h)   
   std::vector<int>    *m_clus_tp;  
   std::vector<std::vector<int> >    *m_clus_pix;   // Pixel digis linked to the cluster 
-  std::vector<std::vector<int> >    *m_clus_mult;  // Overall chip cluster occupancies for the event
+
 
   int m_stub;
 
@@ -217,6 +219,7 @@ class StubExtractor
   std::vector<int>    *m_stub_module; // module of stub i
   std::vector<int>    *m_stub_ladder; // ladder/ring of stub i
   std::vector<int>    *m_stub_seg;    // segment of stub i
+  std::vector<int>    *m_stub_type;   // module type 0/1/2/3 <-> DISK/TILT-/TILT+/FLAT
   std::vector<int>    *m_stub_chip;   // chip of stub i
   std::vector<float>  *m_stub_strip;  // strip of stub i (innermost module value)
   std::vector<float>  *m_stub_x;      // x pos of stub i (in cm)

@@ -1,8 +1,27 @@
-flat=TILTEDORFLAT
+#########################
+#
+# Configuration file for simple MBias events
+# production in tracker only (Flat or Tilted)
+#
+# UE tuning is UE_P8M1
+#
+# Author: S.Viret (viret@in2p3.fr)
+# Date  : 21/06/2016
+#
+# Script tested with release CMSSW_8_1_0_pre7
+#
+#########################
+#
+# Here you choose if you want flat (True) or tilted (False) geometry
+#
+
+flat=False
+
+###################
 
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process('EXTR')
+process = cms.Process('SIM')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -12,17 +31,18 @@ process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration.StandardSequences.SimIdeal_cff')
-process.load('Configuration.StandardSequences.Digi_cff')
-process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
-process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
-process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+from Configuration.Generator.Pythia8CommonSettings_cfi import *
+from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
+
+
+
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(NEVTS)
+    input = cms.untracked.int32(100)
 )
 
 # Input source
@@ -31,31 +51,44 @@ process.source = cms.Source("EmptySource")
 
 # Additional output definition
 
-# Other statements
+# Global tag for PromptReco
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+
+# Random seeds
+process.RandomNumberGeneratorService.generator.initialSeed      = 1
+process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2
+process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
 
 
-process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
-process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
-process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
-process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
+# Generate particle gun events
 
+# From
+# http://cmslxr.fnal.gov/lxr/source/Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCUETP8M1_cfi.py?v=CMSSW_8_1_0_pre7 
+#
 
-process.generator = cms.EDProducer("FlatRandomOneOverPtGunProducer",
-    PGunParameters = cms.PSet(
-	MaxOneOverPt = cms.double(PTMAX),
-        MinOneOverPt = cms.double(PTMIN),
-        PartID = cms.vint32(PTYPE),
-        MaxEta = cms.double(ETAMAX),
-	MaxPhi = cms.double(PHIMAX),
-        MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN)
-    ),
-    Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(True),
+process.generator = cms.EDFilter("Pythia8GeneratorFilter",
+                          crossSection = cms.untracked.double(71.39e+09),
+                          maxEventsToPrint = cms.untracked.int32(0),
+                          pythiaPylistVerbosity = cms.untracked.int32(1),
+                          filterEfficiency = cms.untracked.double(1.0),
+                          pythiaHepMCVerbosity = cms.untracked.bool(False),
+                          comEnergy = cms.double(14000.0),
+                          PythiaParameters = cms.PSet(
+         pythia8CommonSettingsBlock,
+         pythia8CUEP8M1SettingsBlock,
+         processParameters = cms.vstring(
+             'SoftQCD:nonDiffractive = on',
+             'SoftQCD:singleDiffractive = on',
+             'SoftQCD:doubleDiffractive = on'),
+         parameterSets = cms.vstring('pythia8CommonSettings',
+                                     'pythia8CUEP8M1Settings',
+                                     'processParameters',
+                                     )
+         )
 )
+
 
 # Output definition
 
@@ -63,7 +96,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('PGun_example.root'),
+    fileName = cms.untracked.string('MBias_100.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -73,29 +106,15 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     )
 )
 
-SWTUNING
-
-process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_EXTR')
-process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
-process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
-process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
-
-
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
-process.simulation_step      = cms.Path(process.psim)
+process.simulationTkOnly_step   = cms.Path(process.psim)
 process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
-process.digitisationTkOnly_step = cms.Path(process.pdigi_valid)
-process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
-process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulationTkOnly_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
@@ -114,6 +133,5 @@ else:
 	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
 	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted
 	process = cust_2023tilted(process)
-	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
 
-# End of customisation functions	
+# End of customisation functions

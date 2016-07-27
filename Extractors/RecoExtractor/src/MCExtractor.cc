@@ -1,10 +1,13 @@
 #include "../interface/MCExtractor.h"
 
 
-MCExtractor::MCExtractor(bool doTree)
+MCExtractor::MCExtractor(edm::EDGetTokenT< reco::GenParticleCollection > gtoken,edm::EDGetTokenT< TrackingParticleCollection > ttoken, bool doTree)
 {
   // Set everything to 0
   m_OK = false;
+  
+  m_gtoken = gtoken;
+  m_ttoken = ttoken;
 
   m_gen_x       = new std::vector<float>;
   m_gen_y       = new std::vector<float>;
@@ -152,10 +155,11 @@ void MCExtractor::writeInfo(const edm::Event *event)
   int n_part        = 0; // The total number of stored TPs
   
 
-  edm::Handle<TrackingParticleCollection>  TPCollection ;
-  event->getByLabel("mix","MergedTrackTruth",TPCollection);       
+  event->getByToken(m_ttoken,TPCollection);       
+ 
+  //  event->getByLabel("mix","MergedTrackTruth",TrackingParticleHandle);
+
   const TrackingParticleCollection tpColl = *(TPCollection.product());
-  
 
   std::vector<PSimHit>::const_iterator itp; 	
       
@@ -212,8 +216,7 @@ void MCExtractor::writeInfo(const edm::Event *event)
 
 void MCExtractor::getGenInfo(const edm::Event *event) 
 {
-  edm::Handle<reco::GenParticleCollection> genParticles;
-  event->getByLabel("genParticles", genParticles);
+  event->getByToken(m_gtoken, genParticles);
 
   m_gen_n=static_cast<int>(genParticles->size());
 

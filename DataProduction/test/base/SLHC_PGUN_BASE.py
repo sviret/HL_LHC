@@ -1,3 +1,5 @@
+flat=TILTEDORFLAT
+
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('EXTR')
@@ -9,20 +11,15 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('Configuration/StandardSequences/VtxSmearedNoSmear_cff')
+process.load('Configuration.StandardSequences.SimIdeal_cff')
+process.load('Configuration.StandardSequences.Digi_cff')
+process.load('SimGeneral.MixingModule.mixNoPU_cfi')
+process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
-process.load('Configuration.StandardSequences.EndOfProcess_cff')
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
 process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
-
-# Special geometry (Tracker only)
-process.load('DataProduction.SkimGeometry.Sim_SKIM_cff')
-process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
-process.load('DataProduction.SkimGeometry.mixNoPU_SKIM_cfi')
-process.load('DataProduction.SkimGeometry.Digi_SKIM_cff')
-
-from L1Trigger.TrackTrigger.TTStubAlgorithmRegister_cfi import *
+process.load('Configuration.StandardSequences.EndOfProcess_cff')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(NEVTS)
@@ -39,35 +36,29 @@ process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'MYGLOBALTAG', '')
 
-# Load the extracto
-process.load("Extractors.RecoExtractor.MIB_extractor_cff")
-
-process.MIBextraction.doMC             = True
-process.MIBextraction.doPixel          = True
-process.MIBextraction.doMatch          = True
-process.MIBextraction.doSTUB           = True
-
 process.RandomNumberGeneratorService.generator.initialSeed      = NSEEDA
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = NSEEDB
 process.RandomNumberGeneratorService.g4SimHits.initialSeed      = NSEEDC
 process.RandomNumberGeneratorService.mix.initialSeed            = NSEEDD
 
-process.generator = cms.EDProducer("FlatRandomPtGunProducer",
+# Generate particle gun events
+process.generator = cms.EDFilter("Pythia8PtGun",
     PGunParameters = cms.PSet(
-        MaxPt = cms.double(PTMAX),
-        MinPt = cms.double(PTMIN),
-        PartID = cms.vint32(PTYPE),
-	XFlatSpread = cms.double(1.5),   # In mm
-	YFlatSpread = cms.double(1.5),   # In mm
-	ZFlatSpread = cms.double(150.),  # In mm
-	towerID= cms.int32(TRIGGERTOWER),  # Tower ID (put -1 for default params)	
+        AddAntiParticle = cms.bool(True),
         MaxEta = cms.double(ETAMAX),
-	MaxPhi = cms.double(PHIMAX),
+        MaxPhi = cms.double(PHIMAX),
+        MaxPt = cms.double(PTMAX),
         MinEta = cms.double(ETAMIN),
-        MinPhi = cms.double(PHIMIN)
+        MinPhi = cms.double(PHIMIN),
+        MinPt = cms.double(PTMIN),
+        ParticleID = cms.vint32(PTYPE)
+    ),
+    PythiaParameters = cms.PSet(
+        parameterSets = cms.vstring()
     ),
     Verbosity = cms.untracked.int32(0),
-    AddAntiParticle = cms.bool(True),
+    firstRun = cms.untracked.uint32(1),
+    AddAntiParticle = cms.bool(True)
 )
 
 # Output definition
@@ -88,46 +79,48 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 
 SWTUNING
 
+
+process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_EXTR')
+process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
+process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
 
-process.MIBextraction.doL1TT           = True
-
-process.MIBextraction.analysisSettings = cms.untracked.vstring(
-    "evtNum RUN",
-    "matchedStubs 0",
-    "posMatching  1",
-    "zMatch  0",
-    "maxClusWdth  4",
-    "thresh THRESHOLD", 
-    "windowSize -1",
-    "pdgSel -1",
-    "verbose 0"
-    )
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
-process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
-process.digitisation_step    = cms.Path(process.pdigi)
+process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
+process.digitisationTkOnly_step = cms.Path(process.pdigi_valid)
 process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
 process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
-process.p                    = cms.Path(process.MIBextraction)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
-process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisation_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
+
+process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
+
 	
-# Automatic addition of the customisation function
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
 
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import customiseBE5DPixel10D
-from SLHCUpgradeSimulations.Configuration.combinedCustoms import customise_ev_BE5DPixel10D
-
-process=customiseBE5DPixel10D(process)
-process=customise_ev_BE5DPixel10D(process)
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023LReco
+	process = cust_2023LReco(process)
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted
+	process = cust_2023tilted(process)
+	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
 
 # End of customisation functions	
+
 

@@ -72,7 +72,7 @@ void StubTranslator::do_translation(StubExtractor *st)
 
   for (int i=0;i<n_stubs;++i)
   {
-    if (st->getStub_tp(i)!=0) continue;
+    if (st->getStub_tp(i)!=0 && st->getStub_tp(i)!=1) continue;
 
     ++m_stub;
     

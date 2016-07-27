@@ -24,7 +24,6 @@
 
 #include "SimDataFormats/TrackerDigiSimLink/interface/PixelDigiSimLink.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
-#include "SimDataFormats/SLHC/interface/StackedTrackerTypes.h"
 
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 #include "Geometry/CommonTopologies/interface/PixelTopology.h"
@@ -32,19 +31,17 @@
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 
-#include "Geometry/Records/interface/StackedTrackerGeometryRecord.h"
-#include "Geometry/TrackerGeometryBuilder/interface/StackedTrackerGeometry.h"
-#include "Geometry/TrackerGeometryBuilder/interface/StackedTrackerDetUnit.h"
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
 
-#include "DataFormats/L1TrackTrigger/interface/TTStub.h"
-#include "DataFormats/L1TrackTrigger/interface/TTCluster.h"
 #include "DataFormats/L1TrackTrigger/interface/TTTypes.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTClusterAssociationMap.h"
 #include "SimTracker/TrackTriggerAssociation/interface/TTStubAssociationMap.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingVertex.h"
 
-#include "DataFormats/SiPixelDetId/interface/StackedTrackerDetId.h"
+
 #include "DataFormats/SiPixelCluster/interface/SiPixelCluster.h"
 #include "DataFormats/SiPixelDigi/interface/PixelDigi.h"
 #include "DataFormats/SiPixelDetId/interface/PXBDetId.h"
@@ -70,7 +67,7 @@ class L1TrackExtractor
 
  public:
 
-  L1TrackExtractor(edm::InputTag  STUB_tag, edm::InputTag  PATT_tag, edm::InputTag  TC_tag, edm::InputTag  TRCK_tag, bool doTree);
+  L1TrackExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > STUB_tag, edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > PATT_tag,  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > TC_tag,  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > TRCK_tag, bool doTree);
   L1TrackExtractor(TFile *a_file);
   ~L1TrackExtractor();
 
@@ -92,10 +89,10 @@ class L1TrackExtractor
  private:
   
 
-  edm::InputTag m_STUB_tag;
-  edm::InputTag m_PATT_tag;
-  edm::InputTag m_TC_tag;
-  edm::InputTag m_TRCK_tag;
+  edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > m_STUB_tag;
+  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > m_PATT_tag;
+  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > m_TC_tag;
+  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > m_TRCK_tag;
 
   TTree* m_tree;
   bool m_OK;
@@ -103,11 +100,9 @@ class L1TrackExtractor
   int m_n_events;
 
   /// Geometry handles etc
-  edm::ESHandle< TrackerGeometry >                theTrackerGeometry;
-  edm::ESHandle< StackedTrackerGeometry >         theStackedTrackerGeometry;
-  const StackedTrackerGeometry*                   theStackedGeometry;
-  StackedTrackerGeometry::StackContainerIterator  StackedTrackerIterator;
 
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  edm::ESHandle<TrackerGeometry> tGeomHandle;
 
   int n_tot_evt;
 
@@ -116,6 +111,7 @@ class L1TrackExtractor
   // Size of the following vectors is m_patt
   std::vector< std::vector<int> > *m_patt_links; // Links to the stubs making the patterns in L1TkStubs tree
   std::vector<int>                *m_patt_secid; // Sector number
+  std::vector<int>                *m_patt_pattid;// Pattern rank in the bank
   std::vector<int>                *m_patt_miss;  // Number of missed SStrips
 
 
@@ -129,6 +125,7 @@ class L1TrackExtractor
   std::vector<float>               *m_tc_z;     // z0 calculated for track i (in mm)
   std::vector< std::vector<int> >  *m_tc_links; // Links to the stubs making the tracks in L1TkStubs tree
   std::vector<int>                 *m_tc_secid; // Sector number
+  std::vector<int>                 *m_tc_pattid;// Pattern leading to the TC rank in the bank
 
 
   // Size of the following vectors is m_trk
@@ -141,6 +138,7 @@ class L1TrackExtractor
   std::vector<float>               *m_trk_z;     // z0 calculated for track i (in mm)
   std::vector< std::vector<int> >  *m_trk_links; // Links to the stubs making the tracks in L1TkStubs tree
   std::vector<int>                 *m_trk_secid; // Sector number
+  std::vector<int>                 *m_trk_pattid;// Pattern leading to the Track rank in the bank
   std::vector<float>               *m_trk_chi;   // Chi2/dof of the track 
 
 };

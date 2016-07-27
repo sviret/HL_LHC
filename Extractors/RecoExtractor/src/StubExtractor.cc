@@ -1,14 +1,13 @@
 #include "../interface/StubExtractor.h"
 
 
-StubExtractor::StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::string STUB_tag,std::string STUB_name, bool doTree)
+StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > ctoken,edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stoken, edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > cttoken, edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > sttoken, bool doTree)
 {
 
-  m_CLUS_tag   = CLUS_tag;
-  m_STUB_tag   = STUB_tag;
-
-  m_CLUS_name  = CLUS_name;
-  m_STUB_name  = STUB_name;
+  m_ctoken = ctoken;
+  m_cttoken= cttoken;
+  m_stoken = stoken;
+  m_sttoken= sttoken;
 
   m_OK = false;
   n_tot_evt=0;
@@ -23,6 +22,7 @@ StubExtractor::StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::str
   m_clus_module  = new  std::vector<int>;  
   m_clus_ladder  = new  std::vector<int>;  
   m_clus_seg     = new  std::vector<int>; 
+  m_clus_type    = new  std::vector<int>; 
   m_clus_strip   = new  std::vector<float>; 
   m_clus_used    = new  std::vector<int>;  
   m_clus_sat     = new  std::vector<int>; 
@@ -30,19 +30,12 @@ StubExtractor::StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::str
   m_clus_matched = new  std::vector<int>;  
   m_clus_PS      = new  std::vector<int>;  
   m_clus_nrows   = new  std::vector<int>;
+  m_clus_bot     = new  std::vector<int>;
   m_clus_pid     = new  std::vector<int>;  
   m_clus_pdgID   = new  std::vector<int>;  
   m_clus_ptGEN   = new  std::vector<float>; 
-  m_clus_rank_PIX= new  std::vector<int>;  
-  m_clus_rank_STR= new  std::vector<int>; 
-  m_clus_rank_PIX_4= new  std::vector<int>; 
-  m_clus_rank_STR_4= new  std::vector<int>; 
-  m_clus_rank_PIX_8= new  std::vector<int>; 
-  m_clus_rank_STR_8= new  std::vector<int>;  
   m_clus_tp      = new  std::vector<int>;  
   m_clus_pix     = new  std::vector<std::vector<int> >; 
-  m_clus_mult    = new  std::vector<std::vector<int> >; 
-
   m_stub_pt      = new  std::vector<float>;
   m_stub_ptMC    = new  std::vector<float>; 
   m_stub_pxGEN   = new  std::vector<float>; 
@@ -56,6 +49,7 @@ StubExtractor::StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::str
   m_stub_module  = new  std::vector<int>;  
   m_stub_ladder  = new  std::vector<int>; 
   m_stub_seg     = new  std::vector<int>;  
+  m_stub_type    = new  std::vector<int>; 
   m_stub_chip    = new  std::vector<int>;  
   m_stub_strip   = new  std::vector<float>; 
   m_stub_x       = new  std::vector<float>;  
@@ -96,23 +90,18 @@ StubExtractor::StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::str
     m_tree->Branch("L1TkCLUS_module",    &m_clus_module);
     m_tree->Branch("L1TkCLUS_ladder",    &m_clus_ladder);
     m_tree->Branch("L1TkCLUS_seg",       &m_clus_seg);
+    m_tree->Branch("L1TkCLUS_type",      &m_clus_type);
     m_tree->Branch("L1TkCLUS_strip",     &m_clus_strip);
     m_tree->Branch("L1TkCLUS_nstrip",    &m_clus_nstrips);
     m_tree->Branch("L1TkCLUS_nsat",      &m_clus_sat);
     m_tree->Branch("L1TkCLUS_match",     &m_clus_matched);
     m_tree->Branch("L1TkCLUS_PS",        &m_clus_PS);
     m_tree->Branch("L1TkCLUS_nrows",     &m_clus_nrows);
+    m_tree->Branch("L1TkCLUS_bottom",    &m_clus_bot);
     m_tree->Branch("L1TkCLUS_pdgID",     &m_clus_pdgID);
     m_tree->Branch("L1TkCLUS_ptGEN",     &m_clus_ptGEN);
     m_tree->Branch("L1TkCLUS_process",   &m_clus_pid);
-    m_tree->Branch("L1TkCLUS_rank_PIX",  &m_clus_rank_PIX);
-    m_tree->Branch("L1TkCLUS_rank_STR",  &m_clus_rank_STR);
-    m_tree->Branch("L1TkCLUS_rank_PIX_4",  &m_clus_rank_PIX_4);
-    m_tree->Branch("L1TkCLUS_rank_STR_4",  &m_clus_rank_STR_4);
-    m_tree->Branch("L1TkCLUS_rank_PIX_8",  &m_clus_rank_PIX_8);
-    m_tree->Branch("L1TkCLUS_rank_STR_8",  &m_clus_rank_STR_8);
     m_tree->Branch("L1TkCLUS_PIX",       &m_clus_pix);
-    m_tree->Branch("L1TkCLUS_MULT",       &m_clus_mult);
     m_tree->Branch("L1TkCLUS_tp",        &m_clus_tp);
 
     m_tree->Branch("L1TkSTUB_clust1",    &m_stub_clust1);
@@ -131,6 +120,7 @@ StubExtractor::StubExtractor(std::string CLUS_tag,std::string CLUS_name,std::str
     m_tree->Branch("L1TkSTUB_module",    &m_stub_module);
     m_tree->Branch("L1TkSTUB_ladder",    &m_stub_ladder);
     m_tree->Branch("L1TkSTUB_seg",       &m_stub_seg);
+    m_tree->Branch("L1TkSTUB_type",      &m_stub_type);
     m_tree->Branch("L1TkSTUB_chip",      &m_stub_chip);
     m_tree->Branch("L1TkSTUB_strip",     &m_stub_strip);
     m_tree->Branch("L1TkSTUB_x",         &m_stub_x);
@@ -156,6 +146,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_clus_module  = new  std::vector<int>;  
   m_clus_ladder  = new  std::vector<int>;  
   m_clus_seg     = new  std::vector<int>; 
+  m_clus_type    = new  std::vector<int>; 
   m_clus_strip   = new  std::vector<float>; 
   m_clus_used    = new  std::vector<int>;  
   m_clus_sat     = new  std::vector<int>; 
@@ -166,15 +157,8 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_clus_pid     = new  std::vector<int>;  
   m_clus_pdgID   = new  std::vector<int>;  
   m_clus_ptGEN   = new  std::vector<float>; 
-  m_clus_rank_PIX= new  std::vector<int>; 
-  m_clus_rank_STR= new  std::vector<int>; 
-  m_clus_rank_PIX_4= new  std::vector<int>; 
-  m_clus_rank_STR_4= new  std::vector<int>; 
-  m_clus_rank_PIX_8= new  std::vector<int>; 
-  m_clus_rank_STR_8= new  std::vector<int>; 
   m_clus_tp      = new  std::vector<int>;  
   m_clus_pix     = new  std::vector<std::vector<int> >; 
-  m_clus_mult    = new  std::vector<std::vector<int> >; 
 
   m_stub_pt      = new  std::vector<float>;
   m_stub_ptMC    = new  std::vector<float>; 
@@ -189,6 +173,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_stub_module  = new  std::vector<int>;  
   m_stub_ladder  = new  std::vector<int>; 
   m_stub_seg     = new  std::vector<int>;  
+  m_stub_type    = new  std::vector<int>;  
   m_stub_strip   = new  std::vector<float>; 
   m_stub_chip    = new  std::vector<int>; 
   m_stub_x       = new  std::vector<float>;  
@@ -238,23 +223,17 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1TkCLUS_module",    &m_clus_module);
   m_tree->SetBranchAddress("L1TkCLUS_ladder",    &m_clus_ladder);
   m_tree->SetBranchAddress("L1TkCLUS_seg",       &m_clus_seg);
+  m_tree->SetBranchAddress("L1TkCLUS_type",      &m_clus_type);
   m_tree->SetBranchAddress("L1TkCLUS_strip",     &m_clus_strip);
   m_tree->SetBranchAddress("L1TkCLUS_nstrip",    &m_clus_nstrips);
   m_tree->SetBranchAddress("L1TkCLUS_nsat",      &m_clus_sat);
   m_tree->SetBranchAddress("L1TkCLUS_match",     &m_clus_matched);
   m_tree->SetBranchAddress("L1TkCLUS_PS",        &m_clus_PS);
   m_tree->SetBranchAddress("L1TkCLUS_nrows",     &m_clus_nrows);
+  m_tree->SetBranchAddress("L1TkCLUS_bottom",    &m_clus_bot);
   m_tree->SetBranchAddress("L1TkCLUS_pdgID",     &m_clus_pdgID);
   m_tree->SetBranchAddress("L1TkCLUS_ptGEN",     &m_clus_ptGEN);
   m_tree->SetBranchAddress("L1TkCLUS_process",   &m_clus_pid);
-  m_tree->SetBranchAddress("L1TkCLUS_rank_PIX",  &m_clus_rank_PIX);
-  m_tree->SetBranchAddress("L1TkCLUS_rank_STR",  &m_clus_rank_STR);
-  m_tree->SetBranchAddress("L1TkCLUS_rank_PIX_4",  &m_clus_rank_PIX_4);
-  m_tree->SetBranchAddress("L1TkCLUS_rank_STR_4",  &m_clus_rank_STR_4);
-  m_tree->SetBranchAddress("L1TkCLUS_rank_PIX_8",  &m_clus_rank_PIX_8);
-  m_tree->SetBranchAddress("L1TkCLUS_rank_STR_8",  &m_clus_rank_STR_8);
-  m_tree->SetBranchAddress("L1TkCLUS_PIX",       &m_clus_pix);
-  m_tree->SetBranchAddress("L1TkCLUS_MULT",       &m_clus_mult);
   m_tree->SetBranchAddress("L1TkCLUS_tp",        &m_clus_tp);
 
   m_tree->SetBranchAddress("L1TkSTUB_clust1",    &m_stub_clust1);
@@ -273,6 +252,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1TkSTUB_module",    &m_stub_module);
   m_tree->SetBranchAddress("L1TkSTUB_ladder",    &m_stub_ladder);
   m_tree->SetBranchAddress("L1TkSTUB_seg",       &m_stub_seg);
+  m_tree->SetBranchAddress("L1TkSTUB_type",      &m_stub_type);
   m_tree->SetBranchAddress("L1TkSTUB_strip",     &m_stub_strip);
   m_tree->SetBranchAddress("L1TkSTUB_chip",      &m_stub_chip);
   m_tree->SetBranchAddress("L1TkSTUB_x",         &m_stub_x);
@@ -296,40 +276,45 @@ StubExtractor::~StubExtractor()
 
 void StubExtractor::init(const edm::EventSetup *setup)
 {
-  setup->get<TrackerDigiGeometryRecord>().get(theTrackerGeometry);
-  setup->get<StackedTrackerGeometryRecord>().get(theStackedTrackerGeometry);
-  theStackedGeometry = theStackedTrackerGeometry.product(); 
+  setup->get<TrackerTopologyRcd>().get(tTopoHandle);
+  setup->get<TrackerDigiGeometryRecord>().get(tGeomHandle);
 
   /// Magnetic Field
-  edm::ESHandle< MagneticField > magneticFieldHandle;
-  setup->get< IdealMagneticFieldRecord >().get(magneticFieldHandle);
-  const MagneticField* theMagneticField = magneticFieldHandle.product();
-  mMagneticFieldStrength = theMagneticField->inTesla(GlobalPoint(0,0,0)).z();
+  //  edm::ESHandle< MagneticField > magneticFieldHandle;
+  // setup->get< IdealMagneticFieldRecord >().get(magneticFieldHandle);
+  // const MagneticField* theMagneticField = magneticFieldHandle.product();
+  // mMagneticFieldStrength = theMagneticField->inTesla(GlobalPoint(0,0,0)).z();
 
+  mMagneticFieldStrength = 3.8;
 }
 
 //
 // Method filling the main particle tree
 //
 
-void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc) 
+void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCinfo) 
+//void StubExtractor::writeInfo(const edm::Event *event, bool MCinfo) 
 {
   StubExtractor::reset();
   ++n_tot_evt;    
 
-  mc->clearTP(0.001,10000000.0);
-  /// Sim Tracks and Vtx
 
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+  const TrackerGeometry* const theTrackerGeom = tGeomHandle.product();
+
+  if (MCinfo) mc->clearTP(0.001,10000000.0);
+  /// Sim Tracks and Vtx
   event->getByLabel( "g4SimHits", SimTrackHandle );
   event->getByLabel( "g4SimHits", SimVtxHandle );
 
   /// Track Trigger
-  event->getByLabel( m_CLUS_tag, m_CLUS_name,    PixelDigiL1TkClusterHandle );
-  event->getByLabel( m_STUB_tag, m_STUB_name,    PixelDigiL1TkStubHandle );
+  event->getByToken( m_ctoken, PixelDigiL1TkClusterHandle );
+  event->getByToken( m_stoken, PixelDigiL1TkStubHandle );
 
   /// Track Trigger MC Truth
-  event->getByLabel( "TTClusterAssociatorFromPixelDigis", m_CLUS_name, MCTruthTTClusterHandle );
-  event->getByLabel( "TTStubAssociatorFromPixelDigis", m_STUB_name,    MCTruthTTStubHandle );
+  event->getByToken( m_cttoken, MCTruthTTClusterHandle );
+  event->getByToken( m_sttoken, MCTruthTTStubHandle );
+
 
   /// TrackingParticles
   event->getByLabel( "mix", "MergedTrackTruth", TrackingParticleHandle );
@@ -338,6 +323,7 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
   int layer  = 0;
   int ladder = 0;
   int module = 0;
+  int type   = 0;
   int segs   = 0;
   int rows   = 0;
 
@@ -346,30 +332,39 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
   std::vector<int> clus_rows;
   std::vector<int> clus_cols;
 
+  LocalPoint  clustlp;
+  GlobalPoint posClu;  
+  GlobalPoint posStub;
+
   /// Go on only if there are L1TkCluster from PixelDigis
   if ( PixelDigiL1TkClusterHandle->size() > 0 )
   {
     /// Loop over L1TkClusters
-    typename edmNew::DetSetVector< TTCluster< Ref_PixelDigi_ > >::const_iterator inputIter;
-    typename edmNew::DetSet< TTCluster< Ref_PixelDigi_ > >::const_iterator contentIter;
-
-    for ( inputIter = PixelDigiL1TkClusterHandle->begin();
-	  inputIter != PixelDigiL1TkClusterHandle->end();
-	  ++inputIter )
+    for (auto gd=theTrackerGeom->dets().begin(); gd != theTrackerGeom->dets().end(); gd++) 
     {
-      for ( contentIter = inputIter->begin();
-	    contentIter != inputIter->end();
-	    ++contentIter )
+      DetId detid = (*gd)->geographicalId();
+      if(detid.subdetId()!=StripSubdetector::TOB && detid.subdetId()!=StripSubdetector::TID ) continue; // only run on OT
+
+      if (PixelDigiL1TkClusterHandle->find( detid ) == PixelDigiL1TkClusterHandle->end() ) continue;
+
+      /// Get the DetSets of the Clusters
+      edmNew::DetSet< TTCluster< Ref_Phase2TrackerDigi_ > > clusters = (*PixelDigiL1TkClusterHandle)[ detid ];
+      const GeomDetUnit* det0 = theTrackerGeom->idToDetUnit( detid );
+      const PixelGeomDetUnit* theGeomDet = dynamic_cast< const PixelGeomDetUnit* >( det0 );
+      const PixelTopology* topol = dynamic_cast< const PixelTopology* >( &(theGeomDet->specificTopology()) );
+
+      for ( auto clusterIter = clusters.begin();clusterIter != clusters.end();++clusterIter ) 
       {
-	edm::Ref< edmNew::DetSetVector< TTCluster< Ref_PixelDigi_ > >, TTCluster< Ref_PixelDigi_ > > tempCluRef = 
-	  edmNew::makeRefTo( PixelDigiL1TkClusterHandle, contentIter );
 
-	bool genuineClu = MCTruthTTClusterHandle->isGenuine( tempCluRef );
+	edm::Ref< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_  > >, TTCluster< Ref_Phase2TrackerDigi_  > > tempCluRef = 
+	  edmNew::makeRefTo( PixelDigiL1TkClusterHandle, clusterIter );
 
-	StackedTrackerDetId detIdClu( tempCluRef->getDetId() );
-	GlobalPoint posClu      = theStackedGeometry->findAverageGlobalPosition( &(*tempCluRef) );
+       	bool genuineClu = MCTruthTTClusterHandle->isGenuine( tempCluRef );
+	
 	MeasurementPoint coords = tempCluRef->findAverageLocalCoordinates();
-	int    stack            = tempCluRef->getStackMember();
+
+	clustlp = topol->localPosition(coords);
+	posClu  =  theGeomDet->surface().toGlobal(clustlp);
 
 	clus_rows = tempCluRef->getRows();
 	clus_cols = tempCluRef->getCols();
@@ -393,31 +388,33 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	m_clus_strip->push_back(coords.x());
 	m_clus_nstrips->push_back(tempCluRef->findWidth());
 	
-	segs=2;
-	rows=1024;
+	segs= topol->ncolumns();
+	rows= topol->nrows();;
 
-	if ( detIdClu.isBarrel() )
+	m_clus_bot->push_back(static_cast<int>(tTopo->isLower(detid)));
+
+	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = detIdClu.iLayer()+4;
-	  ladder = detIdClu.iPhi();
-	  module = detIdClu.iZ()*2-1+stack;
-	  if (layer<8 && stack==0) segs=32;	
-	  if (layer<8) rows=960;	
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid));
+	  module = static_cast<int>(tTopo->module(detid));
+	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
 	}
-	else if ( detIdClu.isEndcap() )
+	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
-	  layer  = 10+detIdClu.iZ()+abs(detIdClu.iSide()-2)*7;
-	  ladder = detIdClu.iRing();
-	  module = detIdClu.iPhi()*2-1+stack;
-	  if (ladder<9 && stack==0) segs=32;
-	  if (ladder<9) rows=960;
+	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+	  ladder = static_cast<int>(tTopo->tidRing(detid));
+	  module = static_cast<int>(tTopo->module(detid));
+	  type   = 0;
 	}
 	
 	m_clus_layer->push_back(layer);
 	m_clus_ladder->push_back(ladder);
 	m_clus_module->push_back(module);
+	m_clus_type->push_back(type);
 	m_clus_PS->push_back(segs);
-	
+
+				      	
 	if (genuineClu)
 	{
 	  edm::Ptr< TrackingParticle > tpPtr = MCTruthTTClusterHandle->findTrackingParticlePtr( tempCluRef );
@@ -425,8 +422,8 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	  m_clus_matched->push_back(1);
 	  m_clus_ptGEN->push_back(tpPtr->p4().pt()); 
 	  m_clus_pdgID->push_back(tpPtr->pdgId());
-	  m_clus_tp->push_back(mc->getMatchingTP(tpPtr->vertex().x(),tpPtr->vertex().y(),tpPtr->vertex().z(),
-						 tpPtr->p4().px(),tpPtr->p4().py(),tpPtr->p4().pz()));
+	  if (MCinfo) m_clus_tp->push_back(mc->getMatchingTP(tpPtr->vertex().x(),tpPtr->vertex().y(),tpPtr->vertex().z(),
+							     tpPtr->p4().px(),tpPtr->p4().py(),tpPtr->p4().pz()));
 	}
 	else
 	{
@@ -444,180 +441,8 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
   } /// End of if ( PixelDigiL1TkClusterHandle->size() > 0 )
   
 
-  // Clusters are built, now look at the occupancies
-
-  int chip_idx;
-  int chip_basis;
-
-  std::vector<std::vector <int> > chip_mult;
-  std::vector<std::vector<int> > chip_ranks;
-
-  bool found;
-  std::vector<int> chip_st;
-
-  std::vector<int> strip_coord;
-
-  int s_min;
-  int s_max;
-
-  int c_min;
-  int c_max;
-
-  int nums;
-
-  int n_4;
-  int n_8;
-
-  chip_ranks.clear();
-  chip_mult.clear();
-  m_clus_rank_PIX->clear();
-  m_clus_rank_STR->clear();
-
-  for (unsigned int i=0;i<m_clus_layer->size();++i) 
-  {
-    strip_coord = m_clus_pix->at(i);
-
-    s_min=2000;
-    s_max=0;
-
-    for (unsigned int j=0;j<strip_coord.size()/2;++j) 
-    {
-      if (strip_coord.at(2*j)<s_min) s_min = strip_coord.at(2*j);
-      if (strip_coord.at(2*j)>s_max) s_max = strip_coord.at(2*j);
-    }
-
-    //    std::cout << "Cluster spans over " << s_min << "/" << s_max << std::endl;
-
-    c_min = int(s_min/(m_clus_nrows->at(i)/8));
-    c_max = int(s_max/(m_clus_nrows->at(i)/8));
-
-    nums = m_clus_nrows->at(i)/8;
-
-    //    std::cout << "This corresponds to chips " << c_min << " to " << c_max << std::endl;
-
-    chip_basis=0;
-    chip_basis+=(m_clus_layer->at(i))*1000000;
-    chip_basis+=(m_clus_ladder->at(i))*10000;
-    chip_basis+=int((m_clus_module->at(i)-1)/2)*100;
-    chip_basis+=8*int(2*m_clus_seg->at(i)/m_clus_PS->at(i));
-
-    for (int j=c_min;j<=c_max;++j) // Loop over chips
-    {
-      chip_idx=chip_basis+j;
-
-      // Is this idx already registered?
-
-      if (c_min==c_max)
-      {
-	n_4 = int((m_clus_nstrips->at(i)-1)/4+1);
-	n_8 = int((m_clus_nstrips->at(i)-1)/8+1);
-      }
-      else if (j==c_min)
-      {
-	n_4 = int(((c_min+1)*nums-1-s_min)/4+1);
-	n_8 = int(((c_min+1)*nums-1-s_min)/8+1);	
-      }
-      else if (j==c_max)
-      {
-	n_4 = int((s_max-c_max*nums-1)/4+1);
-	n_8 = int((s_max-c_max*nums-1)/8+1);	
-      }
-      else if (j!=c_max && j!=c_min)
-      {
-	n_4 = int((nums-1)/4+1);
-	n_8 = int((nums-1)/8+1);	
-      }    
-
-      found=false;
-
-      for (unsigned int k=0;k<chip_mult.size();++k) 
-      {  
-	if (found) continue;
-
-	if (chip_idx==chip_mult.at(k).at(0))
-	{
-	  found=true;
-	  if (m_clus_PS->at(i)==32)
-	  {
-	    chip_mult.at(k).at(1)+=1;
-	    chip_mult.at(k).at(3)+=n_4;
-	    chip_mult.at(k).at(5)+=n_8;
-	  }
-	  else
-	  {
-	    chip_mult.at(k).at(2)+=1;
-	    chip_mult.at(k).at(4)+=n_4;
-	    chip_mult.at(k).at(6)+=n_8;
-	  }
-	}
-      }
-
-      if (!found)
-      {
-	chip_st.clear(); 
-	chip_st.push_back(chip_idx); 
-	chip_st.push_back(0);
-	chip_st.push_back(0);
-	chip_st.push_back(0);
-	chip_st.push_back(0);
-	chip_st.push_back(0);
-	chip_st.push_back(0);
-	
-	if (m_clus_PS->at(i)==32)
-	{
-	  chip_st.at(1)+=1;
-	  chip_st.at(3)+=n_4;
-	  chip_st.at(5)+=n_8;
-	}
-	else
-	{
-	  chip_st.at(2)+=1;
-	  chip_st.at(4)+=n_4;
-	  chip_st.at(6)+=n_8;
-	}
-
-	chip_mult.push_back(chip_st);
-      }
-    }
-  }
-
-  for (unsigned int k=0;k<chip_mult.size();++k) 
-  {  
-    m_clus_mult->push_back(chip_mult.at(k));
-  }
-
-  //  std::cout << "This event has touched " << chip_mult.size() << " chips" << std::endl;
-
-  for (unsigned int i=0;i<m_clus_layer->size();++i) 
-  {
-    chip_idx=0;
-    chip_idx+=(m_clus_layer->at(i))*1000000;
-    chip_idx+=(m_clus_ladder->at(i))*10000;
-    chip_idx+=int((m_clus_module->at(i)-1)/2)*100;
-    chip_idx+=8*int(2*m_clus_seg->at(i)/m_clus_PS->at(i));
-    chip_idx+=int(m_clus_strip->at(i)/(m_clus_nrows->at(i)/8));
-
-    found=false;
-
-    for (unsigned int k=0;k<chip_mult.size();++k) 
-    {  
-      if (found) continue;
-
-      if (chip_idx==chip_mult.at(k).at(0))
-      {
-	found=true;
-	m_clus_rank_PIX->push_back(chip_mult.at(k).at(1));
-	m_clus_rank_STR->push_back(chip_mult.at(k).at(2));
-	m_clus_rank_PIX_4->push_back(chip_mult.at(k).at(3));
-	m_clus_rank_STR_4->push_back(chip_mult.at(k).at(4));
-	m_clus_rank_PIX_8->push_back(chip_mult.at(k).at(5));
-	m_clus_rank_STR_8->push_back(chip_mult.at(k).at(6));
-      }
-    }
-  }
-
-
-
+  // Clusters are built, now look at the stubs
+    
   int clust1     = -1;
   int clust2     = -1;
  
@@ -626,27 +451,36 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
   {
     /// Loop over L1TkStubs
 
-    typename edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > >::const_iterator otherInputIter;
-    typename edmNew::DetSet< TTStub< Ref_PixelDigi_ > >::const_iterator otherContentIter;
-
-    for ( otherInputIter = PixelDigiL1TkStubHandle->begin();
-	  otherInputIter != PixelDigiL1TkStubHandle->end();
-	  ++otherInputIter )
+    /// Loop over L1TkClusters
+    for (auto gd=theTrackerGeom->dets().begin(); gd != theTrackerGeom->dets().end(); gd++) 
     {
-      for ( otherContentIter = otherInputIter->begin();
-	    otherContentIter != otherInputIter->end();
-	    ++otherContentIter )
-      {
-	/// Make the reference to be put in the map
-	edm::Ref< edmNew::DetSetVector< TTStub< Ref_PixelDigi_ > >, TTStub< Ref_PixelDigi_ > > tempStubPtr = 
-	  edmNew::makeRefTo( PixelDigiL1TkStubHandle, otherContentIter );
+      DetId detid = (*gd)->geographicalId();
+      if(detid.subdetId()!=StripSubdetector::TOB && detid.subdetId()!=StripSubdetector::TID ) continue; // only run on OT
+      if(!tTopo->isLower(detid) ) continue; // loop on the stacks: choose the lower arbitrarily
+      //  DetId lowerDetid = detid;
+      // DetId upperDetid = tTopo->partnerDetId(detid);
+      DetId stackDetid = tTopo->stack(detid); // Stub module detid
 
-	StackedTrackerDetId detIdStub( tempStubPtr->getDetId() );
+      if (PixelDigiL1TkStubHandle->find( stackDetid ) == PixelDigiL1TkStubHandle->end() ) continue;
+
+      /// Get the DetSets of the Clusters
+      edmNew::DetSet< TTStub< Ref_Phase2TrackerDigi_ > > stubs = (*PixelDigiL1TkStubHandle)[ stackDetid ];
+      const GeomDetUnit* det0 = theTrackerGeom->idToDetUnit( detid );
+      const PixelGeomDetUnit* theGeomDet = dynamic_cast< const PixelGeomDetUnit* >( det0 );
+      const PixelTopology* topol = dynamic_cast< const PixelTopology* >( &(theGeomDet->specificTopology()) );
+
+      for ( auto stubIter = stubs.begin();stubIter != stubs.end();++stubIter ) 
+      {
+	edm::Ref< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_  > >, TTStub< Ref_Phase2TrackerDigi_  > > tempStubPtr = edmNew::makeRefTo( PixelDigiL1TkStubHandle, stubIter );
+
       
 	// The stub position is the inner cluster position
 	//
 
-	GlobalPoint posStub = theStackedGeometry->findGlobalPosition( &(*tempStubPtr) );
+	MeasurementPoint coords = tempStubPtr->getClusterRef(0)->findAverageLocalCoordinates();
+
+	clustlp = topol->localPosition(coords);
+	posStub  =  theGeomDet->surface().toGlobal(clustlp);
 
 	++m_stub;
 
@@ -654,15 +488,10 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	double offsetStub   = tempStubPtr->getTriggerOffset();
 	
 	bool genuineStub    = MCTruthTTStubHandle->isGenuine( tempStubPtr );
-    
-	const GeomDetUnit* det0 = theStackedGeometry->idToDetUnit( detIdStub, 0 );
-
-	/// Find pixel pitch and topology related information
-	const PixelGeomDetUnit* pix0 = dynamic_cast< const PixelGeomDetUnit* >( det0 );
-	const PixelTopology* top0    = dynamic_cast< const PixelTopology* >( &(pix0->specificTopology()) );
+	//bool genuineStub    = false;
 	
-	segs = top0->ncolumns();
-	rows = top0->nrows();
+	segs= topol->ncolumns();
+	rows= topol->nrows();;
 	
 	clust1 = StubExtractor::getClust1Idx(posStub.x(),posStub.y(),posStub.z());
 	clust2 = StubExtractor::getClust2Idx(clust1,m_clus_strip->at(clust1)+displStub);
@@ -677,30 +506,32 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	m_stub_strip->push_back(m_clus_strip->at(clust1));
 	m_stub_deltas->push_back(displStub-offsetStub);
 	m_stub_cor->push_back(offsetStub);
-	m_stub_pt->push_back(theStackedGeometry->findRoughPt( mMagneticFieldStrength, &(*tempStubPtr) ));
+	//m_stub_pt->push_back(theStackedGeometry->findRoughPt( mMagneticFieldStrength, &(*tempStubPtr) ));
+	m_stub_pt->push_back(0);
 
-	
-	if ( detIdStub.isBarrel() )
+	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = detIdStub.iLayer()+4;
-	  ladder = detIdStub.iPhi()-1;
-	  module = detIdStub.iZ()-1;
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid));
+	  module = static_cast<int>(tTopo->module(detid));
+	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
 	}
-	else if ( detIdStub.isEndcap() )
+	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
-	  layer  = 10+detIdStub.iZ()+abs(detIdStub.iSide()-2)*7;
-	  ladder = detIdStub.iRing()-1;
-	  module = detIdStub.iPhi()-1;
+	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+	  ladder = static_cast<int>(tTopo->tidRing(detid));
+	  module = static_cast<int>(tTopo->module(detid));
+	  type   = 0;
 	}
 
 	m_stub_layer->push_back(layer);
 	m_stub_ladder->push_back(ladder);
 	m_stub_module->push_back(module);
+	m_stub_type->push_back(type);
 	m_stub_rank->push_back(0);
 
 	if ( genuineStub )
 	{
-	  
 	  edm::Ptr< TrackingParticle > tpPtr = MCTruthTTStubHandle->findTrackingParticlePtr( tempStubPtr );
 	  
 	  m_stub_pxGEN->push_back(tpPtr->p4().px());
@@ -712,8 +543,8 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	  m_stub_Y0->push_back(tpPtr->vertex().y());
 	  m_stub_Z0->push_back(tpPtr->vertex().z());
 	  m_stub_PHI0->push_back(tpPtr->momentum().phi());
-	  m_stub_tp->push_back(mc->getMatchingTP(tpPtr->vertex().x(),tpPtr->vertex().y(),tpPtr->vertex().z(),
-						 tpPtr->p4().px(),tpPtr->p4().py(),tpPtr->p4().pz()));
+	  if (MCinfo) m_stub_tp->push_back(mc->getMatchingTP(tpPtr->vertex().x(),tpPtr->vertex().y(),tpPtr->vertex().z(),
+							     tpPtr->p4().px(),tpPtr->p4().py(),tpPtr->p4().pz()));
 	}
 	else
 	{
@@ -728,108 +559,10 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc)
 	  m_stub_pid->push_back(0);
 	  m_stub_tp->push_back(-1);
 	}
-
-	
-	chip_idx=0;
-	chip_idx+=(layer)*1000000;
-	chip_idx+=(ladder)*10000;
-	chip_idx+=(module)*100;
-	chip_idx+=8*int(2*m_clus_seg->at(clust1)/m_clus_PS->at(clust1));
-	chip_idx+=int(m_clus_strip->at(clust1)/(m_clus_nrows->at(clust1)/8));
-	
-	// Is this idx already registered?
-	
-	found=false;
-	
-	for (unsigned int k=0;k<chip_ranks.size();++k) 
-	{  
-	  if (found) continue;
-
-	  if (chip_idx==chip_ranks.at(k).at(0))
-	  {
-	    found=true;
-	    chip_ranks.at(k).push_back(m_stub_pt->size()-1);
-	  }
-	}
-
-	if (!found)
-	{
-	  chip_st.clear(); 
-	  chip_st.push_back(chip_idx); 
-	  chip_st.push_back(m_stub_pt->size()-1); 
-	  chip_ranks.push_back(chip_st);
-	}
       } /// End of loop over L1TkStubs
     } 
   } /// End of if ( PixelDigiL1TkStubHandle->size() > 0 ) 
- 
   
-  std::vector<int> rank;
-  std::vector<float> bends;
-  std::vector<float> strip;
-
-  float b_min;
-  float s_min2;
-  unsigned int   i_min;
-  int tmp;
-
-  for (unsigned int k=0;k<chip_ranks.size();++k) 
-  { 
-    chip_st=chip_ranks.at(k); 
-
-    if (chip_st.size()==2) continue; // Only one stub, rank is 0
-
-    rank.clear();
-    bends.clear();
-    strip.clear();
-
-    for (unsigned int l=1;l<chip_st.size();++l) 
-    { 
-      rank.push_back(chip_st.at(l));
-      bends.push_back(fabs(m_stub_deltas->at(chip_st.at(l))));
-      strip.push_back(m_stub_strip->at(chip_st.at(l)));
-    }
-
-    // We now have the list, we do the sorting
-
-    for (unsigned int l=0;l<rank.size()-1;++l) 
-    { 
-      i_min=l;
-      b_min=bends.at(l);
-      s_min2=strip.at(l);
-
-      for (unsigned int ll=l+1;ll<rank.size();++ll) 
-      { 
-	if (bends.at(ll)<b_min)
-	{
-	  i_min=ll;
-	  b_min=bends.at(ll);
-	  s_min2=strip.at(ll);
-	}
-	if (bends.at(ll)==b_min && strip.at(ll)<s_min2)
-	{
-	  i_min=ll;
-	  b_min=bends.at(ll);
-	  s_min2=strip.at(ll);
-	}
-      }
-
-      if (i_min!=l)
-      {
-	tmp=rank.at(i_min);
-	rank.at(i_min)=rank.at(l);
-	bends.at(i_min)=bends.at(l);
-	strip.at(i_min)=strip.at(l);
-	
-	rank.at(l)=tmp;
-	bends.at(l)=b_min;
-	strip.at(l)=s_min2;
-      }
-    }
-
-    for (unsigned int l=0;l<rank.size();++l) m_stub_rank->at(rank.at(l)) = l; 
-  }
-
   StubExtractor::fillTree();
 }
 
@@ -858,6 +591,7 @@ void StubExtractor::reset()
   m_clus_module->clear();
   m_clus_ladder->clear();
   m_clus_seg->clear();   
+  m_clus_type->clear(); 
   m_clus_strip->clear(); 
   m_clus_sat->clear();   
   m_clus_nstrips->clear();
@@ -865,18 +599,12 @@ void StubExtractor::reset()
   m_clus_matched->clear();
   m_clus_PS->clear();
   m_clus_nrows->clear();
+  m_clus_bot->clear();
   m_clus_pid->clear();
   m_clus_pdgID->clear();
   m_clus_ptGEN->clear();
-  m_clus_rank_PIX->clear(); 
-  m_clus_rank_STR->clear(); 
-  m_clus_rank_PIX_4->clear(); 
-  m_clus_rank_STR_4->clear();
-  m_clus_rank_PIX_8->clear(); 
-  m_clus_rank_STR_8->clear();
   m_clus_pix->clear(); 
   m_clus_tp->clear(); 
-  m_clus_mult->clear(); 
 
   m_stub_X0->clear();     
   m_stub_Y0->clear();     
@@ -892,6 +620,7 @@ void StubExtractor::reset()
   m_stub_module->clear(); 
   m_stub_ladder->clear(); 
   m_stub_seg->clear();  
+  m_stub_type->clear();
   m_stub_chip->clear();   
   m_stub_strip->clear(); 
   m_stub_x->clear(); 
@@ -948,9 +677,10 @@ int  StubExtractor::getClust2Idx(int idx1, float dist)
 
   for (int i=0;i<m_clus;++i) // Loop over clusters
   { 
+    if (i==idx1) continue;
     if (m_clus_layer->at(i)!=m_clus_layer->at(idx1)) continue;
     if (m_clus_ladder->at(i)!=m_clus_ladder->at(idx1)) continue;
-    if (m_clus_module->at(i)-1!=m_clus_module->at(idx1)) continue;
+    if (m_clus_module->at(i)!=m_clus_module->at(idx1)) continue;
 
     //    std::cout  << m_clus_layer->at(idx1) << " / " <<  m_clus_ladder->at(idx1) << " / " 
     //               << m_clus_module->at(idx1) << " / " <<  m_clus_module->at(i) << " / " 

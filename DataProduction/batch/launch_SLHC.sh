@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 ###########################################
 #
 # Main script for data generation
@@ -21,9 +20,10 @@
 # p9 : ETAMIN
 # p10: ETAMAX
 # p11: TOWER ID: the trigger tower ID (put -1 for default)
-# p12: THRESH: the pt threshold for the stub maker (2/3/4 of -1 for no thresh)
+# p12: THRESH: the pt threshold for the stub maker (2/3/4, -1 for baseline or 0 for no thresh)
 # p13: SUFFIX: a specific nickname for this production 
-# p14: BATCH or nothing: launch lxbatch jobs or not
+# p14: GEOMTYPE: TILT or FLAT 
+# p15: BATCH or nothing: launch lxbatch jobs or not
 #
 # For more details, and examples, have a look at:
 # 
@@ -70,7 +70,6 @@ STORAGEDIR2=srm://$LFC_HOST/$STORAGEDIR
 # https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideLcgAccess
 #
 
-source /afs/cern.ch/project/gd/LCG-share/current_3.2/etc/profile.d/grid-env.sh
 voms-proxy-init --voms cms --valid 100:00 -out $HOME/.globus/gridproxy.cert
 export X509_USER_PROXY=${HOME}'/.globus/gridproxy.cert'
 
@@ -78,9 +77,25 @@ GTAG=${1}           # Global tag
 N_RUN=${2}          # Number of samples 
 EVTS_PER_RUN=${3}   # Number of events per sample
 MATTER=${4}         # Type of event
+GTYPE=${14}         # Type of geometry
 PTYPE=-13           # Default particle type (MUON)
+GEOM=True           # Default geometry is flat
 
 i=0
+
+# The geomtry type is set depending on the GTYPE type
+case "$GTYPE" in
+"TILT")
+GEOM=False;
+;;
+"FLAT")
+GEOM=True;
+;;
+*)
+GTYPE=FLAT;
+echo "You have not provided a correct geom name, we will use FLAT by default";
+;;
+esac
 
 # The particle type is set depending on the MATTER type
 
@@ -114,14 +129,8 @@ PTYPE=666;
 "PILEUP")
 PTYPE=777;
 ;;
-"PILEUP_ND")
-PTYPE=778;
-;;
 "PILEUP4T")
 PTYPE=888;
-;;
-"PILEUPREDO")
-PTYPE=7777;
 ;;
 "MUBANK")
 PTYPE=1013;
@@ -142,6 +151,8 @@ ETAMAX=${10}
 TID=${11}
 THRESH=${12}
 
+DIRNAME=${MATTER}_${GTYPE}_${13}
+
 # Then we setup some environment variables
 
 cd  ..
@@ -153,10 +164,10 @@ cd $PACKDIR/batch
 
 # Finally we create the batch scripts and launch the jobs
 
-echo 'Creating directory '$STORAGEDIR/${MATTER}_${13}' for type '$PTYPE
+echo 'Creating directory '$STORAGEDIR/$DIRNAME' for type '$PTYPE
 
-OUTPUTDIR=$STORAGEDIR2/${MATTER}_${13}
-OUTPUTDIR2=$STORAGEDIR/${MATTER}_${13}
+OUTPUTDIR=$STORAGEDIR2/$DIRNAME
+OUTPUTDIR2=$STORAGEDIR/$DIRNAME
 
 lfc-mkdir $OUTPUTDIR2 
 
@@ -170,16 +181,16 @@ do
 
 	if [ $deal != "0" ]; then
 	
-	    run =`ls gen_job_${MATTER}_${12}_${13}_${i}.sh | wc -l`
+	    run =`ls gen_job_${DIRNAME}_${i}.sh | wc -l`
 
 	    if [ $run != "0" ]; then
-		rm gen_job_${MATTER}_${12}_${13}_${i}.sh
+		rm gen_job_${DIRNAME}_${i}.sh
 	    fi
 	    i=$(( $i + 1))
 	    continue
 	fi
 
-	run=`ls gen_job_${MATTER}_${12}_${13}_${i}.sh | wc -l`
+	run=`ls gen_job_${DIRNAME}_${i}.sh | wc -l`
 
 	if [ $run != "0" ]; then
 	    i=$(( $i + 1))
@@ -187,14 +198,12 @@ do
 	fi
     fi 
 
-    echo "#\!/bin/bash" > gen_job_${MATTER}_${12}_${13}_${i}.sh
-    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU ${THRESH} $TID" >> gen_job_${MATTER}_${12}_${13}_${i}.sh
-    chmod 755 gen_job_${MATTER}_${12}_${13}_${i}.sh
+    echo "#\!/bin/bash" > gen_job_${DIRNAME}_${i}.sh
+    echo "source $PACKDIR/batch/generator_SLHC.sh $EVTS_PER_RUN $PTYPE $MATTER $GTAG $i $RELEASEDIR $PACKDIR $OUTPUTDIR ${PTMIN} ${PTMAX} ${PHIMIN} ${PHIMAX} ${ETAMIN} ${ETAMAX} $STORAGEPU $NPU $THRESH $TID $GEOM" >> gen_job_${DIRNAME}_${i}.sh
+    chmod 755 gen_job_${DIRNAME}_${i}.sh
 
-    if [[ -z "$14" ]]; then
-	if [ ${14} == "BATCH" ]; then	
-	    bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${MATTER}_${12}_${13}_${i}.sh
-	fi
+    if [ ${15} == "BATCH" ]; then	
+	bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${DIRNAME}_${i}.sh
     fi
 
     i=$(( $i + 1))

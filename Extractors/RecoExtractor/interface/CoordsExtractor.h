@@ -17,6 +17,7 @@
 #include "SimDataFormats/TrackerDigiSimLink/interface/PixelDigiSimLink.h"
 #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "Geometry/CommonTopologies/interface/Topology.h"
 #include "Geometry/CommonTopologies/interface/PixelTopology.h"
 #include "Geometry/TrackerGeometryBuilder/interface/PixelGeomDetUnit.h"
 #include "Geometry/TrackerGeometryBuilder/interface/StripGeomDetUnit.h"
@@ -29,10 +30,16 @@
 #include "DataFormats/SiPixelDetId/interface/PixelSubdetector.h"
 #include "DataFormats/SiPixelDetId/interface/PixelBarrelName.h"
 #include "DataFormats/SiPixelDetId/interface/PixelEndcapName.h"
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+#include "DataFormats/TrackerCommon/interface/TrackerTopology.h"
+#include "DataFormats/Phase2TrackerDigi/interface/Phase2TrackerDigi.h"
+
 
 //Include std C++
 #include <iostream>
 #include <vector>
+#include <iomanip>
+#include <bitset>
 
 #include "TMath.h"
 #include "TTree.h"
@@ -54,7 +61,9 @@ class CoordsExtractor
   
   TTree* m_tree;
 
-  edm::ESHandle<TrackerGeometry> theTrackerGeometry;
+  edm::ESHandle<TrackerTopology> tTopoHandle;
+  edm::ESHandle<TrackerGeometry> tGeomHandle;
+
 
   int    m_c_layer;
   int    m_c_module;

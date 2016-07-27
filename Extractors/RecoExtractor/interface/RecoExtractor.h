@@ -15,12 +15,14 @@
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 
+#include "DataFormats/Common/interface/DetSetVectorNew.h"
+
 #include "../interface/CoordsExtractor.h"
 #include "../interface/PixelExtractor.h"
 #include "../interface/StubExtractor.h"
 #include "../interface/L1TrackExtractor.h"
 #include "../interface/MCExtractor.h"
-#include "../interface/L1TrackTrigger_analysis.h"
+//#include "../interface/L1TrackTrigger_analysis.h"
 #include "../interface/StubTranslator.h"
 #include "../interface/AnalysisSettings.h"
 
@@ -72,18 +74,18 @@ class RecoExtractor : public edm::EDAnalyzer{
   int  nevts_;
   int  skip_;
 
-  std::string CLUS_tag;
-  std::string STUB_tag;
-
-  std::string CLUS_name;
-  std::string STUB_name;
-
-  edm::InputTag PIX_tag_;  // 
-  edm::InputTag MC_tag_;  // 
-  edm::InputTag L1_STUB_tag_;
-  edm::InputTag L1_PATT_tag_;
-  edm::InputTag L1_TC_tag_;
-  edm::InputTag L1_TRCK_tag_;
+  edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > clustersToken_;
+  edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > clustersTToken_;
+  edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stubsToken_;
+  edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > stubsTToken_;
+  edm::EDGetTokenT< reco::GenParticleCollection > gpToken_;
+  edm::EDGetTokenT< TrackingParticleCollection > tpToken_;
+  edm::EDGetTokenT< edm::DetSetVector< Phase2TrackerDigi> > pixToken_;
+  edm::EDGetTokenT< edm::DetSetVector< PixelDigiSimLink> > pixslToken_;
+  edm::EDGetTokenT< std::vector<PileupSummaryInfo> > puToken_;
+  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > pattToken_;
+  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > tcToken_;
+  edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > trkToken_;
 
   //
   // Definition of root-tuple :
@@ -101,11 +103,12 @@ class RecoExtractor : public edm::EDAnalyzer{
   CoordsExtractor*          m_COORDS;
   PixelExtractor*           m_PIX;
   MCExtractor*              m_MC;
+  MCExtractor*              m_dummy_MC;
   StubExtractor*            m_STUB;
   L1TrackExtractor*         m_L1TRK;
   StubTranslator*           m_BK;
   AnalysisSettings*         m_ana_settings;
-  L1TrackTrigger_analysis*  m_L1TT_analysis;
+  // L1TrackTrigger_analysis*  m_L1TT_analysis;
 
 };
 

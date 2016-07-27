@@ -16,7 +16,13 @@
 # Script tested with release CMSSW_6_2_0_SLHC25_patch3
 #
 #########
+#
+# Here you choose if you want flat (True) or tilted (False) geometry
+#
 
+flat=False
+
+###################
 
 import FWCore.ParameterSet.Config as cms
 
@@ -26,14 +32,12 @@ process.load('Configuration/StandardSequences/Services_cff')
 process.load('Configuration/StandardSequences/EndOfProcess_cff')
 process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 
-# Special geometry (Tracker only)
-process.load('DataProduction.SkimGeometry.GeometryExtendedPhase2TkBEReco_SKIM_cff')
 
 # Other statements
 
 # Global tag for PromptReco
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'DES23_62_V1::All', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Number of events
 process.maxEvents = cms.untracked.PSet(
@@ -54,5 +58,16 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 process.MIBextraction.getCoords        = True
 
 process.p = cms.Path(process.MIBextraction)
+
+# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
+
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+
+# End of customisation functions
 
 

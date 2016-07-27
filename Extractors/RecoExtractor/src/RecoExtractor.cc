@@ -4,7 +4,7 @@ using namespace std;
 using namespace edm;
 
 RecoExtractor::RecoExtractor(const edm::ParameterSet& config) :
-  do_fill_       (config.getUntrackedParameter<bool>("fillTree", true)),
+  do_fill_       (config.getUntrackedParameter<bool>("fillTree",   true)),
   do_COORDS_     (config.getUntrackedParameter<bool>("getCoords",  false)),
   do_PIX_        (config.getUntrackedParameter<bool>("doPixel",    false)),
   do_MC_         (config.getUntrackedParameter<bool>("doMC",       false)),
@@ -12,22 +12,28 @@ RecoExtractor::RecoExtractor(const edm::ParameterSet& config) :
   do_L1TRK_      (config.getUntrackedParameter<bool>("doL1TRK",    false)),
   do_BANK_       (config.getUntrackedParameter<bool>("doBANK",     false)),
   do_MATCH_      (config.getUntrackedParameter<bool>("doMatch",    false)),
-  do_L1tt_       (config.getUntrackedParameter<bool>("doL1TT", false)),
+  do_L1tt_       (config.getUntrackedParameter<bool>("doL1TT",     false)),
   nevts_         (config.getUntrackedParameter<int>("n_events", 10000)),
   skip_          (config.getUntrackedParameter<int>("skip_events", 0)),
-  CLUS_tag       (config.getParameter<std::string>("CLUS_container")),
-  STUB_tag       (config.getParameter<std::string>("STUB_container")),
-  CLUS_name      (config.getParameter<std::string>("CLUS_name")),
-  STUB_name      (config.getParameter<std::string>("STUB_name")),
-  PIX_tag_       (config.getParameter<edm::InputTag>("pixel_tag")),
-  L1_STUB_tag_   (config.getParameter<edm::InputTag>("L1stub_tag")),
-  L1_PATT_tag_   (config.getParameter<edm::InputTag>("L1pattern_tag")),
-  L1_TC_tag_     (config.getParameter<edm::InputTag>("L1tc_tag")),
-  L1_TRCK_tag_   (config.getParameter<edm::InputTag>("L1track_tag")),
   outFilename_   (config.getParameter<std::string>("extractedRootFile")),
   inFilename_    (config.getParameter<std::string>("inputRootFile")),
   m_settings_    (config.getUntrackedParameter<std::vector<std::string> >("analysisSettings"))
 {
+  clustersToken_ = consumes< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_  > > >(config.getParameter< edm::InputTag >( "TTClusters" ));
+  stubsToken_    = consumes< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_  > > >(config.getParameter< edm::InputTag >( "TTStubs" ));
+  clustersTToken_ = consumes< TTClusterAssociationMap< Ref_Phase2TrackerDigi_  > >(config.getParameter< edm::InputTag >( "TTClustersAssociators" ));
+  stubsTToken_    = consumes< TTStubAssociationMap< Ref_Phase2TrackerDigi_  > >(config.getParameter< edm::InputTag >( "TTStubsAssociators" ));
+
+  gpToken_       = consumes< reco::GenParticleCollection >(config.getParameter< edm::InputTag >( "GenParticles" )); 
+  tpToken_       = consumes< TrackingParticleCollection >(config.getParameter< edm::InputTag >( "TrkParticles" )); 
+  pixToken_      = consumes< edm::DetSetVector< Phase2TrackerDigi > >(config.getParameter< edm::InputTag >( "digi_tag" )); 
+  pixslToken_    = consumes< edm::DetSetVector< PixelDigiSimLink > >(config.getParameter< edm::InputTag >( "digisimlink_tag" )); 
+  puToken_       = consumes< std::vector<PileupSummaryInfo> >(config.getParameter< edm::InputTag >( "PUinfo_tag" )); 
+
+  pattToken_     = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(config.getParameter< edm::InputTag >( "L1pattern_tag" )); 
+  tcToken_       = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(config.getParameter< edm::InputTag >( "L1tc_tag" )); 
+  trkToken_       = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(config.getParameter< edm::InputTag >( "L1track_tag" )); 
+
   // We parse the analysis settings
   m_ana_settings = new AnalysisSettings(&m_settings_);
   m_ana_settings->parseSettings();
@@ -46,8 +52,8 @@ void RecoExtractor::beginJob()
     ? RecoExtractor::initialize()
     : RecoExtractor::retrieve();
 
-  if (do_MC_ && do_PIX_ && do_L1tt_) 
-    m_L1TT_analysis = new L1TrackTrigger_analysis(m_ana_settings,skip_);
+  //  if (do_MC_ && do_PIX_ && do_L1tt_) 
+  //  m_L1TT_analysis = new L1TrackTrigger_analysis(m_ana_settings,skip_);
 
   if (do_BANK_ && do_STUB_) 
     m_BK = new StubTranslator();
@@ -62,7 +68,7 @@ void RecoExtractor::beginJob()
 void RecoExtractor::beginRun(Run const& run, EventSetup const& setup) 
 {
   nevent = 0;
-
+  
   if (do_fill_) // We are filling the ntuple, first init the geom stuff
   {
     if (do_COORDS_)   m_COORDS->init(&setup);
@@ -71,7 +77,7 @@ void RecoExtractor::beginRun(Run const& run, EventSetup const& setup)
     if (do_STUB_)     m_STUB->init(&setup);
     if (do_L1TRK_)    m_L1TRK->init(&setup);
   }
-
+  
   // If we start from existing file we don't have to loop over events
   if (!do_fill_ && do_PIX_ && m_PIX->n_events()) 
   {    
@@ -137,7 +143,8 @@ void RecoExtractor::fillInfo(const edm::Event *event)
 {
   if (do_PIX_)               m_PIX->writeInfo(event);
   if (do_MC_)                m_MC->writeInfo(event);
-  if (do_STUB_ && do_MC_)    m_STUB->writeInfo(event,m_MC);
+  if (do_STUB_ && do_MC_)    m_STUB->writeInfo(event,m_MC,do_MC_);
+  if (do_STUB_ && !do_MC_)    m_STUB->writeInfo(event,m_dummy_MC,do_MC_);
   if (do_STUB_ && do_L1TRK_)  m_L1TRK->writeInfo(event,m_STUB);
 }   
 
@@ -158,11 +165,13 @@ void RecoExtractor::getInfo(int ievent)
 void RecoExtractor::initialize() 
 {
   m_outfile  = new TFile(outFilename_.c_str(),"RECREATE");
-  m_MC       = new MCExtractor(do_MC_);
-  m_STUB     = new StubExtractor(CLUS_tag,CLUS_name,STUB_tag,STUB_name,do_STUB_);
-  m_L1TRK    = new L1TrackExtractor(L1_STUB_tag_,L1_PATT_tag_,L1_TC_tag_,L1_TRCK_tag_,do_L1TRK_);
-  m_PIX      = new PixelExtractor(PIX_tag_,do_PIX_,do_MATCH_);
+  m_MC       = new MCExtractor(gpToken_,tpToken_,do_MC_);
+  m_STUB     = new StubExtractor(clustersToken_,stubsToken_,clustersTToken_,stubsTToken_,do_STUB_);
+  m_L1TRK    = new L1TrackExtractor(stubsToken_,pattToken_,tcToken_,trkToken_,do_L1TRK_);
+  m_PIX      = new PixelExtractor(pixToken_,pixslToken_,puToken_,do_PIX_,do_MATCH_);
   m_COORDS   = new CoordsExtractor(do_COORDS_);
+
+  m_dummy_MC = new MCExtractor();
 }  
 
 // Here are the initializations when starting from already extracted stuff
@@ -195,13 +204,13 @@ void RecoExtractor::retrieve()
 
 void RecoExtractor::doAna() 
 {
-  
+  /* 
   if (do_MC_ && do_PIX_ && do_L1tt_) 
   {  
     m_L1TT_analysis->do_stubs(m_PIX,m_MC);
     m_L1TT_analysis->fillTree();
   }
-
+  */
   if (do_STUB_ && do_BANK_) 
   {  
     m_BK->do_translation(m_STUB);
