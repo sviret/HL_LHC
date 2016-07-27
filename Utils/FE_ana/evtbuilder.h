@@ -107,12 +107,18 @@ class evtbuilder
   std::vector<int>    m_pix_module;
   std::vector<int>    m_pix_row;
   std::vector<int>    m_pix_col;
+  std::vector<int>    m_pix_nrow;
+  std::vector<int>    m_pix_ncol;
+  std::vector<float>  m_pix_z;
 
   std::vector<int>    *pm_pix_layer;
   std::vector<int>    *pm_pix_ladder;
   std::vector<int>    *pm_pix_module;
   std::vector<int>    *pm_pix_row;
   std::vector<int>    *pm_pix_col;
+  std::vector<int>    *pm_pix_nrow;
+  std::vector<int>    *pm_pix_ncol;
+  std::vector<float>  *pm_pix_z;
 
   int m_stub;
   std::vector<int>    m_stub_layer;
@@ -127,6 +133,7 @@ class evtbuilder
   std::vector<float>  m_stub_Y0;
   std::vector<float>  m_stub_pxGEN;
   std::vector<float>  m_stub_pyGEN;
+  std::vector<float>  m_stub_z;
 
   std::vector<int>    *pm_stub_layer;
   std::vector<int>    *pm_stub_ladder;
@@ -140,7 +147,7 @@ class evtbuilder
   std::vector<float>  *pm_stub_Y0;
   std::vector<float>  *pm_stub_pxGEN;
   std::vector<float>  *pm_stub_pyGEN;
-
+  std::vector<float>  *pm_stub_z;
 
   std::multimap< int, std::vector<int> > m_chip_trig;  //
 
@@ -223,6 +230,7 @@ class evtbuilder
   bool m_write_trg;
   bool m_write_out;
 
+  bool m_tilted;
 };
 
 #endif

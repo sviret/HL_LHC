@@ -11,7 +11,7 @@ The FE analyzer package is providing some tools in order to test the different F
 
 The reference for the formats is:
 
-https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v2.pdf
+https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v3.pdf
 
 Most useful methods are described in point VI and VII
 
@@ -98,7 +98,7 @@ The result of this command is a root file containing, for all the sequences, the
 VI/  Trigger sequences generation for a complete tracker part
 
 
-./FE_ana -c build_stim_TRG  -i INPUT_PHYS -j INPUT_MBIAS -n NSEQ -f SECTORDEF -o OUTPUT -k PHYS_PROP -u LAY -v LAD -w MOD
+./FE_ana -c build_stim_TRG  -i INPUT_PHYS -j INPUT_MBIAS -n NSEQ -f SECTORDEF -o OUTPUT -k PHYS_PROP -u LAY -v LAD -w MOD -e BLOCKSIZE
 
 INPUT_PHYS  : extracted root file, or list of extracted root files containing physics events (ie which might pass L1)
 INPUT_MBIAS : extracted root file, or list of extracted root files containing raw min bias events (ie which might not pass L1)
@@ -109,6 +109,7 @@ PHYS_PROP   : proportion of physics events in the CIC TRG sequence (in %)
 LAY         : layer number you're interested in (put -1 for all)
 LAD         : ladder number you're interested in (put -1 for all)
 MOD         : module number you're interested in (put -1 for all)
+BLOCKSIZE   : size of the TRG block, in bits (from 256 to 768 depending on the GBT scheme)
 
 The result is the same ROOT file than the other cases, but in addition 3 text files are produced:
 
@@ -122,7 +123,7 @@ The result is the same ROOT file than the other cases, but in addition 3 text fi
 VII/  L1 sequences generation for a complete tracker part
 
 
-./FE_ana -c build_stim_RAW  -i INPUT_PHYS -n NSEQ -f SECTORDEF -o OUTPUT -u LAY -v LAD -w MOD -r RATE -e L1CICBITS
+./FE_ana -c build_stim_RAW  -i INPUT_PHYS -n NSEQ -f SECTORDEF -o OUTPUT -u LAY -v LAD -w MOD -r RATE -e L1CICBITS -l ERROR
 
 INPUT_PHYS  : extracted root file, or list of extracted root files containing physics events (ie which might pass L1)
 NSEQ        : number of BXs you want to produce
@@ -133,7 +134,13 @@ LAY         : layer number you're interested in (put -1 for all)
 LAD         : ladder number you're interested in (put -1 for all)
 MOD         : module number you're interested in (put -1 for all)
 L1CICBITS   : the number of L1 bits extracted from the CIC per BX. This can be either 8 (LP-GBT) or 16 (10G-GBT). For the other chips the value is always 8
-
+ERROR       : integer number containing five value ABCDE. Set the value to one to produce random errors in the corresponding field:
+	    :  ERROR types : ABCDE
+    	    // A: random errors (flip bits) out of the L1 data (SEU)  
+    	    // B: header errors (flip bits)   
+    	    // C: cluster size errors (flip bits)   
+    	    // D: not used
+    	    // E: not used
 
 The result is the same ROOT file than the other cases, but in addition 3 text files are produced:
 
@@ -143,4 +150,14 @@ The result is the same ROOT file than the other cases, but in addition 3 text fi
 
 3. L1_CIC_out.txt: the expected CIC output. Here we provide the full L1 sequence (NSEQ BXs) for all the chips. Here the data is retrieved from the MPA/CBC chips, so the CIC data extraction cannot start until the last L1 FE packet has been received. Timeout features are not included yet.
 
+
+VIII/  Compare the CIC simulation output file with the verilog output 
+
+./FE_ana -c compa_out_***  -i INPUT_VERILOG -j INPUT_SIMU -o OUTPUT
+
+where *** can be: TRG, L1_MPA, or L1_CBC
+
+INPUT_VERILOG : output text file produced by the verilog model (Yannick's parsing) 
+INPUT_SIMU    : output text file produced by the simulation tool (CIC output from build_stim_trg or build_stim_raw) 
+OUTPUT        : name of the ouptut text file summarizing the differences
 

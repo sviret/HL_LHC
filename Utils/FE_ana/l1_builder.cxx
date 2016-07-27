@@ -22,7 +22,7 @@
 #include "l1_builder.h"
 
 l1_builder::l1_builder(std::string filenameRAW, std::string outfile, std::string sectorfile,
-		       int npatt, int rate, int layer, int ladder, int module, int npblock)
+		       int npatt, int rate, int layer, int ladder, int module, int npblock, int error)
 {
     m_lay        = layer;
     m_lad        = ladder;
@@ -46,6 +46,25 @@ l1_builder::l1_builder(std::string filenameRAW, std::string outfile, std::string
     m_raw_conc_fifo= new  std::vector<int>;
     m_raw_conc_bx  = new  std::vector<int>;
     
+    // ERROR types : ABCDE
+    // A: random errors (flip bits) out of the L1 data (SEU)  
+    // B: header errors (flip bits)   
+    // C: cluster size errors (flip bits)   
+    // D: not used
+    // E: not used
+
+    m_error_FE     = error;
+    m_error_prop   = 0.001; // Proportion of errors
+
+    m_error_rdm    = m_error_FE/10000;
+    m_error_hdr    = (m_error_FE-10000*m_error_rdm)/1000;
+    m_error_siz    = (m_error_FE-10000*m_error_rdm-1000*m_error_hdr)/100;
+
+    unsp = false;
+
+    if (error==2) unsp=true; // Turn on unsparsification for the CBC
+
+
     l1_builder::initVars();                       // Initialize everything
     l1_builder::convert(sectorfile);              // Get the trigger tower module info
     l1_builder::initTuple(filenameRAW,outfile);   // Initialize ROOT stuff
@@ -191,7 +210,7 @@ void l1_builder::get_stores(int nevts)
 
             // Look if this chip has already been touched in this event
             m_iter  = m_chip_raw.find(B_id);
-	        m_iter2 = m_conc_raw.find(B_id_conc);
+	    m_iter2 = m_conc_raw.find(B_id_conc);
             
             if (m_iter == m_chip_raw.end()) // Unknown chip, this can happen because csv file is only considering chips involved in TRG
             {
@@ -281,9 +300,14 @@ void l1_builder::get_stores(int nevts)
     int rank_r2 = 0;
     int rank_r3 = 0;
 
+
     int lim_r1 = 3;
     int lim_r2 = 25;
     int lim_r3 = 100;
+
+    //    int lim_r1 = 0;
+    //    int lim_r2 = 0;
+    //    int lim_r3 = 0;
 
     bool L1_rule = true;
 
@@ -374,60 +398,70 @@ void l1_builder::get_stores(int nevts)
     char buffer1[200];
     char buffer2[200];
     char buffer3[200];
+    char buffer4[200];
     
 
     if (m_lay!=-1 && m_lad!=-1 && m_mod!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
-        sprintf(buffer2, "l1_FE_OUT_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
+        sprintf(buffer1, "l1_FE_IN_L%dR%dM%d_%d_%d.txt",m_lay,m_lad,m_mod,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_L%dR%dM%d_%d_%d.txt",m_lay,m_lad,m_mod,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_L%dR%dM%d_%d_%d_err_%d%d%d.txt",m_lay,m_lad,m_mod,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_L%dR%dM%d_%d_%d.txt",m_lay,m_lad,m_mod,m_rate,nevts);
     }
     else if (m_lay!=-1 && m_lad!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-        sprintf(buffer2, "l1_FE_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+        sprintf(buffer1, "l1_FE_IN_L%dR%d_%d_%d.txt",m_lay,m_lad,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_L%dR%d_%d_%d.txt",m_lay,m_lad,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_L%dR%d_%d_%d_err_%d%d%d.txt",m_lay,m_lad,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_L%dR%d_%d_%d.txt",m_lay,m_lad,m_rate,nevts);
     }
     else if (m_lay!=-1 && m_mod!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-        sprintf(buffer2, "l1_FE_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+        sprintf(buffer1, "l1_FE_IN_L%dM%d_%d_%d.txt",m_lay,m_mod,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_L%dM%d_%d_%d.txt",m_lay,m_mod,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_L%dM%d_%d_%d_err_%d%d%d.txt",m_lay,m_mod,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_L%dM%d_%d_%d.txt",m_lay,m_mod,m_rate,nevts);
     }
     else if (m_lad!=-1 && m_mod!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-        sprintf(buffer2, "l1_FE_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+        sprintf(buffer1, "l1_FE_IN_R%dM%d_%d_%d.txt",m_lad,m_mod,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_R%dM%d_%d_%d.txt",m_lad,m_mod,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_R%dM%d_%d_%d_err_%d%d%d.txt",m_lad,m_mod,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_R%dM%d_%d_%d.txt",m_lad,m_mod,m_rate,nevts);
     }
     else if (m_lay!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-        sprintf(buffer2, "l1_FE_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+        sprintf(buffer1, "l1_FE_IN_L%dR%d_%d_%d.txt",m_lay,m_lad,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_L%dR%d_%d_%d.txt",m_lay,m_lad,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_L%dR%d_%d_%d_err_%d%d%d.txt",m_lay,m_lad,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_L%dR%d_%d_%d.txt",m_lay,m_lad,m_rate,nevts);
     }
     else if (m_mod!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-        sprintf(buffer2, "l1_FE_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+        sprintf(buffer1, "l1_FE_IN_L%dM%d_%d_%d.txt",m_lay,m_mod,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_L%dM%d_%d_%d.txt",m_lay,m_mod,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_L%dM%d_%d_%d_err_%d%d%d.txt",m_lay,m_mod,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_L%dM%d_%d_%d.txt",m_lay,m_mod,m_rate,nevts);
     }
     else if (m_lad!=-1)
     {
-        sprintf(buffer1, "l1_FE_IN_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-        sprintf(buffer2, "l1_FE_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-        sprintf(buffer3, "l1_CIC_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+        sprintf(buffer1, "l1_FE_IN_R%dM%d_%d_%d.txt",m_lad,m_mod,m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_R%dM%d_%d_%d.txt",m_lad,m_mod,m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_R%dM%d_%d_%d_err_%d%d%d.txt",m_lad,m_mod,m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_R%dM%d_%d_%d.txt",m_lad,m_mod,m_rate,nevts);
     }
     else
     {
-        sprintf(buffer1, "l1_FE_IN_ALL_%d.txt",nevts);
-        sprintf(buffer2, "l1_FE_OUT_ALL_%d.txt",nevts);
-        sprintf(buffer3, "l1_CIC_OUT_ALL_%d.txt",nevts);
+        sprintf(buffer1, "l1_FE_IN_ALL_%d_%d.txt",m_rate,nevts);
+        sprintf(buffer2, "l1_FE_OUT_ALL_%d_%d.txt",m_rate,nevts);
+        sprintf(buffer4, "l1_FE_OUT_ALL_%d_%d_err_%d%d%d.txt",m_rate,nevts,m_error_rdm,m_error_hdr,m_error_siz);
+        sprintf(buffer3, "l1_CIC_OUT_ALL_%d_%d.txt",m_rate,nevts);
     }
     
     
     FE_L1_IN.open(buffer1);
     FE_L1_OUT.open(buffer2);
+    FE_L1_OUT_E.open(buffer4);
     CIC_L1_OUT.open(buffer3);
     
     FE_L1_IN << "Digital input to the FE chip.\n";
@@ -442,7 +476,20 @@ void l1_builder::get_stores(int nevts)
     FE_L1_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
     FE_L1_OUT << "\n";
     FE_L1_OUT << "For each FE chip required, the list of L1 fragments is given for a period of " << nevts << " bunch crossings\n";
+    FE_L1_OUT << "Errors in the stream (outside L1 data)      : 0\n";
+    FE_L1_OUT << "Errors in the cluster size fields (MPA only): 0\n";
+    FE_L1_OUT << "Errors in the header fields                 : 0\n";
     
+    FE_L1_OUT_E<< "Digital L1 output of the FE chip (with random errors).\n";
+    FE_L1_OUT_E << "\n";
+    FE_L1_OUT_E << "Format defined in:\n";
+    FE_L1_OUT_E << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    FE_L1_OUT_E << "\n";
+    FE_L1_OUT_E << "For each FE chip required, the list of L1 fragments is given for a period of " << nevts << " bunch crossings\n";
+    FE_L1_OUT_E << "Errors in the stream (outside L1 data)      : "<< m_error_rdm <<"\n";
+    FE_L1_OUT_E << "Errors in the cluster size fields (MPA only): "<< m_error_siz <<"\n";
+    FE_L1_OUT_E << "Errors in the header fields                 : "<< m_error_hdr <<"\n";
+
     CIC_L1_OUT << "Digital L1 output of the CIC chip.\n";
     CIC_L1_OUT << "\n";
     CIC_L1_OUT << "Format defined in:\n";
@@ -460,6 +507,10 @@ void l1_builder::get_stores(int nevts)
     int last_rank;
     int last_BX;
 
+    int extracted_bit_per_BX = 8;
+
+    int nevts_tmp = nevts+10000;
+
     m_words.clear();
     m_raw_FIFO.clear();
     m_chip_FIFOs.clear();
@@ -472,7 +523,7 @@ void l1_builder::get_stores(int nevts)
     {
       m_digi_list.clear();
 
-      for (int j=0;j<m_npblock*nevts;++j)
+      for (int j=0;j<m_npblock*nevts_tmp;++j)
       {
           m_digi_list.push_back(0);
       }
@@ -491,9 +542,9 @@ void l1_builder::get_stores(int nevts)
     {
       m_digi_list.clear();
     
-      for (int j=0;j<8*nevts;++j)
+      for (int j=0;j<extracted_bit_per_BX*nevts_tmp;++j)
       {
-          m_digi_list.push_back(0);
+          m_digi_list.push_back(m_error_rdm*badbit());
       }
       m_words.insert(std::make_pair(m_chips.at(i),m_digi_list));
         
@@ -594,8 +645,8 @@ void l1_builder::get_stores(int nevts)
                 // Number of L1 bits extracted per bunch crossing is 8 for all the chips (one diff line at 320 MHz)
                 // could be 16 for the CIC in the 10G-GBT scenario
                 
-                int extracted_bit_per_BX = 8;
-                int delay                = 0;
+
+                int delay                = 0; // Delay is the minimal period, in BX, between L1A reception and data emission by the chip
                 
                 (isPS)
                 ? delay = m_MPA_L1_delay+m_raw_np+m_raw_ns // From D.Ceresa
@@ -604,14 +655,16 @@ void l1_builder::get_stores(int nevts)
                 // Find the chip FIFO footprint
                 // defined as follows:
 
-                // < CHIP_ID, <-1,BXin(1),BXout(1),BXin(2),BXout(2),... > >
+                // < CHIP_ID, <-1,1,BXin(1),BXout(1),2,BXin(2),BXout(2),... > >
 
                 m_iter2 = m_raw_FIFO.find(m_raw_chip); // Find the chip
 
                 FIFO_new.clear();
-                FIFO      = m_iter2->second;
+                FIFO      = m_iter2->second; // Recover the FIFO info for the chip
                 FIFO_size = (FIFO.size()-1)/3; // How many L1 events are in the FIFO (depth)?
                 FIFO_new.push_back(-1);
+
+		// We will fill FIFO_new with the new FIFO content
 
                 if (FIFO_size==0) // Empty FIFO, initialize it!
                 {
@@ -619,23 +672,25 @@ void l1_builder::get_stores(int nevts)
                     // BXout = BXin + numb of BXs to extract the event (if FIFO is empty it's simple)
                     
                     FIFO_new.push_back(L1_id);
-                    FIFO_new.push_back(i+delay);
-                    FIFO_new.push_back(i+delay+m_raw_size/(extracted_bit_per_BX)+1);
+                    FIFO_new.push_back(i+delay);  // BXin
+                    FIFO_new.push_back(i+delay+m_raw_size/(extracted_bit_per_BX)+1); // BXout
                     
                     m_raw_FIFO_FULL = (FIFO_new.size()-1)/3; // New FIFO size
-                    m_raw_FIFO_SIZE = i+delay;
+                    m_raw_FIFO_SIZE = i+delay;  
                     last_BX         = i+delay+m_raw_size/(extracted_bit_per_BX)+1;
                     
-                    m_iter2 = m_words.find(m_raw_chip);
-                    word    = m_iter2->second;
+                    m_iter3 = m_words.find(m_raw_chip);
+                    word    = m_iter3->second; // Full data stream for the chip
                     
                     for (int k=extracted_bit_per_BX*(i+delay);k<extracted_bit_per_BX*(i+delay)+m_raw_size;++k)
                     {
-                        if (k>=extracted_bit_per_BX*nevts) continue;
+                        if (k>=extracted_bit_per_BX*nevts_tmp) continue;
+
+			if (word.at(k)==1) std::cout << "E/STRANGE " << m_raw_chip << " / " << k/extracted_bit_per_BX << std::endl;
                         word.at(k) = m_raw_data->at(k-extracted_bit_per_BX*(i+delay));
                     }
                     
-                    m_words.erase(m_iter2->first);
+                    m_words.erase(m_iter3->first);
                     m_words.insert(std::make_pair(m_raw_chip,word));
                         
                 }
@@ -643,6 +698,8 @@ void l1_builder::get_stores(int nevts)
                 {
                     last_BX=i+delay;
                     
+		    //		    std::cout << m_raw_chip << " / " << (FIFO.size()-1)/3 << std::endl;
+
                     for (unsigned int j=0;j<(FIFO.size()-1)/3;++j)
                     {
                         if (FIFO.at(3*j+3)<i) continue; // Time to go out for this event (BXo(j)<i)
@@ -653,13 +710,15 @@ void l1_builder::get_stores(int nevts)
                         
                         // The last BXo fixes the time where we can start to extract the next event
                         last_BX=std::max(FIFO.at(3*j+3),i+delay);
+
+			//			std::cout << m_raw_chip << " / " << i << " / " << j << " / " << FIFO.at(3*j+1)  << " / " << FIFO.at(3*j+2)  << " / " << FIFO.at(3*j+3)  << " / " << last_BX  << std::endl;
                     }
 
                     // FIFO has been updated, check if it is FULL or not
                     
-                    if (static_cast<int>((FIFO_new.size()-1)/3)==m_MPA_FIFO_depth)
+                    if (static_cast<int>((FIFO_new.size()-1)/3)>=1000000*m_MPA_FIFO_depth)
                     {
-                        cout << "SIZE ERROR" << endl;
+		      cout << "SIZE ERROR -> " << static_cast<int>((FIFO_new.size()-1)/3) << " > " << m_MPA_FIFO_depth << endl;
                     }
                     
                     // Put the latest event
@@ -668,27 +727,32 @@ void l1_builder::get_stores(int nevts)
                     FIFO_new.push_back(i+delay);
                     FIFO_new.push_back(last_BX+m_raw_size/(extracted_bit_per_BX)+1);
                     
+		    //		    std::cout << m_raw_chip << " / " << " / " << L1_id  << " / " << i+delay  << " / " << last_BX+m_raw_size/(extracted_bit_per_BX)+1  << std::endl;
+
                     // Here we compute the size of the current FIFO
 
                     m_raw_FIFO_SIZE = last_BX;
                     m_raw_FIFO_FULL = (FIFO_new.size()-1)/3;
 
-                    m_iter2 = m_words.find(m_raw_chip);
-                    word=m_iter2->second;
+                    m_iter3 = m_words.find(m_raw_chip);
+                    word=m_iter3->second;
                     
                    // cout << last_BX << endl;
                     
                     for (int k=extracted_bit_per_BX*last_BX;k<extracted_bit_per_BX*last_BX+m_raw_size;++k)
                     {
-                        if (k>=extracted_bit_per_BX*nevts) continue;
+                        if (k>=extracted_bit_per_BX*nevts_tmp) continue;
+			if (word.at(k)==1) std::cout << "F/STRANGE " << m_raw_chip << " / " << k/extracted_bit_per_BX << std::endl;
                         word.at(k) = m_raw_data->at(k-extracted_bit_per_BX*last_BX);
                     }
                     
-                    m_words.erase(m_iter2->first);
+                    m_words.erase(m_iter3->first);
                     m_words.insert(std::make_pair(m_raw_chip,word));
                     
                     last_BX=last_BX+m_raw_size/(extracted_bit_per_BX)+1;
                 }
+
+		//		std::cout << m_raw_chip << " / " << (FIFO_new.size()-1)/3 << std::endl;
 
                 m_raw_FIFO.erase(m_iter2->first);
                 m_raw_FIFO.insert(std::make_pair(m_raw_chip,FIFO_new)); // Update the FIFO for this chip
@@ -734,7 +798,7 @@ void l1_builder::get_stores(int nevts)
             
                 // We have the info, we now write the word, making a difference bet. CIC and FE chip words
                 
-                l1_builder::fill_CONC_RAW_block(m_digi_list,isPS,L1_id);
+                l1_builder::fill_CONC_RAW_block(m_digi_list,isPS,L1_id,unsp);
             
                 // The sparsified word is written in the m_raw_data vector. We now store it in the FIFO, adding it's
                 // BX_in and BX_out coordinates
@@ -795,16 +859,16 @@ void l1_builder::get_stores(int nevts)
                     m_raw_FIFO_SIZE=bx_in;
                     last_BX=bx_in+m_raw_size/(extracted_bit_per_BX)+1;
                     
-                    m_iter2 = m_c_words.find(m_raw_chip);
-                    word=m_iter2->second;
+                    m_iter3 = m_c_words.find(m_raw_chip);
+                    word=m_iter3->second;
                     
                     for (int k=m_npblock*bx_in;k<m_npblock*bx_in+m_raw_size;++k)
                     {
-                        if (k>=m_npblock*nevts) continue;
+                        if (k>=m_npblock*nevts_tmp) continue;
                         word.at(k) = m_raw_data->at(k-m_npblock*bx_in);
                     }
                     
-                    m_c_words.erase(m_iter2->first);
+                    m_c_words.erase(m_iter3->first);
                     m_c_words.insert(std::make_pair(m_raw_chip,word));
                     
                 }
@@ -835,16 +899,16 @@ void l1_builder::get_stores(int nevts)
                     m_raw_FIFO_FULL = (FIFO_new.size()-1)/2;
                 
                     
-                    m_iter2 = m_c_words.find(m_raw_chip);
-                    word=m_iter2->second;
+                    m_iter3 = m_c_words.find(m_raw_chip);
+                    word=m_iter3->second;
                     
                     for (int k=m_npblock*last_BX;k<m_npblock*last_BX+m_raw_size;++k)
                     {
-                        if (k>=m_npblock*nevts) continue;
+                        if (k>=m_npblock*nevts_tmp) continue;
                         word.at(k) = m_raw_data->at(k-m_npblock*last_BX);
                     }
                     
-                    m_c_words.erase(m_iter2->first);
+                    m_c_words.erase(m_iter3->first);
                     m_c_words.insert(std::make_pair(m_raw_chip,word));
 
                     
@@ -873,36 +937,64 @@ void l1_builder::get_stores(int nevts)
     
     // Print the L1 data fragments
     
+    int n_err;
+
     for (unsigned int i=0;i<m_chips.size();++i)
     {
         L1_id = 0;
         m_iter = m_words.find(m_chips.at(i));
         FE_L1_OUT << "     CHIP ID |    BX ID | L1 ID | L1 fragment " << "\n";
+        FE_L1_OUT_E << "     CHIP ID |    BX ID | L1 ID | L1 fragment " << "\n";
         
         for (unsigned int j=0;j<m_iter->second.size();++j)
         {
             if (j%8==0)
             {
-                
-                if ((j/8)%3564==0) L1_id=0; // BCR, L1ID get back to 0
-                FE_L1_OUT << std::setw(12 - (j!=0)) << m_iter->first << " | " << std::setw(8) << j/8 << " | ";
+              n_err=0;
+	      if ((j/8)%3564==0) L1_id=0; // BCR, L1ID get back to 0
+	      FE_L1_OUT << std::setw(12 - (j!=0)) << m_iter->first << " | " << std::setw(8) << j/8 << " | ";
+	      FE_L1_OUT_E << std::setw(12 - (j!=0)) << m_iter->first << " | " << std::setw(8) << j/8 << " | ";
+	      
+	      if (j/8<nevts)
+	      {
+		if (raw_seq.at(j/8)!=-1) // Chip has received received a L1 A, we write the raw block
+		{
+		  ++L1_id;
+		  FE_L1_OUT << std::setw(5) << L1_id << " | ";
+		  FE_L1_OUT_E << std::setw(5) << L1_id << " | ";
+		}
+		else
+		{
+		  FE_L1_OUT << "      | ";
+		  FE_L1_OUT_E << "      | ";
+		}
+	      }
+	      else
+	      {
+		FE_L1_OUT << "      | ";
+		FE_L1_OUT_E << "      | ";
+	      }
+	    }
             
-                if (raw_seq.at(j/8)!=-1) // Chip has received received a L1 A, we write the raw block
-                {
-                    ++L1_id;
-                    FE_L1_OUT << std::setw(5) << L1_id << " | ";
-                }
-                else
-                {
-                    FE_L1_OUT << "      | ";
-                }
-            }
-                
-            FE_L1_OUT << m_iter->second.at(j);
-            if (j%8==7) FE_L1_OUT << "\n ";
+            FE_L1_OUT << m_iter->second.at(j)%2;
+
+	    if (m_iter->second.at(j)>1)
+	    {
+	      ++n_err;
+	      FE_L1_OUT_E << 1-m_iter->second.at(j)%2;
+	    }
+	    else
+	    {
+	      FE_L1_OUT_E << m_iter->second.at(j)%2;
+	    }
+
+            if (j%8==7) FE_L1_OUT << " | |\n ";
+            if (j%8==7 && n_err==0) FE_L1_OUT_E << " | |\n ";
+            if (j%8==7 && n_err>0) FE_L1_OUT_E << " |E|\n ";
         }
         
         FE_L1_OUT << "\n";
+	FE_L1_OUT_E << "\n";
     }
     
     for (unsigned int i=0;i<m_concs.size();++i)
@@ -918,16 +1010,23 @@ void l1_builder::get_stores(int nevts)
                 if ((j/m_npblock)%3564==0) L1_id=0; // BCR, L1ID get back to 0
                 CIC_L1_OUT << std::setw(12 - (j!=0)) << m_iter->first << " | " << std::setw(8) << j/m_npblock << " | ";
 
-                if (raw_seq.at(j/m_npblock)!=-1) // Chip has received received a L1 A, we write the raw block
-                {
+		if (j/m_npblock<nevts)
+		{
+		  if (raw_seq.at(j/m_npblock)!=-1) // Chip has received received a L1 A, we write the raw block
+		  {
                     ++L1_id;
                     CIC_L1_OUT << std::setw(5) << L1_id << " | ";
-                }
-                else
-                {
+		  }
+		  else
+		  {
                     CIC_L1_OUT << "      | ";
-                }
-                
+		  }
+		}
+		else
+		{
+		  CIC_L1_OUT << "      | ";
+		}
+
             }
             CIC_L1_OUT << m_iter->second.at(j);
             if (int(j)%m_npblock==m_npblock-1) CIC_L1_OUT << " \n ";
@@ -938,6 +1037,7 @@ void l1_builder::get_stores(int nevts)
     
     FE_L1_IN.close();
     FE_L1_OUT.close();
+    FE_L1_OUT_E.close();
     CIC_L1_OUT.close();
     
   // We evaluate the drift function : BX_out-BX_in = a*BX + b
@@ -1262,7 +1362,7 @@ bool l1_builder::convert(std::string sectorfilename)
 // List of method writing the data blocks, according to the format defined in
 // the following document:
 //
-// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v2.pdf
+// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v3.pdf
 //
 
 
@@ -1423,8 +1523,8 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
         std::bitset<5> N_S = ns;
         std::bitset<5> N_P = np;
 
-	for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
-        for (int j=0;j<5;++j) m_raw_data->push_back(N_P[4-j]);
+	for (int j=0;j<5;++j) m_raw_data->push_back(m_error_siz*badbit()+N_S[4-j]);
+        for (int j=0;j<5;++j) m_raw_data->push_back(m_error_siz*badbit()+N_P[4-j]);
 	m_raw_data->push_back(0);
 
         for (int j=0;j<ns;++j)
@@ -1486,7 +1586,7 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
 // 2: L1 raw block at the concentrator level
 //
 
-void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
+void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool MPA,int BXid,bool unsparsified)
 {
 //    cout << "Into fill_CONC_RAW_block" << endl;
     
@@ -1496,6 +1596,8 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
     l1_builder::fill_CONC_RAW_header(BXid);
 
+    if (unsparsified && !MPA) m_raw_data->clear();
+
     // Then go for the data
 
     int np,ns;
@@ -1503,7 +1605,7 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     int ndata=(digis.size()-1)/3; // Default first item is -1
     int hsize=m_raw_data->size();
  
-    if (!spars) // CBC case
+    if (!MPA) // CBC case
     {
         int data_CBC[8][254];
         int row,chip;
@@ -1591,21 +1693,33 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
         ns = clus_s.size()/3;
         m_raw_ns        = ns;
 
-        if (ns>127)
-        {
+	if (unsparsified)
+	{
+	  for (int j=0;j<15;++j) m_raw_data->push_back(1);
+	  m_raw_data->push_back(0);
+
+	  for (int j=0;j<8;++j)
+	  {
+	    l1_builder::fill_RAW_header_CBC(BXid);
+            for (int i=0;i<254;++i) m_raw_data->push_back(data_CBC[j][i]);
+	  }
+	}
+	else
+	{
+	  if (ns>127)
+	  {
             cout << "OVERFLOW ERROR IN CIC 2S" << endl;
             m_raw_data->at(24) = 1;
-        }
-        
-        ns = std::min(127,ns);
+	  }
+	  
+	  ns = std::min(127,ns);
+	  
+	  std::bitset<7> N_S = ns;
 
-        
-        std::bitset<7> N_S = ns;
+	  for (int j=0;j<7;++j) m_raw_data->push_back(N_S[6-j]);
 
-        for (int j=0;j<7;++j) m_raw_data->push_back(N_S[6-j]);
-
-        for (int j=0;j<ns;++j)
-        {
+	  for (int j=0;j<ns;++j)
+	  {
             std::bitset<3> chp =  clus_s.at(3*j+2);
             std::bitset<8> row =  clus_s.at(3*j);
             std::bitset<3> wdt =  clus_s.at(3*j+1);
@@ -1613,7 +1727,8 @@ void l1_builder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
             for (int k=0;k<3;++k) m_raw_data->push_back(chp[2-k]);
             for (int k=0;k<8;++k) m_raw_data->push_back(row[7-k]);
             for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
-        }
+	  }
+	}
     }
     else // MPA case
     {
@@ -1852,8 +1967,8 @@ void l1_builder::fill_RAW_header_CBC(int L1id)
   // HHEEPPPPPPPPPLLLLLLLLL : HHEE (header + error) LL..LL (L1 ID bet 0 and 512)
   //                          PP..PP CBC pipeline address 
 
-    for (int j=0;j<2;++j) m_raw_data->push_back(1); // HH
-    for (int j=0;j<2;++j) m_raw_data->push_back(0); // EE
+    for (int j=0;j<2;++j) m_raw_data->push_back(m_error_hdr*badbit()+1); // HH
+    for (int j=0;j<2;++j) m_raw_data->push_back(m_error_hdr*badbit()+0); // EE
 
     if (L1id>512)
     {
@@ -1862,33 +1977,35 @@ void l1_builder::fill_RAW_header_CBC(int L1id)
 
     std::bitset<9> L1_ID = L1id;
 
-    for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // PP..PP
-    for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // CC..CC
+    for (int j=0;j<9;++j) m_raw_data->push_back(m_error_hdr*badbit()+L1_ID[8-j]); // PP..PP
+    for (int j=0;j<9;++j) m_raw_data->push_back(m_error_hdr*badbit()+L1_ID[8-j]); // CC..CC
 }
 
 
 void l1_builder::fill_RAW_header_MPA(int L1id)
 {
-    // Format of the MPA L1 word header
-    //
-    // 1111111111111111110EECCCCCCCCC0 : EE (error) CC..CC (L1 ID bet 0 and 512)
-    //
+  // Format of the MPA L1 word header
+  //
+  // 1111111111111111110EECCCCCCCCC0 : EE (error) CC..CC (L1 ID bet 0 and 512)
+  //
+  
+  // if we add random errors we add 2 to the bits 
 
-    for (int j=0;j<18;++j) m_raw_data->push_back(1);
-    m_raw_data->push_back(0);
-    m_raw_data->push_back(0);
-    m_raw_data->push_back(0);
+  for (int j=0;j<18;++j) m_raw_data->push_back(m_error_hdr*badbit()+1);
+  m_raw_data->push_back(m_error_hdr*badbit());
+  m_raw_data->push_back(m_error_hdr*badbit());
+  m_raw_data->push_back(m_error_hdr*badbit());
+  
+  if (L1id>512)
+  {
+    std::cout << "Too many L1ids, problem!!!" << std::endl;
+ }
 
-    if (L1id>512)
-    {
-        std::cout << "Too many L1ids, problem!!!" << std::endl;
-    }
-
-    std::bitset<9> L1_ID = L1id;
+  std::bitset<9> L1_ID = L1id;
     
-    for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // CC..CC
+  for (int j=0;j<9;++j) m_raw_data->push_back(m_error_hdr*badbit()+L1_ID[8-j]); // CC..CC
 
-    m_raw_data->push_back(0);
+  m_raw_data->push_back(m_error_hdr*badbit());
 }
 
 void l1_builder::fill_CONC_RAW_header(int L1id)
@@ -1912,3 +2029,7 @@ void l1_builder::fill_CONC_RAW_header(int L1id)
     for (int j=0;j<9;++j) m_raw_data->push_back(L1_ID[8-j]); // CC..CC
 }
 
+int l1_builder::badbit()
+{
+  return 2*(rand()%(static_cast<int>(10/m_error_prop))<10);
+}

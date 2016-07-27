@@ -47,6 +47,7 @@ evtbuilder::evtbuilder(std::string filenameRAW, std::string filenameTRG, std::st
   m_write_out  = false;
   int m_tower      = -1;
 
+  m_tilted = true;
 
   evtbuilder::initVars();                                 // Initialize everything
   evtbuilder::convert(sector,m_tower);                    // Get the trigger tower module info
@@ -70,7 +71,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
  
   int B_id; // The detector module IDs (defined in the header)
 
-  int layer,ladder,module,strip,chip,seg,pt;
+  int layer,ladder,module,strip,chip,seg,pt,nstrip,nseg;
 
   int n_entries_TRG = L1TT->GetEntries();
   int n_entries_RAW = PIX->GetEntries();
@@ -79,6 +80,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
   int   goodstub    = -1;
   float pTgen       = 0.;
   float d0gen       = 0.;
+  float x,z;
 
   // Then loop over events
 
@@ -142,7 +144,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
     if (!conc)
     {
       for (unsigned int i=0;i<m_chips.size();++i) // All the chips if one asks the FE output
-      {
+     {
 	m_digi_list.clear();
 	m_digi_list.push_back(-1);
 	m_chip_raw.insert(std::make_pair(m_chips.at(i),m_digi_list));
@@ -173,20 +175,58 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	ladder= m_pix_ladder[i]-1;
 	if (layer<8 || (layer>10 && ladder<9)) isPS = true; 
 	
-	module= static_cast<int>((m_pix_module[i]-1)/2); 
+	module= static_cast<int>(m_pix_module[i]-1); 
 	seg   = m_pix_col[i]; 
 	strip = m_pix_row[i]; 
-	
-	if (isPS && m_pix_module[i]%2==1) // Ger the chip number for the PS
+	nseg  = m_pix_ncol[i]; 
+	nstrip= m_pix_nrow[i]; 
+	z     = m_pix_z[i];
+
+	if (m_tilted)
 	{
-	  chip  = static_cast<int>(strip/127)+(seg/16)*8;      
+	  if (layer==5)
+	  {
+	    if (z<-15) module       = ladder;
+	    if (z>15)  module       = 18+ladder;
+	    if (fabs(z)<15)  module+= 11;
+	    if (fabs(z)>15)  ladder = static_cast<int>(m_pix_module[i]-1); 
+
+	  }
+	  
+	  if (layer==6)
+	  {
+	    if (z<-25) module       = ladder;
+	    if (z>25)  module       = 23+ladder;
+	    if (fabs(z)<25)  module+= 12;
+	    if (fabs(z)>25)  ladder = static_cast<int>(m_pix_module[i]-1); 
+	  }              
+	  
+	  if (layer==7)
+	  {
+	    if (z<-34) module       = ladder;
+	    if (z>34)  module       = 28+ladder;
+	    if (fabs(z)<34)  module+= 13;
+	    if (fabs(z)>34)  ladder = static_cast<int>(m_pix_module[i]-1);
+	  }
+	}
+
+
+	if (isPS && nseg==32) // Pixel size
+	{
+	  chip  = static_cast<int>(strip/120)+(seg/16)*8;
+	  strip = strip%120;
+	}
+	else if (isPS && m_pix_module[i]%2==0) // Ger the chip number for the PS-S
+	{
+	  chip  = static_cast<int>(strip/120)+seg*8;
+	  strip = strip%120+120;
 	}
 	else // For the 2S
 	{
 	  chip  = static_cast<int>(strip/127)+seg*8;
+	  //	  strip = strip%127+((m_pix_module[i])%2)*127;
+	  strip = strip%127;
 	}
-
-	strip = strip%128+((m_pix_module[i]-1)%2)*128;
 
 	B_id = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the module ID corresponding to the map
 
@@ -237,13 +277,43 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	
 	if (layer!=m_lay && m_lay!=-1) continue;
 	
-	ladder= m_stub_ladder[i]; 
+	ladder= m_stub_ladder[i]-1; 
 	
 	if (layer<8 || (layer>10 && ladder<9)) isPS = true; 
 	
-	module= m_stub_module[i];
+	module= m_stub_module[i]-1;
 	seg   = m_stub_seg[i]; 
-		
+	z     = m_stub_z[i];
+
+	if (m_tilted)
+	{
+	  if (layer==5)
+	  {
+	    if (z<-15) module       = ladder;
+	    if (z>15)  module       = 18+ladder;
+	    if (fabs(z)<15)  module+= 11;
+	    if (fabs(z)>15)  ladder = static_cast<int>(m_stub_module[i]-1); 
+
+	  }
+	  
+	  if (layer==6)
+	  {
+	    if (z<-25) module       = ladder;
+	    if (z>25)  module       = 23+ladder;
+	    if (fabs(z)<25)  module+= 12;
+	    if (fabs(z)>25)  ladder = static_cast<int>(m_stub_module[i]-1); 
+	  }              
+	  
+	  if (layer==7)
+	  {
+	    if (z<-34) module       = ladder;
+	    if (z>34)  module       = 28+ladder;
+	    if (fabs(z)<34)  module+= 13;
+	    if (fabs(z)>34)  ladder = static_cast<int>(m_stub_module[i]-1);
+	  }
+	}	
+
+	
 	if (isPS)
 	{
 	  chip  =  m_stub_chip[i]+(seg/16)*8;      
@@ -255,7 +325,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 
 	if (isPS)
 	{
-	  strip = int(2*m_stub_strip[i])%256;  // Bet 0 and 255
+	  strip = int(2*m_stub_strip[i])%240;  // Bet 0 and 255
 	}
 	else
 	{
@@ -746,8 +816,6 @@ void evtbuilder::get_stores(int nevts, bool conc)
   float a,b;
   float da,db;
   
-  float x,z;
-
   if (m_write_raw)
   {    	
     for ( m_iter = m_chip_FIFOs.begin(); m_iter != m_chip_FIFOs.end();++m_iter )
@@ -1038,6 +1106,9 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
     pm_pix_module=&m_pix_module;
     pm_pix_row=&m_pix_row;
     pm_pix_col=&m_pix_col;
+    pm_pix_nrow=&m_pix_nrow;
+    pm_pix_ncol=&m_pix_ncol;
+    pm_pix_z=&m_pix_z;
 
     PIX->SetBranchAddress("PIX_n",         &m_pix);
     PIX->SetBranchAddress("PIX_nPU",       &m_npu);
@@ -1046,6 +1117,9 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
     PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
     PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
     PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
+    PIX->SetBranchAddress("PIX_nrow",      &pm_pix_nrow);
+    PIX->SetBranchAddress("PIX_ncolumn",   &pm_pix_ncol);
+    PIX->SetBranchAddress("PIX_z",         &pm_pix_z);
   }    
 
   if (m_write_trg)
@@ -1062,7 +1136,8 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
     pm_stub_Y0=&m_stub_Y0;
     pm_stub_pxGEN=&m_stub_pxGEN;
     pm_stub_pyGEN=&m_stub_pyGEN;
-    
+    pm_stub_z=&m_stub_z;
+ 
     L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
     L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
     L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
@@ -1076,6 +1151,7 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
     L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
     L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
     L1TT->SetBranchAddress("L1TkSTUB_Y0",        &pm_stub_Y0);
+    L1TT->SetBranchAddress("L1TkSTUB_z",         &pm_stub_z);
   }
 }
 

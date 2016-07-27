@@ -123,6 +123,8 @@ class stim_builder
     std::vector<int>    m_pix_module;
     std::vector<int>    m_pix_row;
     std::vector<int>    m_pix_col;
+    std::vector<int>    m_pix_ncol;
+    std::vector<int>    m_pix_bot;
     std::vector<float>  m_pix_ch;
     std::vector<float>  m_pix_x;
     std::vector<float>  m_pix_y;
@@ -133,6 +135,8 @@ class stim_builder
     std::vector<int>    *pm_pix_module;
     std::vector<int>    *pm_pix_row;
     std::vector<int>    *pm_pix_col;
+    std::vector<int>    *pm_pix_ncol;
+    std::vector<int>    *pm_pix_bot;
     std::vector<float>  *pm_pix_x;
     std::vector<float>  *pm_pix_y;
     std::vector<float>  *pm_pix_z;
@@ -142,6 +146,7 @@ class stim_builder
     std::vector<int>   m_clus_ladder;
     std::vector<int>   m_clus_module;
     std::vector<int>   m_clus_nrows;
+    std::vector<int>   m_clus_bot;
     std::vector<int>   m_clus_tp;
     std::vector<std::vector<int> >   m_clus_pix;
     std::vector<std::vector<int> >   m_clus_mult;
@@ -150,6 +155,8 @@ class stim_builder
     std::vector<int>   *pm_clus_layer;
     std::vector<int>   *pm_clus_ladder;
     std::vector<int>   *pm_clus_module;
+    std::vector<int>   *pm_clus_nrows;
+    std::vector<int>   *pm_clus_bot;
     std::vector<int>   *pm_clus_tp;
     std::vector<std::vector<int> >   *pm_clus_pix;
     std::vector<std::vector<int> >   *pm_clus_mult;

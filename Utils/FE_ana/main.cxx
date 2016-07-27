@@ -8,6 +8,7 @@
 #include "evtbuilder.h"
 #include "stim_builder.h"
 #include "l1_builder.h"
+#include "compa_files.h"
 #include "jobparams.h"
 #include "TROOT.h"
 
@@ -91,9 +92,26 @@ int main(int argc, char** argv) {
     
   if (params.option()=="build_stim_RAW")
   {
-    l1_builder* my_stim = new l1_builder(params.inputfile(),params.outfile(),params.testfile(),params.nevt(),params.rate(),params.lay(),params.lad(),params.mod(),params.cicsize());
+    l1_builder* my_stim = new l1_builder(params.inputfile(),params.outfile(),params.testfile(),params.nevt(),params.rate(),params.lay(),params.lad(),params.mod(),params.cicsize(),params.l1size());
     delete my_stim;
   }
     
+  if (params.option()=="compa_out_TRG")
+  {
+    compa_files* my_comp = new compa_files(params.inputfile(),params.inputfileTRG(),params.outfile(),0,0);
+    delete my_comp;
+  }
+
+  if (params.option()=="compa_out_L1_MPA")
+  {
+    compa_files* my_comp = new compa_files(params.inputfile(),params.inputfileTRG(),params.outfile(),1,1);
+    delete my_comp;
+  }
+
+  if (params.option()=="compa_out_L1_CBC")
+  {
+    compa_files* my_comp = new compa_files(params.inputfile(),params.inputfileTRG(),params.outfile(),1,0);
+    delete my_comp;
+  }
   return 0;
 }

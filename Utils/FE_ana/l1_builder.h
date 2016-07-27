@@ -58,7 +58,7 @@ class l1_builder
  public:
 
     l1_builder(std::string filenameRAW, std::string outfile, std::string sectorfile,
-               int npatt, int rate, int layer, int ladder, int module, int npblock);
+               int npatt, int rate, int layer, int ladder, int module, int npblock, int error);
     void  initVars();
     void  initTuple(std::string inRAW,std::string out);
     void  get_stores(int nevts);
@@ -67,11 +67,13 @@ class l1_builder
     void  fill_RAW_header_CBC(int L1id);
     void  fill_RAW_header_MPA(int L1id);
     
-    void  fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid);
+    void  fill_CONC_RAW_block(std::vector<int> digis,bool MPA,int BXid,bool unsparsified);
     void  fill_CONC_RAW_header(int L1id);
 
     bool  convert(std::string sectorfilename);
     
+    int   badbit();
+
  private:
 
     TChain *PIX;      // The trees containing the input data
@@ -92,6 +94,14 @@ class l1_builder
     // https://github.com/sviret/HL_LHC/blob/master/Extractors/RecoExtractor/interface/L1TrackTrigger_analysis.h
     //
 
+    bool unsp;
+
+    int m_error_FE;
+    float m_error_prop;
+
+    int m_error_rdm;
+    int m_error_hdr;
+    int m_error_siz;
 
     int m_pix;
     int m_npu;
@@ -111,6 +121,7 @@ class l1_builder
     std::multimap< int, std::vector<int> > m_chip_raw;  //
     std::multimap< int, std::vector<int> >::const_iterator m_iter;
     std::multimap< int, std::vector<int> >::const_iterator m_iter2;
+    std::multimap< int, std::vector<int> >::const_iterator m_iter3;
 
     std::vector<std::multimap< int, std::vector<int> > > m_data_raw;
 
@@ -176,6 +187,7 @@ class l1_builder
     
     ofstream FE_L1_IN;
     ofstream FE_L1_OUT;
+    ofstream FE_L1_OUT_E;
     ofstream CIC_L1_OUT;
 };
 

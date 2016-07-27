@@ -60,7 +60,7 @@ void stim_builder::get_stores(int nevts, bool conc)
  
     int B_id, B_id_conc; // The detector module IDs (defined in the header)
 
-    int layer,ladder,module,strip,chip,seg;
+    int layer,ladder,module,strip,chip,seg,nseg;
 
     int n_entries_TRG = L1TT->GetEntries();
 
@@ -78,87 +78,87 @@ void stim_builder::get_stores(int nevts, bool conc)
     m_data_trig.clear();
     m_data_raw.clear();
 
-  //
-  // We make a first loop over all entries available
-  // in order to build data stores, using the digis (L1raw block)
-  // and the stubs (trigger block)
-  // 
-  // 2 data samples are defined for that, one with m_L1prop % physics events, 
-  // for the trigger words, and one with pure physics events, for L1 data transmission 
-  //
-  // You can choose the proportion of complex events you want in the TRG block, in % 
-  //
+    //
+    // We make a first loop over all entries available
+    // in order to build data stores, using the digis (L1raw block)
+    // and the stubs (trigger block)
+    // 
+    // 2 data samples are defined for that, one with m_L1prop % physics events, 
+    // for the trigger words, and one with pure physics events, for L1 data transmission 
+    //
+    // You can choose the proportion of complex events you want in the TRG block, in % 
+    //
 
-  int mixpar = 0;
-  int store_size;
+    int mixpar = 0;
+    int store_size;
 
-  store_size = n_entries_TRG;
+    store_size = n_entries_TRG;
 
-  cout << "--> Entering loop 1, producing the big data stores for " 
-       << store_size << " events..." << endl;
+    cout << "--> Entering loop 1, producing the big data stores for " 
+	 << store_size << " events..." << endl;
 
-  if (m_chips.size()==0 || m_concs.size()==0)
-  {
+    if (m_chips.size()==0 || m_concs.size()==0)
+    {
       cout << "You haven't selected any module... " << endl;
       cout << "Try again... " << endl;
-  }
+    }
     
-  cout << "--> Considering " 
-       << m_chips.size() << " FE chips and..."
-       << m_concs.size() << " CIC chips..." << endl;
+    cout << "--> Considering " 
+	 << m_chips.size() << " FE chips and..."
+	 << m_concs.size() << " CIC chips..." << endl;
 
-  for (int j=0;j<200;++j)
-  //for (int j=0;j<store_size;++j)
-  {    
-    if (j%10==0)
-      cout << "Processing event " <<  j << "/" << store_size << endl;
 
-    m_chip_trig.clear();
-    m_chip_raw.clear();
-    m_conc_trig.clear();
-    m_conc_raw.clear();
+    for (int j=0;j<store_size;++j)
+    {    
+      if (j%10==0)
+	cout << "Processing event " <<  j << "/" << store_size << endl;
 
-    if (rand()%100>m_L1prop) // Mbias event in the trigger block
-    {
-      mixpar=rand()%(n_entries_TRG-m_PHYsize)+m_PHYsize;
-      L1TT->GetEntry(mixpar);
-      PIX->GetEntry(mixpar);
-    }
-    else // Phys event (stored in the s2nd half of the TRG sample)
-    {
-      mixpar=rand()%m_PHYsize; 
-      L1TT->GetEntry(mixpar); 
-      PIX->GetEntry(mixpar); 
-    }
+      m_chip_trig.clear();
+      m_chip_raw.clear();
+      m_conc_trig.clear();
+      m_conc_raw.clear();
+
+      if (rand()%100>m_L1prop) // Mbias event in the trigger block
+      {
+	mixpar=rand()%(n_entries_TRG-m_PHYsize)+m_PHYsize;
+	L1TT->GetEntry(mixpar);
+	PIX->GetEntry(mixpar);
+      }
+      else // Phys event (stored in the s2nd half of the TRG sample)
+      {
+	mixpar=rand()%m_PHYsize; 
+	L1TT->GetEntry(mixpar); 
+	PIX->GetEntry(mixpar); 
+      }
    
-    // Initialize the map with dummy values for all referenced modules
-    //
-    // Please keep in mind that this map is 8 times larger in the FE output case
-    // Maps are quite heavy, so don't produce a lot of FE events
+      // Initialize the map with dummy values for all referenced modules
+      //
+      // Please keep in mind that this map is 8 times larger in the FE output case
+      // Maps are quite heavy, so don't produce a lot of FE events
+      
+      for (unsigned int i=0;i<m_chips.size();++i) // All the chips if one asks the FE output
+      {
+	m_digi_list.clear();
+	m_digi_list.push_back(mixpar);
+	m_chip_raw.insert(std::make_pair(m_chips.at(i),m_digi_list));
+	m_chip_trig.insert(std::make_pair(m_chips.at(i),m_digi_list));
+      }
 
-    for (unsigned int i=0;i<m_chips.size();++i) // All the chips if one asks the FE output
-    {
-      m_digi_list.clear();
-      m_digi_list.push_back(mixpar);
-      m_chip_raw.insert(std::make_pair(m_chips.at(i),m_digi_list));
-      m_chip_trig.insert(std::make_pair(m_chips.at(i),m_digi_list));
-    }
+      for (unsigned int i=0;i<m_concs.size();++i) // All the concentrators if one asks the CONC output (8 times less)
+      {
+	m_digi_list.clear();
+	m_digi_list.push_back(mixpar);
+	m_conc_raw.insert(std::make_pair(m_concs.at(i),m_digi_list));
+	m_conc_trig.insert(std::make_pair(m_concs.at(i),m_digi_list));
+      }
 
-    for (unsigned int i=0;i<m_concs.size();++i) // All the concentrators if one asks the CONC output (8 times less)
-    {
-      m_digi_list.clear();
-      m_digi_list.push_back(mixpar);
-      m_conc_raw.insert(std::make_pair(m_concs.at(i),m_digi_list));
-      m_conc_trig.insert(std::make_pair(m_concs.at(i),m_digi_list));
-    }
+      // First loop over the digis (raw block)
 
-    // First loop over the digis (raw block)
-
-    for (int i=0;i<m_pix;++i) // Loop over pixels
-    {
+      for (int i=0;i<m_pix;++i) // Loop over pixels
+      {
         isPS  = false;
         layer = m_pix_layer[i];
-
+	
         if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
         ladder= m_pix_ladder[i]-1;
@@ -166,27 +166,32 @@ void stim_builder::get_stores(int nevts, bool conc)
         if (ladder!=m_lad && m_lad!=-1) continue; // By default we loop over all ladders (-1)
         if (layer<8 || (layer>10 && ladder<9)) isPS = true;
 
-        module= static_cast<int>((m_pix_module[i]-1)/2);
+        module= static_cast<int>(m_pix_module[i]-1);
         
         if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
         seg   = m_pix_col[i];
         strip = m_pix_row[i];
+	nseg  = m_pix_ncol[i]; 
 
-        if (isPS && m_pix_module[i]%2==1) // Ger the chip number for the PS
-        {
-            chip  = static_cast<int>(strip/127)+(seg/16)*8;
-        }
-        else // For the 2S
-        {
-            chip  = static_cast<int>(strip/127)+seg*8;
-        }
+	if (isPS && nseg==32) // Pixel size
+	{
+	  chip  = static_cast<int>(strip/120)+(seg/16)*8;
+	  strip = strip%120;
+	}
+	else if (isPS && m_pix_module[i]%2==0) // Ger the chip number for the PS-S
+	{
+	  chip  = static_cast<int>(strip/120)+seg*8;
+	  strip = strip%120+120;
+	}
+	else // For the 2S
+	{
+	  chip  = static_cast<int>(strip/127)+seg*8;
+	  strip = strip%127+(1-m_pix_bot[i])*127;
+	}
 
-     //   cout << m_pix_module[i] << " / " << strip << " / " << seg << " / " << chip << endl;
-        
-        strip = strip%128+((m_pix_module[i]-1)%2)*128;
-        
-       // cout << m_pix_module[i] << " // " << strip << endl;
-
+	//   cout << m_pix_module[i] << " / " << strip << " / " << seg << " / " << chip << endl;       
+	// cout << m_pix_module[i] << " // " << strip << endl;
+	
         B_id = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the FE chip ID
 
         // Look if this chip has already been touched in this event
@@ -210,24 +215,24 @@ void stim_builder::get_stores(int nevts, bool conc)
         m_chip_raw.erase(m_iter->first);
         m_chip_raw.insert(std::make_pair(B_id,m_digi_list));
 
-    } // End of digi collection
+      } // End of digi collection
  
-     // return;
+      // return;
       
-    for (int i=0;i<m_stub;++i) // Loop over stubs
-    {  
-        // First of all we compute the ID of the stub's module
+      for (int i=0;i<m_stub;++i) // Loop over stubs
+      {  
+	// First of all we compute the ID of the stub's module
         isPS     = false;
         layer    = m_stub_layer[i];
 	
         if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
-        ladder   = m_stub_ladder[i];
+        ladder   = m_stub_ladder[i]-1;
       
         if (ladder!=m_lad && m_lad!=-1) continue; // By default we loop over all ladders (-1)
         if (layer<8 || (layer>10 && ladder<9)) isPS = true;
       
-        module   = m_stub_module[i];
+        module   = m_stub_module[i]-1;
       
         if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
       
@@ -238,9 +243,8 @@ void stim_builder::get_stores(int nevts, bool conc)
         : chip  =  m_stub_chip[i]+seg*8;
 
         (isPS)
-        ? strip = int(2*m_stub_strip[i])%256  // Bet 0 and 255
+        ? strip = int(2*m_stub_strip[i])%240  // Bet 0 and 255
         : strip = int(2*m_stub_strip[i])%254+1; // Code between 1 and 254 to avoid 00000000 position
-
 
         B_id      = layer*1000000 + ladder*10000 + module*100 + chip;
         B_id_conc = B_id - chip%8; // Here we get the concentrator ID
@@ -248,11 +252,11 @@ void stim_builder::get_stores(int nevts, bool conc)
         // Look if this chip has already been touched in this event
         m_iter  = m_chip_trig.find(B_id);
         m_iter2 = m_conc_trig.find(B_id_conc);
-
+	
         if (m_iter == m_chip_trig.end()) // Unknown chip???
         {
-            continue;
             cout << "Wow, this should not happen, the chip ref " << B_id << " is unknown!!!" << endl;
+            continue;
         }
         else // Otherwise complement
         {
@@ -268,8 +272,8 @@ void stim_builder::get_stores(int nevts, bool conc)
 
         if (m_iter2 == m_conc_trig.end()) // Unknown chip???
         {
-            continue;
             cout << "Wow, this should not happen, the CIC ref " << B_id_conc << " is unknown!!!" << endl;
+            continue;
         }
         else // Otherwise complement
         {
@@ -280,137 +284,136 @@ void stim_builder::get_stores(int nevts, bool conc)
             m_conc_trig.erase(m_iter2->first);
             m_conc_trig.insert(std::make_pair(B_id_conc,m_stub_list));
         }
-    }  // End of stub collection
+      }  // End of stub collection
 
-    // Finally we add both collection to the stores
+      // Finally we add both collection to the stores
     
-    m_data_trig.push_back(m_chip_trig);
-    m_data_trig.push_back(m_conc_trig);
-    m_data_raw.push_back(m_chip_raw);
-   
-  } // End of storage loop
+      m_data_trig.push_back(m_chip_trig);
+      m_data_trig.push_back(m_conc_trig);
+      m_data_raw.push_back(m_chip_raw);
+      
+    } // End of storage loop
 
-  // Now we have two collections one containing the raw data,
+    // Now we have two collections one containing the raw data,
     // and one the trigger data for all event at the concentrator level
 
-  // Trigger data is sent at every BX
+    // Trigger data is sent at every BX
 
-  cout << "--> Entering loop 2, producing the random Trig/L1 sequence..." << endl;
+    cout << "--> Entering loop 2, producing the random Trig/L1 sequence..." << endl;
 
-  int n_trig = m_data_raw.size();
+    int n_trig = m_data_raw.size();
+    int trg_evnum;
 
-  int trg_evnum;
+    std::vector<int> trig_seq;
 
-  std::vector<int> trig_seq;
+    trig_seq.clear();
 
-  trig_seq.clear();
-
-  cout << "... Generate the sequence of " << nevts << " by picking up events in the store..." << std::endl;
-
-  for (int i=0;i<nevts;++i)
-  { 
-    trg_evnum = rand()%n_trig;
-    trig_seq.push_back(trg_evnum);
-  }
-
-  // Now we have a sequence of nevts, with L1A distributed randomly 
-  // following the trigger rules
-
-  // Next stage consists in creating a ROOT/txt file containing this sequence 
-  // of events, with the correspondind data for each Concentrator chip
-
-  cout << "--> Entering loop 3, producing the final root file..." << endl;
-
-  // Write the trigger data 
-  // Everything is written down on a 2BX basis for CBC/MPA   
+    cout << "... Generate the sequence of " << nevts << " by picking up events in the store..." << std::endl;
     
-  char buffer1[200];
-  char buffer2[200];
-  char buffer3[200];
+    for (int i=0;i<nevts;++i)
+    { 
+      trg_evnum = rand()%n_trig;
+      trig_seq.push_back(trg_evnum);
+    }
+
+    // Now we have a sequence of nevts, with L1A distributed randomly 
+    // following the trigger rules
     
-  if (m_tower!=-1)
-  {
+    // Next stage consists in creating a ROOT/txt file containing this sequence 
+    // of events, with the correspondind data for each Concentrator chip
+    
+    cout << "--> Entering loop 3, producing the final root file..." << endl;
+
+    // Write the trigger data 
+    // Everything is written down on a 2BX basis for CBC/MPA   
+    
+    char buffer1[200];
+    char buffer2[200];
+    char buffer3[200];
+    
+    if (m_tower!=-1)
+    {
       sprintf(buffer1, "trg_FE_IN_Tow%d_%d.txt",m_tower,nevts);
       sprintf(buffer2, "trg_FE_OUT_Tow%d_%d.txt",m_tower,nevts);
       sprintf(buffer3, "trg_CIC_OUT_Tow%d_%d.txt",m_tower,nevts);
-  }
-  else
-  {
+    }
+    else
+    {
       if (m_lay!=-1 && m_lad!=-1 && m_mod!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
-          sprintf(buffer2, "trg_FE_OUT_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
+	sprintf(buffer1, "trg_FE_IN_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
+	sprintf(buffer2, "trg_FE_OUT_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_L%dR%dM%d_%d.txt",m_lay,m_lad,m_mod,nevts);
       }
       else if (m_lay!=-1 && m_lad!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-          sprintf(buffer2, "trg_FE_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+	sprintf(buffer1, "trg_FE_IN_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+	sprintf(buffer2, "trg_FE_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
       }
       else if (m_lay!=-1 && m_mod!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-          sprintf(buffer2, "trg_FE_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+	sprintf(buffer1, "trg_FE_IN_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+	sprintf(buffer2, "trg_FE_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
       }
       else if (m_lad!=-1 && m_mod!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-          sprintf(buffer2, "trg_FE_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+	sprintf(buffer1, "trg_FE_IN_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+	sprintf(buffer2, "trg_FE_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
       }
       else if (m_lay!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-          sprintf(buffer2, "trg_FE_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+	sprintf(buffer1, "trg_FE_IN_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+	sprintf(buffer2, "trg_FE_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_L%dR%d_%d.txt",m_lay,m_lad,nevts);
       }
       else if (m_mod!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-          sprintf(buffer2, "trg_FE_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+	sprintf(buffer1, "trg_FE_IN_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+	sprintf(buffer2, "trg_FE_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_L%dM%d_%d.txt",m_lay,m_mod,nevts);
       }
       else if (m_lad!=-1)
       {
-          sprintf(buffer1, "trg_FE_IN_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-          sprintf(buffer2, "trg_FE_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
-          sprintf(buffer3, "trg_CIC_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+	sprintf(buffer1, "trg_FE_IN_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+	sprintf(buffer2, "trg_FE_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
+	sprintf(buffer3, "trg_CIC_OUT_R%dM%d_%d.txt",m_lad,m_mod,nevts);
       }
       else
       {
-          sprintf(buffer1, "trg_FE_IN_ALL_%d.txt",nevts);
-          sprintf(buffer2, "trg_FE_OUT_ALL_%d.txt",nevts);
-          sprintf(buffer3, "trg_CIC_OUT_ALL_%d.txt",nevts);
+	sprintf(buffer1, "trg_FE_IN_ALL_%d.txt",nevts);
+	sprintf(buffer2, "trg_FE_OUT_ALL_%d.txt",nevts);
+	sprintf(buffer3, "trg_CIC_OUT_ALL_%d.txt",nevts);
       }
-  }
+    }
     
-  FE_TRG_IN.open(buffer1);
-  FE_TRG_OUT.open(buffer2);
-  CIC_TRG_OUT.open(buffer3);
+    FE_TRG_IN.open(buffer1);
+    FE_TRG_OUT.open(buffer2);
+    CIC_TRG_OUT.open(buffer3);
 
-  FE_TRG_IN << "Digital input to the FE chip.\n";
+    FE_TRG_IN << "Digital input to the FE chip.\n";
     
-
-  FE_TRG_OUT << "Digital output of the FE chip.\n";
-  FE_TRG_OUT << "\n";
-  FE_TRG_OUT << "Format defined in:\n";
-  FE_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
     
-  CIC_TRG_OUT << "Digital output of the CIC chip.\n";
-  CIC_TRG_OUT << "\n";
-  CIC_TRG_OUT << "Format defined in:\n";
-  CIC_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    FE_TRG_OUT << "Digital output of the FE chip.\n";
+    FE_TRG_OUT << "\n";
+    FE_TRG_OUT << "Format defined in:\n";
+    FE_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
     
-  float ptGEN;
-  float d0GEN;
-  bool isGOOD;
-  
-  int evtID;
+    CIC_TRG_OUT << "Digital output of the CIC chip.\n";
+    CIC_TRG_OUT << "\n";
+    CIC_TRG_OUT << "Format defined in:\n";
+    CIC_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
     
-  for (int i=0;i<nevts;++i) // Create the sequence
-  {
+    float ptGEN;
+    float d0GEN;
+    bool isGOOD;
+    
+    int evtID;
+    
+    for (int i=0;i<nevts;++i) // Create the sequence
+    {
       if (i%10==0) cout << i << endl;
       
       m_chip_raw  = m_data_raw.at(trig_seq.at(i)); // Pick up the event in the store
@@ -428,215 +431,210 @@ void stim_builder::get_stores(int nevts, bool conc)
 
       if (i%8==0)
       {
-          CIC_TRG_OUT << "\n";
-          CIC_TRG_OUT << "##################################################\n";
-          CIC_TRG_OUT << "#\n";
-          CIC_TRG_OUT << "# Events  " << i << " to " << i+7 << "\n";
+	CIC_TRG_OUT << "\n";
+	CIC_TRG_OUT << "##################################################\n";
+	CIC_TRG_OUT << "#\n";
+	CIC_TRG_OUT << "# Events  " << i << " to " << i+7 << "\n";
+        
+	m_chip_trig   = m_data_trig.at(2*trig_seq.at(i)+1);
+        
+	for ( m_iter = m_chip_trig.begin(); m_iter != m_chip_trig.end();++m_iter )
+        {
+	  trig_sequence.clear();
           
-          m_chip_trig   = m_data_trig.at(2*trig_seq.at(i)+1);
+	  isPS        = false;
+	  m_tri_bx    = i;
+	  m_tri_chip  = m_iter->first;
+	  m_tri_lay   = m_tri_chip/1000000;
+	  m_tri_lad   = (m_tri_chip-1000000*m_tri_lay)/10000;
+	  m_tri_mod   = (m_tri_chip-1000000*m_tri_lay-10000*m_tri_lad)/100;
           
-          for ( m_iter = m_chip_trig.begin(); m_iter != m_chip_trig.end();++m_iter )
-          {
-              trig_sequence.clear();
+	  trig_sequence.push_back(m_iter->second);
+	      
+	  if (m_tri_lay<8 || (m_tri_lay>10 && m_tri_lad<9)) isPS = true;
+          
+	  for (int j=1;j<8;++j)
+	  {
+	    trig_sequence.push_back((m_data_trig.at(2*trig_seq.at(i+j)+1).find(m_tri_chip))->second);
+	  }
               
-              isPS        = false;
-              m_tri_bx    = i;
-              m_tri_chip  = m_iter->first;
-              m_tri_lay   = m_tri_chip/1000000;
-              m_tri_lad   = (m_tri_chip-1000000*m_tri_lay)/10000;
-              m_tri_mod   = (m_tri_chip-1000000*m_tri_lay-10000*m_tri_lad)/100;
-              
-              trig_sequence.push_back(m_iter->second);
-              
-              if (m_tri_lay<8 || (m_tri_lay>10 && m_tri_lad<9)) isPS = true;
-              
-              for (int j=1;j<8;++j)
-              {
-                  trig_sequence.push_back((m_data_trig.at(2*trig_seq.at(i+j)+1).find(m_tri_chip))->second);
-              }
-              
-             // CIC_TRG_OUT << "\n";
-             // CIC_TRG_OUT << "__________________________________________________\n";
-             // CIC_TRG_OUT << "Layer/Disk  " << m_tri_lay << "\n";
-             // CIC_TRG_OUT << "Ladder/Ring " << m_tri_lad << "\n";
-             // CIC_TRG_OUT << "Module      " << m_tri_mod << "\n";
-             // CIC_TRG_OUT << "CIC Chip    " << (m_tri_chip%100)/8 << "\n";
-                  
-              CIC_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
-              stim_builder::fill_TRG_block(trig_sequence,isPS,1,i);
-          }
+	  // CIC_TRG_OUT << "\n";
+	  // CIC_TRG_OUT << "__________________________________________________\n";
+	  // CIC_TRG_OUT << "Layer/Disk  " << m_tri_lay << "\n";
+	  // CIC_TRG_OUT << "Ladder/Ring " << m_tri_lad << "\n";
+	  // CIC_TRG_OUT << "Module      " << m_tri_mod << "\n";
+	  // CIC_TRG_OUT << "CIC Chip    " << (m_tri_chip%100)/8 << "\n";
+          
+	  CIC_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
+	  stim_builder::fill_TRG_block(trig_sequence,isPS,1,i);
+	}
       }
 
-      
       if (i%2==0)
       {
-          FE_TRG_OUT << "\n";
-          FE_TRG_OUT << "##################################################\n";
-          FE_TRG_OUT << "#\n";
-          FE_TRG_OUT << "# Events  " << i << "/" << i+1 << "\n";
+	FE_TRG_OUT << "\n";
+	FE_TRG_OUT << "##################################################\n";
+	FE_TRG_OUT << "#\n";
+	FE_TRG_OUT << "# Events  " << i << "/" << i+1 << "\n";
+        
+	m_chip_trig   = m_data_trig.at(2*trig_seq.at(i));
+	
+	for ( m_iter = m_chip_trig.begin(); m_iter != m_chip_trig.end();++m_iter )
+        {
+	  trig_sequence.clear();
           
-          m_chip_trig   = m_data_trig.at(2*trig_seq.at(i));
-      
-          for ( m_iter = m_chip_trig.begin(); m_iter != m_chip_trig.end();++m_iter )
-          {
-              trig_sequence.clear();
-          
-              isPS        = false;
-              m_tri_bx    = i;
-              m_tri_chip  = m_iter->first;
-              m_tri_lay   = m_tri_chip/1000000;
-              m_tri_lad   = (m_tri_chip-1000000*m_tri_lay)/10000;
-          	  m_tri_mod   = (m_tri_chip-1000000*m_tri_lay-10000*m_tri_lad)/100;
+	  isPS        = false;
+	  m_tri_bx    = i;
+	  m_tri_chip  = m_iter->first;
+	  m_tri_lay   = m_tri_chip/1000000;
+	  m_tri_lad   = (m_tri_chip-1000000*m_tri_lay)/10000;
+	  m_tri_mod   = (m_tri_chip-1000000*m_tri_lay-10000*m_tri_lad)/100;
               
-              trig_sequence.push_back(m_iter->second);
+	  trig_sequence.push_back(m_iter->second);
           
-              if (m_tri_lay<8 || (m_tri_lay>10 && m_tri_lad<9)) isPS = true;
-      
-              if (isPS) // MPA case, data is sent over 2BXs
-              {
-                 trig_sequence.push_back((m_data_trig.at(2*trig_seq.at(i+1)).find(m_tri_chip))->second);
-              
-                 // FE_TRG_OUT << "\n";
-                 // FE_TRG_OUT << "__________________________________________________\n";
-                 // FE_TRG_OUT << "Layer/Disk  " << m_tri_lay << "\n";
-                 // FE_TRG_OUT << "Ladder/Ring " << m_tri_lad << "\n";
-                 // FE_TRG_OUT << "Module      " << m_tri_mod << "\n";
-                 // FE_TRG_OUT << "Chip        " << m_tri_chip%100 << "\n";
-                  
-                  FE_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
-                  stim_builder::fill_TRG_block(trig_sequence,isPS,0,i);
-              }
-              else // CBC case, one BX basis
-              {
-                  FE_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
-                  stim_builder::fill_TRG_block(trig_sequence,isPS,0,i);
-                  trig_sequence.clear();
-                  m_tri_bx    = i+1;
-                  trig_sequence.push_back((m_data_trig.at(2*trig_seq.at(i+1)).find(m_tri_chip))->second);
-                  FE_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
-                  stim_builder::fill_TRG_block(trig_sequence,isPS,0,i+1);
-              }
-       
-          }
+	  if (m_tri_lay<8 || (m_tri_lay>10 && m_tri_lad<9)) isPS = true;
+	      
+	  if (isPS) // MPA case, data is sent over 2BXs
+	  {
+	    trig_sequence.push_back((m_data_trig.at(2*trig_seq.at(i+1)).find(m_tri_chip))->second);
+            
+	    // FE_TRG_OUT << "\n";
+	    // FE_TRG_OUT << "__________________________________________________\n";
+	    // FE_TRG_OUT << "Layer/Disk  " << m_tri_lay << "\n";
+	    // FE_TRG_OUT << "Ladder/Ring " << m_tri_lad << "\n";
+	    // FE_TRG_OUT << "Module      " << m_tri_mod << "\n";
+	    // FE_TRG_OUT << "Chip        " << m_tri_chip%100 << "\n";
+            
+	    FE_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
+	    stim_builder::fill_TRG_block(trig_sequence,isPS,0,i);
+	  }
+	  else // CBC case, one BX basis
+	  {
+	    FE_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
+	    stim_builder::fill_TRG_block(trig_sequence,isPS,0,i);
+	    trig_sequence.clear();
+	    m_tri_bx    = i+1;
+	    trig_sequence.push_back((m_data_trig.at(2*trig_seq.at(i+1)).find(m_tri_chip))->second);
+	    FE_TRG_OUT << m_tri_bx << " / " << m_tri_chip << " -> ";
+	    stim_builder::fill_TRG_block(trig_sequence,isPS,0,i+1);
+	  }
+	}
       }
-
-      
 
       L1TT->GetEntry(evtID);
       for ( m_iter = m_chip_raw.begin(); m_iter != m_chip_raw.end();++m_iter )
       {
-          m_raw_chip = m_iter->first;
-          m_digi_list= m_iter->second;
-          m_raw_lay  = m_raw_chip/1000000;
-          m_raw_lad  = (m_raw_chip-1000000*m_raw_lay)/10000;
-          m_raw_mod  = (m_raw_chip-1000000*m_raw_lay-10000*m_raw_lad)/100;
+	m_raw_chip = m_iter->first;
+	m_digi_list= m_iter->second;
+	m_raw_lay  = m_raw_chip/1000000;
+	m_raw_lad  = (m_raw_chip-1000000*m_raw_lay)/10000;
+	m_raw_mod  = (m_raw_chip-1000000*m_raw_lay-10000*m_raw_lad)/100;
+        
+	if (m_raw_lay<8 || (m_raw_lay>10 && m_raw_lad<9)) isPS = true;
+        
+	FE_TRG_IN << "\n";
+	FE_TRG_IN << "__________________________________________________\n";
+	FE_TRG_IN << "Layer/Disk  " << m_raw_lay << "\n";
+	FE_TRG_IN << "Ladder/Ring " << m_raw_lad << "\n";
+	FE_TRG_IN << "Module      " << m_raw_mod << "\n";
+	FE_TRG_IN << "Chip        " << m_raw_chip%100 << "\n";
+       
+	// Link the stub/cluster info
+	
+	if (m_digi_list.size()-1 == 0) continue;
           
-          if (m_raw_lay<8 || (m_raw_lay>10 && m_raw_lad<9)) isPS = true;
+	ana_pix(m_raw_lay,m_raw_lad,m_raw_mod,m_digi_list);
+	
+	// Start the printing loop
+	for (unsigned int k=1;k<m_digi_list.size();++k) // Loop over all digis
+        {
+	  its=-1;
+	  itp=-1;
+	  idx   = m_digi_list.at(k); // Digi index in the original rootuple
+	  
+	  seg   = m_pix_col[idx];
+	  strip = m_pix_row[idx];
           
-          FE_TRG_IN << "\n";
-          FE_TRG_IN << "__________________________________________________\n";
-          FE_TRG_IN << "Layer/Disk  " << m_raw_lay << "\n";
-          FE_TRG_IN << "Ladder/Ring " << m_raw_lad << "\n";
-          FE_TRG_IN << "Module      " << m_raw_mod << "\n";
-          FE_TRG_IN << "Chip        " << m_raw_chip%100 << "\n";
+	  // Got it or not in the flagged content from ana_pix
+	  for (unsigned int kk=0;kk<m_evt_pix.size();++kk)
+	  {
+	    if (idx!=m_evt_pix[kk]) continue;
+	    its = m_evt_stu[kk];
+	    itp = m_evt_tp[kk];
+	  }
+              
+	  isGOOD=false;
+              
+	  // Look if the pix is induced by a primary particle
+	  if (itp!=-1)
+	  {
+	    ptGEN = sqrt(m_part_px[itp]*m_part_px[itp]+m_part_py[itp]*m_part_py[itp]);
+	    d0GEN = sqrt(m_part_x[itp]*m_part_x[itp]+m_part_y[itp]*m_part_y[itp]);
+            
+	    if (ptGEN>2 && d0GEN<0.2) isGOOD=true;
+	  }
+              
+	  // Start to print
+	  if (isPS)
+	  {
+	    (m_pix_ncol[idx]==32)
+	      ? FE_TRG_IN << "pixeldigi " << std::setw(5) << strip << " " << std::setw(3) << seg
+	      : FE_TRG_IN << "stripdigi " << std::setw(5) << strip << " " << std::setw(3) << seg;
+	  }
+	  else
+	  {
+	    (m_pix_bot[idx]==1)
+	      ? FE_TRG_IN << "stripdigi bot " << std::setw(5) << strip << " " << std::setw(3) << seg
+	      : FE_TRG_IN << "stripdigi top " << std::setw(5) << strip << " " << std::setw(3) << seg;
+	  }
+              
+	  if (itp==-1) // Unmatched digi
+	  {
+	    FE_TRG_IN << " // 0   0.00   0.00 // "
+		      << std::fixed << std::setprecision(2)
+		      << std::setw(6) << atan2(m_pix_y[idx],m_pix_x[idx]) << " "
+		      << std::setw(6) << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " "
+		      << std::setw(6) << m_pix_z[idx]
+		      << std::fixed << std::setprecision(0)
+		      << "\n";
+	  }
+	  else // Matched digi
+	  {
+	    if (its==-1)  FE_TRG_IN << " // 0 "; // No stub
+	    if (its!=-1 && isGOOD)  FE_TRG_IN << " // 2 "; // In a stub from a good part
+	    if (its!=-1 && !isGOOD) FE_TRG_IN << " // 1 "; // In a stub from a not good part
+            
+	    FE_TRG_IN << std::fixed << std::setprecision(2)
+		      << std::setw(6) << ptGEN << " " 
+		      << std::setw(6) << d0GEN << " // "  
+		      << std::setw(6) << atan2(m_pix_y[idx],m_pix_x[idx]) << " " 
+		      << std::setw(6) << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " " 
+		      << std::setw(6) << m_pix_z[idx]
+		      << std::fixed << std::setprecision(0)
+		      << "\n";
+	  }
+	}
           
+	m_chip_trig   = m_data_trig.at(2*trig_seq.at(i)); // The stubs
+	m_digi_list = (m_chip_trig.find(m_raw_chip))->second;
           
-          // Link the stub/cluster info
-          
-          if (m_digi_list.size()-1 == 0) continue;
-          
-          ana_pix(m_raw_lay,m_raw_lad,m_raw_mod,m_digi_list);
+	if (m_digi_list.size()-1 == 0) continue;
 
-          // Start the printing loop
-          for (unsigned int k=1;k<m_digi_list.size();++k) // Loop over all digis
-          {
-              its=-1;
-              itp=-1;
-              idx   = m_digi_list.at(k); // Digi index in the original rootuple
-
-              seg   = m_pix_col[idx];
-              strip = m_pix_row[idx];
-              
-              // Got it or not in the flagged content from ana_pix
-              for (unsigned int kk=0;kk<m_evt_pix.size();++kk)
-              {
-                  if (idx!=m_evt_pix[kk]) continue;
-                  its = m_evt_stu[kk];
-                  itp = m_evt_tp[kk];
-              }
-              
-              isGOOD=false;
-              
-              // Look if the pix is induced by a primary particle
-              if (itp!=-1)
-              {
-                  ptGEN = sqrt(m_part_px[itp]*m_part_px[itp]+m_part_py[itp]*m_part_py[itp]);
-                  d0GEN = sqrt(m_part_x[itp]*m_part_x[itp]+m_part_y[itp]*m_part_y[itp]);
-                  
-                  if (ptGEN>2 && d0GEN<0.2) isGOOD=true;
-              }
-              
-              // Start to print
-              if (isPS)
-              {
-                  (m_pix_module[idx]%2==1)
-                  ? FE_TRG_IN << "pixeldigi " << std::setw(5) << strip << " " << std::setw(3) << seg
-                  : FE_TRG_IN << "stripdigi " << std::setw(5) << strip << " " << std::setw(3) << seg;
-              }
-              else
-              {
-                  (m_pix_module[idx]%2==1)
-                  ? FE_TRG_IN << "stripdigi bot " << std::setw(5) << strip << " " << std::setw(3) << seg
-                  : FE_TRG_IN << "stripdigi top " << std::setw(5) << strip << " " << std::setw(3) << seg;
-              }
-              
-              if (itp==-1) // Unmatched digi
-              {
-                  FE_TRG_IN << " // 0   0.00   0.00 // "
-                  << std::fixed << std::setprecision(2)
-                  << std::setw(6) << atan2(m_pix_y[idx],m_pix_x[idx]) << " "
-                  << std::setw(6) << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " "
-                  << std::setw(6) << m_pix_z[idx]
-                  << std::fixed << std::setprecision(0)
-                  << "\n";
-              }
-              else // Matched digi
-              {
-                  if (its==-1)  FE_TRG_IN << " // 0 "; // No stub
-                  if (its!=-1 && isGOOD)  FE_TRG_IN << " // 2 "; // In a stub from a good part
-                  if (its!=-1 && !isGOOD) FE_TRG_IN << " // 1 "; // In a stub from a not good part
-                  
-                  FE_TRG_IN << std::fixed << std::setprecision(2)
-                  << std::setw(6) << ptGEN << " " 
-                  << std::setw(6) << d0GEN << " // "  
-                  << std::setw(6) << atan2(m_pix_y[idx],m_pix_x[idx]) << " " 
-                  << std::setw(6) << sqrt(m_pix_x[idx]*m_pix_x[idx]+m_pix_y[idx]*m_pix_y[idx]) << " " 
-                  << std::setw(6) << m_pix_z[idx]
-                  << std::fixed << std::setprecision(0)
-                  << "\n";
-              }
-          }
-          
-          m_chip_trig   = m_data_trig.at(2*trig_seq.at(i)); // The stubs
-          m_digi_list = (m_chip_trig.find(m_raw_chip))->second;
-          
-          if (m_digi_list.size()-1 == 0) continue;
-
-          do_stub(m_digi_list);
+	do_stub(m_digi_list);
       }
-  }
+    }
     
-  cout << "End of event loop" << endl;
-  FE_TRG_IN.close();
-  FE_TRG_OUT.close();
-  CIC_TRG_OUT.close();
-
-  m_outfile->Write();
-  
-  delete L1TT;
-  delete PIX;
-  delete MC;
-  delete m_outfile;
+    cout << "End of event loop" << endl;
+    FE_TRG_IN.close();
+    FE_TRG_OUT.close();
+    CIC_TRG_OUT.close();
+    
+    m_outfile->Write();
+    
+    delete L1TT;
+    delete PIX;
+    delete MC;
+    delete m_outfile;
 }
 
 
@@ -707,7 +705,7 @@ void stim_builder::ana_pix(int lay,int lad,int mod, std::vector<int> digits)
     {
         if (m_clus_layer[i]!=lay) continue;
         if (m_clus_ladder[i]!=lad+1) continue;
-        if (int(m_clus_module[i]-1)/2!=mod) continue;
+        if (int(m_clus_module[i])!=mod+1) continue;
         
         list_pix.clear();
         list_pix_coords.clear();
@@ -745,8 +743,8 @@ void stim_builder::ana_pix(int lay,int lad,int mod, std::vector<int> digits)
     for (int i=0;i<m_stub;++i)
     {
         if (m_stub_layer[i] !=lay) continue;
-        if (m_stub_ladder[i]!=lad) continue;
-        if (m_stub_module[i]!=mod) continue;
+        if (m_stub_ladder[i]!=lad+1) continue;
+        if (m_stub_module[i]!=mod+1) continue;
         
         // First of all we compute the ID of the stub's module
         
@@ -909,6 +907,8 @@ void stim_builder::initTuple(std::string inRAW,std::string inTRG,std::string out
     pm_pix_module=&m_pix_module;
     pm_pix_row=&m_pix_row;
     pm_pix_col=&m_pix_col;
+    pm_pix_ncol=&m_pix_ncol;
+    pm_pix_bot=&m_pix_bot;
     pm_pix_x=&m_pix_x;
     pm_pix_y=&m_pix_y;
     pm_pix_z=&m_pix_z;
@@ -920,6 +920,8 @@ void stim_builder::initTuple(std::string inRAW,std::string inTRG,std::string out
     PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
     PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
     PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
+    PIX->SetBranchAddress("PIX_ncolumn",   &pm_pix_ncol);
+    PIX->SetBranchAddress("PIX_bottom",    &pm_pix_bot);
     PIX->SetBranchAddress("PIX_x",         &pm_pix_x);
     PIX->SetBranchAddress("PIX_y",         &pm_pix_y);
     PIX->SetBranchAddress("PIX_z",         &pm_pix_z);
@@ -949,6 +951,7 @@ void stim_builder::initTuple(std::string inRAW,std::string inTRG,std::string out
     pm_clus_layer=&m_clus_layer;
     pm_clus_ladder=&m_clus_ladder;
     pm_clus_module=&m_clus_module;
+    pm_clus_bot=&m_clus_bot;
     pm_clus_tp=&m_clus_tp;
     
     L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
@@ -968,12 +971,13 @@ void stim_builder::initTuple(std::string inRAW,std::string inTRG,std::string out
     
     L1TT->SetBranchAddress("L1TkCLUS_n",         &m_clus);
     L1TT->SetBranchAddress("L1TkCLUS_PIX",       &pm_clus_pix);
-    L1TT->SetBranchAddress("L1TkCLUS_MULT",      &pm_clus_mult);
+    //    L1TT->SetBranchAddress("L1TkCLUS_MULT",      &pm_clus_mult);
     L1TT->SetBranchAddress("L1TkCLUS_tp",        &pm_clus_tp);
     L1TT->SetBranchAddress("L1TkCLUS_layer",     &pm_clus_layer);
     L1TT->SetBranchAddress("L1TkCLUS_ladder",    &pm_clus_ladder);
     L1TT->SetBranchAddress("L1TkCLUS_module",    &pm_clus_module);
-    
+    L1TT->SetBranchAddress("L1TkCLUS_bottom",    &pm_clus_bot);    
+
     L1TT->SetBranchAddress("L1TkSTUB_pxGEN",     &pm_stub_pxGEN);
     L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
     L1TT->SetBranchAddress("L1TkSTUB_etaGEN",    &pm_stub_etaGEN);
@@ -1179,7 +1183,7 @@ void stim_builder::fill_TRG_block(std::vector<std::vector<int> > stubs, bool ps,
             if (ps)
             {
                 chip  =  m_stub_chip[idx];
-                strip = int(2*m_stub_strip[idx])%256;  // Bet 0 and 255
+                strip = int(2*m_stub_strip[idx])%240;  // Bet 0 and 255
             }
             else
             {
@@ -1206,7 +1210,7 @@ void stim_builder::fill_TRG_block(std::vector<std::vector<int> > stubs, bool ps,
             
             if (conc)
             {
-              //  cout << i << " // " << chip << " // " << nstubs_tot << endl;
+	      //	      cout << i << " // " << chip << " // " << nstubs_tot << endl;
                 stub_register.push_back(i);
                 stub_register.push_back(chip);
                 stub_register.push_back(strip);
@@ -1283,110 +1287,109 @@ void stim_builder::fill_TRG_block(std::vector<std::vector<int> > stubs, bool ps,
     {
         for (unsigned int i=0;i<stub_register.size()/5;++i)
         {
-           // cout << idx << " /÷/ " << i << endl;
+	  //	  cout << idx << " /÷/ " << i << endl;
             
 	  if (int(i)>=lim_stub_CIC) continue;
 
-            idx      = i;
-            min_bend = fabs(stub_register.at(5*i+4));
-            min_off  = int(stub_register.at(5*i)/2);
-            min_chp  = stub_register.at(5*i+1);
-            min_add  = stub_register.at(5*i+2);
+	  idx      = i;
+	  min_bend = fabs(stub_register.at(5*i+4));
+	  min_off  = int(stub_register.at(5*i)/2);
+	  min_chp  = stub_register.at(5*i+1);
+	  min_add  = stub_register.at(5*i+2);
+          
+	  if (i!=stub_register.size()/5-1)
+          {
+	    for (unsigned int j=i+1;j<stub_register.size()/5;++j)
+	    {
+	      if (min_bend>fabs(stub_register.at(5*j+4))) // lowest bend
+	      {
+		min_bend = fabs(stub_register.at(5*j+4));
+		min_off  = int(stub_register.at(5*j)/2);
+		min_chp  = stub_register.at(5*j+1);
+		min_add  = stub_register.at(5*j+2);
+		idx=j;
+	      }
+	      else if (min_bend==fabs(stub_register.at(5*j+4)) && min_off<int(stub_register.at(5*j)/2)) // highest offset
+	      {
+		min_off  = int(stub_register.at(5*j)/2);
+		min_chp  = stub_register.at(5*j+1);
+		min_add  = stub_register.at(5*j+2);
+		idx=j;
+	      }
+	      else if (min_bend==fabs(stub_register.at(5*j+4))
+		       && min_off==int(stub_register.at(5*j)/2)
+		       && min_chp<stub_register.at(5*j+1)
+		       ) // highest offset
+	      {
+		min_chp  = stub_register.at(5*j+1);
+		min_add  = stub_register.at(5*j+2);
+		idx=j;
+	      }
+	      else if (min_bend==fabs(stub_register.at(5*j+4))
+		       && min_off==int(stub_register.at(5*j)/2)
+		       && min_chp==stub_register.at(5*j+1)
+		       && min_add<stub_register.at(5*j+2)
+		       ) // highest offset
+	      {
+		min_add=stub_register.at(5*j+2);
+		idx=j;
+	      }          
+	    }
+	  }
+	  
+	  //	  cout << idx << " /÷ " << i << endl;
             
-            if (i!=stub_register.size()/5-1)
-            {
-                for (unsigned int j=i+1;j<stub_register.size()/5;++j)
-                {
-                    if (min_bend>fabs(stub_register.at(5*j+4))) // lowest bend
-                    {
-                        min_bend = fabs(stub_register.at(5*j+4));
-                        min_off  = int(stub_register.at(5*j)/2);
-                        min_chp  = stub_register.at(5*j+1);
-                        min_add  = stub_register.at(5*j+2);
-                        idx=j;
-                    }
-                    else if (min_bend==fabs(stub_register.at(5*j+4)) && min_off<int(stub_register.at(5*j)/2)) // highest offset
-                    {
-                        min_off  = int(stub_register.at(5*j)/2);
-                        min_chp  = stub_register.at(5*j+1);
-                        min_add  = stub_register.at(5*j+2);
-                        idx=j;
-                    }
-                    else if (min_bend==fabs(stub_register.at(5*j+4))
-                             && min_off==int(stub_register.at(5*j)/2)
-                             && min_chp<stub_register.at(5*j+1)
-                             ) // highest offset
-                    {
-                        min_chp  = stub_register.at(5*j+1);
-                        min_add  = stub_register.at(5*j+2);
-                        idx=j;
-                    }
-                    else if (min_bend==fabs(stub_register.at(5*j+4))
-                             && min_off==int(stub_register.at(5*j)/2)
-                             && min_chp==stub_register.at(5*j+1)
-                             && min_add<stub_register.at(5*j+2)
-                        ) // highest offset
-                    {
-                        min_add=stub_register.at(5*j+2);
-                        idx=j;
-                    }
-                    
-                }
-            }
+	  // Here we exchange row i and idx, if needed;
+            
+	  if (idx!=int(i))
+          {
+	    tp1 = stub_register.at(5*i);
+	    tp2 = stub_register.at(5*i+1);
+	    tp3 = stub_register.at(5*i+2);
+	    tp4 = stub_register.at(5*i+3);
+	    tp5 = stub_register.at(5*i+4);
+            
+	    stub_register.at(5*i)   = stub_register.at(5*idx);
+	    stub_register.at(5*i+1) = stub_register.at(5*idx+1);
+	    stub_register.at(5*i+2) = stub_register.at(5*idx+2);
+	    stub_register.at(5*i+3) = stub_register.at(5*idx+3);
+	    stub_register.at(5*i+4) = stub_register.at(5*idx+4);
+            
+	    stub_register.at(5*idx)   = tp1;
+	    stub_register.at(5*idx+1) = tp2;
+	    stub_register.at(5*idx+2) = tp3;
+	    stub_register.at(5*idx+3) = tp4;
+	    stub_register.at(5*idx+4) = tp5;
+	  }
 
-            //cout << idx << " /÷ " << i << endl;
+	  //	  cout << i << " / " << stub_register.at(5*i) << " / " << stub_register.at(5*i+1) << endl;
+          
+	  std::bitset<3> bx  = stub_register.at(5*i);          // Offset in the sequence
+	  std::bitset<3> chp = stub_register.at(5*i+1);        // Chip number
+	  std::bitset<8> pos = stub_register.at(5*i+2);        // Stub position
+	  std::bitset<4> col = stub_register.at(5*i+3);        // Z position (for PS module)
+          
+          
+	  for (int j=0;j<3;++j) m_tri_data->push_back(bx[bit_bx-1-j]);
+	  for (int j=0;j<3;++j) m_tri_data->push_back(chp[2-j]);
+	  for (int j=0;j<8;++j) m_tri_data->push_back(pos[7-j]);
+          
+	  if (ps)
+	  {
+	    std::bitset<3> off = convert_bend_PS(lay,lad,stub_register.at(5*i+4));
+	    for (int j=0;j<bend_bit_MPA;++j) m_tri_data->push_back(off[2-j]);
+	  }
+	  else
+	  {
+	    std::bitset<4> off = convert_bend_2S(lay,lad,stub_register.at(5*i+4));
+	    for (int j=0;j<bend_bit_CBC;++j) m_tri_data->push_back(off[3-j]);
+	  }
             
-            // Here we exchange row i and idx, if needed;
-            
-            if (idx!=int(i))
-            {
-                tp1 = stub_register.at(5*i);
-                tp2 = stub_register.at(5*i+1);
-                tp3 = stub_register.at(5*i+2);
-                tp4 = stub_register.at(5*i+3);
-                tp5 = stub_register.at(5*i+4);
-            
-                stub_register.at(5*i)   = stub_register.at(5*idx);
-                stub_register.at(5*i+1) = stub_register.at(5*idx+1);
-                stub_register.at(5*i+2) = stub_register.at(5*idx+2);
-                stub_register.at(5*i+3) = stub_register.at(5*idx+3);
-                stub_register.at(5*i+4) = stub_register.at(5*idx+4);
-            
-                stub_register.at(5*idx)   = tp1;
-                stub_register.at(5*idx+1) = tp2;
-                stub_register.at(5*idx+2) = tp3;
-                stub_register.at(5*idx+3) = tp4;
-                stub_register.at(5*idx+4) = tp5;
-            }
-
-//            cout << i << " / " << stub_register.at(5*i) << " / " << stub_register.at(5*i+1) << endl;
-            
-            std::bitset<3> bx  = stub_register.at(5*i);          // Offset in the sequence
-            std::bitset<3> chp = stub_register.at(5*i+1);        // Chip number
-            std::bitset<8> pos = stub_register.at(5*i+2);        // Stub position
-            std::bitset<4> col = stub_register.at(5*i+3);        // Z position (for PS module)
-            
-            
-            for (int j=0;j<3;++j) m_tri_data->push_back(bx[bit_bx-1-j]);
-            for (int j=0;j<3;++j) m_tri_data->push_back(chp[2-j]);
-            for (int j=0;j<8;++j) m_tri_data->push_back(pos[7-j]);
-            
-            if (ps)
-            {
-                std::bitset<3> off = convert_bend_PS(lay,lad,stub_register.at(5*i+4));
-                for (int j=0;j<bend_bit_MPA;++j) m_tri_data->push_back(off[2-j]);
-            }
-            else
-            {
-                std::bitset<4> off = convert_bend_2S(lay,lad,stub_register.at(5*i+4));
-                for (int j=0;j<bend_bit_CBC;++j) m_tri_data->push_back(off[3-j]);
-            }
-            
-            // Finally the column for MPA side
-            if (ps)
-            {
-                for (int j=0;j<4;++j) m_tri_data->push_back(col[3-j]);
-            }
+	  // Finally the column for MPA side
+	  if (ps)
+          {
+	    for (int j=0;j<4;++j) m_tri_data->push_back(col[3-j]);
+	  }
         }
     }
     
