@@ -6,14 +6,14 @@
 # Usage: cmsRun get_Tracker_coords.py
 #
 # More info:
-# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto
+# http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTutoDev
 #
 # Look at STEP III
 #
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 16/04/2015
 #
-# Script tested with release CMSSW_6_2_0_SLHC25_patch3
+# Script tested with release CMSSW_8_1_0_pre11
 #
 #########
 #
@@ -37,7 +37,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 
 # Global tag for PromptReco
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 # Number of events
 process.maxEvents = cms.untracked.PSet(
@@ -56,6 +56,8 @@ process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 # Tune some options (see MIB_extractor_cfi.py for details)
 
 process.MIBextraction.getCoords        = True
+process.MIBextraction.flatBarrel       = flat
+process.MIBextraction.fullInfo         = False # Do you want all the coords or just the modid
 
 process.p = cms.Path(process.MIBextraction)
 

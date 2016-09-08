@@ -26,7 +26,6 @@
 <use   name="TrackingTools/TransientTrack"/>
 <use   name="TrackingTools/Records"/>
 <use   name="RecoTracker/TransientTrackingRecHit"/>
-<use   name="rootcintex"/>
 <use   name="root"/>
 <use   name="SimTracker/TrackAssociation"/>
 <use   name="SimTracker/TrackerHitAssociation"/>
@@ -36,12 +35,9 @@
 <use   name="CondFormats/L1TObjects"/>
 <use   name="L1Trigger/GlobalTriggerAnalyzer"/>
 <use   name="HLTrigger/HLTcore"/>
-<use   name="MathMore"/>
 <use   name="DataFormats/DetId"/>
 <use   name="DataFormats/GeometryVector"/>
 <use   name="DataFormats/GeometrySurface"/>
 <use   name="DataFormats/L1TrackTrigger"/>
 <flags     EDM_PLUGIN="1"/>
-<export>
-  <lib     name="1"/>
-</export>
+

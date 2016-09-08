@@ -52,10 +52,10 @@ class CoordsExtractor
 
  public:
 
-  CoordsExtractor(bool doTree);
+  CoordsExtractor(bool doTree, bool skim);
   ~CoordsExtractor();
 
-  void init(const edm::EventSetup *setup);
+  void init(const edm::EventSetup *setup, bool isFlat);
 
  private:
   
@@ -70,9 +70,12 @@ class CoordsExtractor
   int    m_c_ladder;
   int    m_c_row;
   int    m_c_column;
+  int    m_c_modid;
   float  m_c_x;
   float  m_c_y;
   float  m_c_z;
+
+  bool m_skim;
 };
 
 #endif 

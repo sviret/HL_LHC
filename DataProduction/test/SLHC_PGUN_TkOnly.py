@@ -68,7 +68,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 
 # Random seeds
@@ -140,8 +140,8 @@ for path in process.paths:
 if flat:
 	print 'You choose the flat geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023LReco
-	process = cust_2023LReco(process)
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
+	process = cust_2023flat(process)
 else:
 	print 'You choose the tilted geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry

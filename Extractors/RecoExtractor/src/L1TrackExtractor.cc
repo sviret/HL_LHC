@@ -154,10 +154,12 @@ L1TrackExtractor::~L1TrackExtractor()
 {}
 
 
-void L1TrackExtractor::init(const edm::EventSetup *setup)
+void L1TrackExtractor::init(const edm::EventSetup *setup, bool isFlat)
 {
   setup->get<TrackerTopologyRcd>().get(tTopoHandle);
   setup->get<TrackerDigiGeometryRecord>().get(tGeomHandle);
+
+  m_tilted = (!isFlat);
 
   /// Magnetic Field
   //  edm::ESHandle< MagneticField > magneticFieldHandle;

@@ -41,6 +41,7 @@ process.MIBextraction.doMC             = True
 process.MIBextraction.doSTUB           = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
+process.MIBextraction.flatBarrel       = flat
 
 process.p = cms.Path(process.MIBextraction)
 

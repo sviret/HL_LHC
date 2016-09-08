@@ -72,7 +72,7 @@ class L1TrackExtractor
   ~L1TrackExtractor();
 
 
-  void init(const edm::EventSetup *setup);
+  void init(const edm::EventSetup *setup, bool isFlat);
   void writeInfo(const edm::Event *event, StubExtractor *stub); 
   void getInfo(int ievt); 
 
@@ -98,6 +98,8 @@ class L1TrackExtractor
   bool m_OK;
   double mMagneticFieldStrength ;
   int m_n_events;
+
+  bool m_tilted;
 
   /// Geometry handles etc
 

@@ -13,7 +13,9 @@ RecoExtractor::RecoExtractor(const edm::ParameterSet& config) :
   do_BANK_       (config.getUntrackedParameter<bool>("doBANK",     false)),
   do_MATCH_      (config.getUntrackedParameter<bool>("doMatch",    false)),
   do_L1tt_       (config.getUntrackedParameter<bool>("doL1TT",     false)),
-  nevts_         (config.getUntrackedParameter<int>("n_events", 10000)),
+  use_flat_      (config.getUntrackedParameter<bool>("flatBarrel", true)),
+  fullinfo_      (config.getUntrackedParameter<bool>("fullInfo",   false)),
+  nevts_         (config.getUntrackedParameter<int>("n_events",    10000)),
   skip_          (config.getUntrackedParameter<int>("skip_events", 0)),
   outFilename_   (config.getParameter<std::string>("extractedRootFile")),
   inFilename_    (config.getParameter<std::string>("inputRootFile")),
@@ -71,11 +73,11 @@ void RecoExtractor::beginRun(Run const& run, EventSetup const& setup)
   
   if (do_fill_) // We are filling the ntuple, first init the geom stuff
   {
-    if (do_COORDS_)   m_COORDS->init(&setup);
-    if (do_PIX_)      m_PIX->init(&setup);
+    if (do_COORDS_)   m_COORDS->init(&setup,use_flat_);
+    if (do_PIX_)      m_PIX->init(&setup,use_flat_);
     if (do_MC_)       m_MC->init(&setup);
-    if (do_STUB_)     m_STUB->init(&setup);
-    if (do_L1TRK_)    m_L1TRK->init(&setup);
+    if (do_STUB_)     m_STUB->init(&setup,use_flat_);
+    if (do_L1TRK_)    m_L1TRK->init(&setup,use_flat_);
   }
   
   // If we start from existing file we don't have to loop over events
@@ -169,7 +171,7 @@ void RecoExtractor::initialize()
   m_STUB     = new StubExtractor(clustersToken_,stubsToken_,clustersTToken_,stubsTToken_,do_STUB_);
   m_L1TRK    = new L1TrackExtractor(stubsToken_,pattToken_,tcToken_,trkToken_,do_L1TRK_);
   m_PIX      = new PixelExtractor(pixToken_,pixslToken_,puToken_,do_PIX_,do_MATCH_);
-  m_COORDS   = new CoordsExtractor(do_COORDS_);
+  m_COORDS   = new CoordsExtractor(do_COORDS_,fullinfo_);
 
   m_dummy_MC = new MCExtractor();
 }  

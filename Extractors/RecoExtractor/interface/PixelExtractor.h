@@ -54,7 +54,7 @@ class PixelExtractor
   ~PixelExtractor();
 
 
-  void init(const edm::EventSetup *setup);
+  void init(const edm::EventSetup *setup, bool isFlat);
   void writeInfo(const edm::Event *event); 
   void getInfo(int ievt); 
 
@@ -104,6 +104,7 @@ class PixelExtractor
   int nrow(int i)    {return m_pixclus_nrow->at(i);}
   int ncolumn(int i) {return m_pixclus_ncolumn->at(i);}
   int bottom(int i) {return m_pixclus_bot->at(i);}
+  int type(int i) {return m_pixclus_type->at(i);}
 
  private:
   
@@ -129,6 +130,10 @@ class PixelExtractor
   int  m_n_events;
   int  m_nPU;
 
+  bool m_tilted;
+
+  int limits[6][3];
+
   // Pixel info
 
   /*
@@ -150,6 +155,7 @@ class PixelExtractor
     m_tree->Branch("PIX_nrow",      &m_pixclus_nrow);
     m_tree->Branch("PIX_ncolumn",   &m_pixclus_ncolumn);
     m_tree->Branch("PIX_bottom",    &m_pixclus_bot);
+    m_tree->Branch("PIX_type",      &m_pixclus_type);
     m_tree->Branch("PIX_pitchx",    &m_pixclus_pitchx);
     m_tree->Branch("PIX_pitchy",    &m_pixclus_pitchy);
   */
@@ -176,6 +182,7 @@ class PixelExtractor
   std::vector<int>                 *m_pixclus_nrow;     // Number of strips of the sensor containing the digi
   std::vector<int>                 *m_pixclus_ncolumn;  // Number of columns of the sensor containing the digi
   std::vector<int>                 *m_pixclus_bot;      // Bottom or top (1/0) layer of the pt module
+  std::vector<int>                 *m_pixclus_type;      // 
   std::vector<float>               *m_pixclus_pitchx;   // Strip pitch
   std::vector<float>               *m_pixclus_pitchy;   // Column pitch
 

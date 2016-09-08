@@ -71,6 +71,9 @@ class RecoExtractor : public edm::EDAnalyzer{
   bool do_MATCH_;
   bool do_L1tt_;
 
+  bool use_flat_;
+  bool fullinfo_;
+
   int  nevts_;
   int  skip_;
 

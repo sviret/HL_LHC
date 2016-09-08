@@ -15,7 +15,7 @@
 # Here you choose if you want flat (True) or tilted (False) geometry
 #
 
-flat=True
+flat=False
 
 ###################
 
@@ -34,7 +34,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 # Global tag for PromptReco
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 process.options = cms.untracked.PSet(
     SkipEvent = cms.untracked.vstring('ProductNotFound')
@@ -47,7 +47,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('file:PGun_example.root'),
+                            fileNames = cms.untracked.vstring('file:PGun_example_TkOnly_TILTED.root'),
                             #fileNames = cms.untracked.vstring('file:PU_30_sample.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
@@ -61,6 +61,7 @@ process.MIBextraction.doMC             = True
 process.MIBextraction.doSTUB           = True
 process.MIBextraction.doPixel          = True
 process.MIBextraction.doMatch          = True
+process.MIBextraction.flatBarrel       = flat
 
 process.p = cms.Path(process.MIBextraction)
 

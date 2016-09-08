@@ -2,7 +2,7 @@
 #include "../interface/CoordsExtractor.h"
 
 
-CoordsExtractor::CoordsExtractor(bool doTree)
+CoordsExtractor::CoordsExtractor(bool doTree, bool skim)
 {
   if (doTree)
   {
@@ -11,19 +11,26 @@ CoordsExtractor::CoordsExtractor(bool doTree)
     m_tree->Branch("layer",     &m_c_layer);
     m_tree->Branch("module",    &m_c_module);
     m_tree->Branch("ladder",    &m_c_ladder);
-    m_tree->Branch("strip",     &m_c_row);
-    m_tree->Branch("segment",   &m_c_column);
-    m_tree->Branch("x",         &m_c_x);
-    m_tree->Branch("y",         &m_c_y);
-    m_tree->Branch("z",         &m_c_z);
+    m_tree->Branch("modid",     &m_c_modid);
+
+    if (!skim)
+    {
+      m_tree->Branch("strip",     &m_c_row);
+      m_tree->Branch("segment",   &m_c_column);
+      m_tree->Branch("x",         &m_c_x);
+      m_tree->Branch("y",         &m_c_y);
+      m_tree->Branch("z",         &m_c_z);
+    }
   }
+
+  m_skim = skim;
 }
 
 CoordsExtractor::~CoordsExtractor()
 {}
 
 
-void CoordsExtractor::init(const edm::EventSetup *setup)
+void CoordsExtractor::init(const edm::EventSetup *setup, bool isFlat)
 {
   setup->get<TrackerTopologyRcd>().get(tTopoHandle);
   setup->get<TrackerDigiGeometryRecord>().get(tGeomHandle);
@@ -34,21 +41,20 @@ void CoordsExtractor::init(const edm::EventSetup *setup)
   bool barrel;
   bool endcap;
 
-  int disk;  
-
   int cols;    
   int rows;    
 
-  int limits[3][3];
+  int limits[6][3];
 
-  int n_tilted_rings[3];
-  int n_flat_rings[3];
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
 
-  bool m_tilt=true;
+  bool m_tilt=(!isFlat);
 
   if (!m_tilt)
   {
-    for (int i=0; i < 3; ++i) n_tilted_rings[i]=0;
+    for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+    for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
   }
   else
   {
@@ -60,7 +66,7 @@ void CoordsExtractor::init(const edm::EventSetup *setup)
     n_flat_rings[2]=15;
   }
 
-  for (int i=0; i < 3; ++i)
+  for (int i=0; i < 6; ++i)
   {
     for (int j=0; j < 3; ++j)
     {
@@ -72,13 +78,9 @@ void CoordsExtractor::init(const edm::EventSetup *setup)
     }
   }
 
-
   LocalPoint  clustlp;
   GlobalPoint pos;    
-
   float phi,r,z;
-
-  int tilt, layer, module, ladder;
 
   for (auto id=theTrackerGeom->dets().begin(); id != theTrackerGeom->dets().end(); id++) 
   { 
@@ -103,63 +105,45 @@ void CoordsExtractor::init(const edm::EventSetup *setup)
     r   = det0->position().perp();
     z   = det0->position().z();
     phi = atan2(det0->position().y(),det0->position().x()) ;
-
-    int modid;
     
     std::string binary = std::bitset<32>(static_cast<int>(tTopo->stack(detid))).to_string(); //to binary
 
-    // DetID of the module containing the stub
-    std::bitset<32> MODID = static_cast<int>(tTopo->stack(detid));
-
     if (barrel) // barrel module
     {
-      tilt  = tTopo->tobSide(detid);
-      layer = tTopo->tobLayer(detid);
+      m_c_layer   = static_cast<int>(tTopo->layer(detid))+4;
+      m_c_ladder  = static_cast<int>(tTopo->tobRod(detid))-1;
+      m_c_module  = static_cast<int>(tTopo->module(detid))-1;
 
-      if (tilt==3) std::cout << "Barrel FLAT   / ";
-      if (tilt<=2) std::cout << "Barrel TILTED / ";
-
-      if (layer>3) // 2S barrel module
-      {
-	modid = 10000*(layer+4)+100*(static_cast<int>(tTopo->tobRod(detid))-1)+static_cast<int>(tTopo->module(detid));
+      if (tTopo->tobSide(detid)==3) 
+      {	
+	std::cout << "Barrel FLAT   / ";
+	m_c_modid = 10000*m_c_layer+100*m_c_ladder+limits[m_c_layer-5][tTopo->tobSide(detid)-1]+m_c_module;
       }
-      else // PS barrel module
+      else
       {
-	modid = 10000*(layer+4);
-
-	if (tilt==3) modid += 100*(static_cast<int>(tTopo->tobRod(detid))-1)
-		       + limits[layer-1][tilt-1]+static_cast<int>(tTopo->module(detid)); // Flat 
-
-	if (tilt<=2) modid += 100*(static_cast<int>(tTopo->module(detid))-1)
-		       + limits[layer-1][tilt-1]+static_cast<int>(tTopo->tobRod(detid)); // Tilted
+	std::cout << "Barrel TILTED / ";
+	m_c_modid = 10000*m_c_layer+100*m_c_module+limits[m_c_layer-5][tTopo->tobSide(detid)-1]+m_c_ladder;
       }
     }
     else //Disk
     {
-      //      std::cout << tTopo->print(detid) << std::endl;
+      m_c_layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+      m_c_ladder = static_cast<int>(tTopo->tidRing(detid))-1;
+      m_c_module = static_cast<int>(tTopo->module(detid))-1;
 
       std::cout << "Disk          / ";
-      layer= 4*MODID[20]+2*MODID[19]+MODID[18];
 
-      if (MODID[24]) layer+=10;
-      if (MODID[23]) layer+=17;
-
-      modid = 10000*(layer)+100*(static_cast<int>(tTopo->tidRing(detid))-1)+static_cast<int>(tTopo->module(detid));
+      m_c_modid = 10000*m_c_layer+100*m_c_ladder+m_c_module;
     }
-
 
     std::cout << std::setw(7) << std::fixed << std::setprecision(2) << r; 
     std::cout << " / " << std::setw(7) << std::fixed << std::setprecision(2) << z; 
     std::cout << " / " << std::setw(7) << std::fixed << std::setprecision(2) << phi; 
-    std::cout << " / " << std::setw(7) << std::fixed << modid-1;
+    std::cout << " / " << std::setw(7) << std::fixed << m_c_modid;
     std::cout << " / " << binary << std::endl;
 
-    if (barrel)
+    if (!m_skim)
     {
-      m_c_layer   = static_cast<int>(tTopo->layer(detid));
-      m_c_module  = static_cast<int>(tTopo->module(detid));
-      m_c_ladder  = static_cast<int>(tTopo->tobRod(detid));
- 
       for (int i=0; i < cols; ++i)
       {
 	for (int j=0; j < rows; ++j)
@@ -177,32 +161,9 @@ void CoordsExtractor::init(const edm::EventSetup *setup)
 	}
       }
     }   
-    
-    if (endcap)
+    else
     {
-      disk = (static_cast<int>(tTopo->side(detid))*2-3)*static_cast<int>(tTopo->tidWheel(detid));
-
-      if (disk>5 || disk<-5) continue; 
-      m_c_layer = disk; 
-      m_c_module = static_cast<int>(tTopo->module(detid)); 
-      m_c_ladder = static_cast<int>(tTopo->tidRing(detid)); 
-
-      for (int i=0; i < cols; ++i)
-      {
-	for (int j=0; j < rows; ++j)
-	{
-	  clustlp = topol->localPosition( MeasurementPoint(j+0.5,i+0.5));
-	  pos     =  theGeomDet->surface().toGlobal(clustlp);
-	  
-	  m_c_row    = j;
-	  m_c_column = i;
-	  m_c_x      = pos.x();
-	  m_c_y      = pos.y();
-	  m_c_z      = pos.z();
-	  
-	  m_tree->Fill(); 
-	}
-      }
+      m_tree->Fill(); 
     }
   }
 }

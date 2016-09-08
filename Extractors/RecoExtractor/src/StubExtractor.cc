@@ -274,10 +274,44 @@ StubExtractor::~StubExtractor()
 {}
 
 
-void StubExtractor::init(const edm::EventSetup *setup)
+void StubExtractor::init(const edm::EventSetup *setup, bool isFlat)
 {
   setup->get<TrackerTopologyRcd>().get(tTopoHandle);
   setup->get<TrackerDigiGeometryRecord>().get(tGeomHandle);
+
+  m_tilted=(!isFlat);
+
+
+
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
+
+  if (!m_tilted)
+  {
+    for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+    for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+  }
+  else
+  {
+    n_tilted_rings[0]=11;
+    n_tilted_rings[1]=12;
+    n_tilted_rings[2]=13;
+    n_flat_rings[0]=7;
+    n_flat_rings[1]=11;
+    n_flat_rings[2]=15;
+  }
+
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 3; ++j)
+    {
+      limits[i][j]=0;
+
+      if (n_tilted_rings[i]==0) continue;
+
+      limits[i][j]=(j%2)*n_flat_rings[i]+(j>0)*n_tilted_rings[i];
+    }
+  }
 
   /// Magnetic Field
   //  edm::ESHandle< MagneticField > magneticFieldHandle;
@@ -395,16 +429,22 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 
 	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = static_cast<int>(tTopo->layer(detid))+4;
-	  ladder = static_cast<int>(tTopo->tobRod(detid));
-	  module = static_cast<int>(tTopo->module(detid));
 	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1+limits[layer-5][type-1];
+
+	  if (type<3)
+	  {
+	    ladder = static_cast<int>(tTopo->module(detid))-1;
+	    module = static_cast<int>(tTopo->tobRod(detid))-1+limits[layer-5][type-1];
+	  }
 	}
 	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
 	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
-	  ladder = static_cast<int>(tTopo->tidRing(detid));
-	  module = static_cast<int>(tTopo->module(detid));
+	  ladder = static_cast<int>(tTopo->tidRing(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1;
 	  type   = 0;
 	}
 	
@@ -511,16 +551,22 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 
 	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = static_cast<int>(tTopo->layer(detid))+4;
-	  ladder = static_cast<int>(tTopo->tobRod(detid));
-	  module = static_cast<int>(tTopo->module(detid));
 	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1+limits[layer-5][type-1];
+
+	  if (type<3)
+	  {
+	    ladder = static_cast<int>(tTopo->module(detid))-1;
+	    module = static_cast<int>(tTopo->tobRod(detid))-1+limits[layer-5][type-1];
+	  }
 	}
 	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
 	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
-	  ladder = static_cast<int>(tTopo->tidRing(detid));
-	  module = static_cast<int>(tTopo->module(detid));
+	  ladder = static_cast<int>(tTopo->tidRing(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1;
 	  type   = 0;
 	}
 

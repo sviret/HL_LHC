@@ -85,7 +85,7 @@ class StubExtractor
   ~StubExtractor();
 
 
-  void init(const edm::EventSetup *setup);
+  void init(const edm::EventSetup *setup, bool isFlat);
 
   void writeInfo(const edm::Event *event, MCExtractor *mc, bool MCinfo); 
   void getInfo(int ievt); 
@@ -163,6 +163,10 @@ class StubExtractor
   bool m_matching;
   int  m_n_events;
   double mMagneticFieldStrength ;
+
+  bool m_tilted;
+
+  int limits[6][3];
 
   /// Geometry handles etc
  

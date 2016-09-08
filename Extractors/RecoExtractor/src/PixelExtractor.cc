@@ -31,6 +31,7 @@ PixelExtractor::PixelExtractor(edm::EDGetTokenT< edm::DetSetVector< Phase2Tracke
   m_pixclus_nrow     = new std::vector<int>;    
   m_pixclus_ncolumn  = new std::vector<int>;  
   m_pixclus_bot      = new std::vector<int>;  
+  m_pixclus_type     = new std::vector<int>;  
   m_pixclus_pitchx   = new std::vector<float>;  
   m_pixclus_pitchy   = new std::vector<float>; 
 
@@ -63,6 +64,7 @@ PixelExtractor::PixelExtractor(edm::EDGetTokenT< edm::DetSetVector< Phase2Tracke
     m_tree->Branch("PIX_nrow",      &m_pixclus_nrow);
     m_tree->Branch("PIX_ncolumn",   &m_pixclus_ncolumn);
     m_tree->Branch("PIX_bottom",    &m_pixclus_bot);
+    m_tree->Branch("PIX_type",      &m_pixclus_type);
     m_tree->Branch("PIX_pitchx",    &m_pixclus_pitchx);
     m_tree->Branch("PIX_pitchy",    &m_pixclus_pitchy);
   }
@@ -89,6 +91,8 @@ PixelExtractor::PixelExtractor(TFile *a_file)
   m_pixclus_ladder   = new std::vector<int>;    
   m_pixclus_nrow     = new std::vector<int>;    
   m_pixclus_ncolumn  = new std::vector<int>;  
+  m_pixclus_bot      = new std::vector<int>;
+  m_pixclus_type     = new std::vector<int>;    
   m_pixclus_pitchx   = new std::vector<float>;  
   m_pixclus_pitchy   = new std::vector<float>; 
 
@@ -126,6 +130,8 @@ PixelExtractor::PixelExtractor(TFile *a_file)
   m_tree->SetBranchAddress("PIX_ladder",    &m_pixclus_ladder);
   m_tree->SetBranchAddress("PIX_nrow",      &m_pixclus_nrow);
   m_tree->SetBranchAddress("PIX_ncolumn",   &m_pixclus_ncolumn);
+  m_tree->SetBranchAddress("PIX_bottom",    &m_pixclus_bot);
+  m_tree->SetBranchAddress("PIX_type",      &m_pixclus_type);
 }
 
 
@@ -133,11 +139,43 @@ PixelExtractor::PixelExtractor(TFile *a_file)
 PixelExtractor::~PixelExtractor()
 {}
 
-
-void PixelExtractor::init(const edm::EventSetup *setup)
+void PixelExtractor::init(const edm::EventSetup *setup, bool isFlat)
 {
   setup->get<TrackerDigiGeometryRecord>().get(theTrackerGeometry);
   setup->get<TrackerTopologyRcd>().get(theTrackerTopology);
+
+  m_tilted = (!isFlat);
+
+
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
+
+  if (!m_tilted)
+  {
+    for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+    for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+  }
+  else
+  {
+    n_tilted_rings[0]=11;
+    n_tilted_rings[1]=12;
+    n_tilted_rings[2]=13;
+    n_flat_rings[0]=7;
+    n_flat_rings[1]=11;
+    n_flat_rings[2]=15;
+  }
+
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 3; ++j)
+    {
+      limits[i][j]=0;
+
+      if (n_tilted_rings[i]==0) continue;
+
+      limits[i][j]=(j%2)*n_flat_rings[i]+(j>0)*n_tilted_rings[i];
+    }
+  }
 }
 
 //
@@ -229,14 +267,12 @@ void PixelExtractor::writeInfo(const edm::Event *event)
       m_pixclus_row->push_back((*iter).row()); 
       m_pixclus_column->push_back((*iter).column());
       m_pixclus_bot->push_back(static_cast<int>(tTopo->isLower(detid)));
-      
-      // std::cout << rows << "/" << cols << "/" << static_cast<int>(tTopo->isLower(detid)) << std::endl;
+      m_pixclus_type->push_back(static_cast<int>(tTopo->tobSide(detid))); // Tilt-/Tilt+/Flat <-> 1/2/3
 
       if (m_matching)
       {
 	if (pDigiLinks.data.size() != 0)
 	{
-	  //	  edm::DetSet<PixelDigiSimLink>::const_iterator it;
 	  // Loop over DigisSimLink in this det unit
 
 	  for(auto it = pDigiLinks.data.begin();  it != pDigiLinks.data.end(); it++) 
@@ -264,16 +300,27 @@ void PixelExtractor::writeInfo(const edm::Event *event)
       if (barrel)
       {
 	m_pixclus_layer->push_back(static_cast<int>(tTopo->layer(detid))+4); 
-	m_pixclus_module->push_back(static_cast<int>(tTopo->module(detid))); 
-      	m_pixclus_ladder->push_back(static_cast<int>(tTopo->tobRod(detid))); 
+
+	if (tTopo->tobSide(detid)==3)
+	{ 
+	  m_pixclus_ladder->push_back(static_cast<int>(tTopo->tobRod(detid))-1); 
+	  m_pixclus_module->push_back(static_cast<int>(tTopo->module(detid))-1
+				      +limits[static_cast<int>(tTopo->layer(detid))-1][tTopo->tobSide(detid)-1]); 
+	}
+	else
+	{ 
+	  m_pixclus_ladder->push_back(static_cast<int>(tTopo->module(detid))-1); 
+	  m_pixclus_module->push_back(static_cast<int>(tTopo->tobRod(detid))-1
+				      +limits[static_cast<int>(tTopo->layer(detid))-1][tTopo->tobSide(detid)-1]); 
+	}
       }
 
       if (endcap)
       {
 	disk = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
 	m_pixclus_layer->push_back(disk); 
-	m_pixclus_ladder->push_back(tTopo->tidRing(detid)); 
-	m_pixclus_module->push_back(tTopo->module(detid)); 
+	m_pixclus_ladder->push_back(tTopo->tidRing(detid)-1); 
+	m_pixclus_module->push_back(tTopo->module(detid)-1); 
       }
 
       m_pixclus_nrow->push_back(rows);
@@ -321,6 +368,7 @@ void PixelExtractor::reset()
   m_pixclus_nrow->clear();   
   m_pixclus_ncolumn->clear();
   m_pixclus_bot->clear();
+  m_pixclus_type->clear();
   m_pixclus_pitchx->clear(); 
   m_pixclus_pitchy->clear(); 
 }
