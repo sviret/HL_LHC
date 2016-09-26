@@ -122,6 +122,7 @@ class StubExtractor
 
   int getStub_ID(int i) {return 1000000*m_stub_layer->at(i)+10000*m_stub_ladder->at(i)
       +100*m_stub_module->at(i)+m_stub_seg->at(i);}
+  int getStub_DETID(int i) {return m_stub_detid->at(i);}
   int getStub_tp(int i) {return m_stub_tp->at(i);}
   int getNStub() {return m_stub;}
 
@@ -226,6 +227,7 @@ class StubExtractor
   std::vector<int>    *m_stub_type;   // module type 0/1/2/3 <-> DISK/TILT-/TILT+/FLAT
   std::vector<int>    *m_stub_chip;   // chip of stub i
   std::vector<float>  *m_stub_strip;  // strip of stub i (innermost module value)
+  std::vector<int>    *m_stub_detid;  // detid of stub i 
   std::vector<float>  *m_stub_x;      // x pos of stub i (in cm)
   std::vector<float>  *m_stub_y;      // y pos of stub i (in cm)
   std::vector<float>  *m_stub_z;      // z pos of stub i (in cm)

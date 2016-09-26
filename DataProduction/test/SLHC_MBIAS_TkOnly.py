@@ -54,7 +54,7 @@ process.source = cms.Source("EmptySource")
 # Global tag for PromptReco
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 # Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1
@@ -130,8 +130,8 @@ if flat:
 	process = cust_2023LReco(process)
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted
-	process = cust_2023tilted(process)
+	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
+	process = cust_2023tilted4021(process)
 
 # End of customisation functions

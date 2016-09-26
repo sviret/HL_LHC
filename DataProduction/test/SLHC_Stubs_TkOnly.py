@@ -60,7 +60,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 # Additional output definition
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
 
 # This line is necessary to keep track of the Tracking Particles
 
@@ -80,6 +80,7 @@ process.RAWSIMoutput_step     = cms.EndPath(process.RAWSIMoutput)
 
 process.schedule = cms.Schedule(process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
+
 # Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
 
 if flat:
@@ -87,8 +88,8 @@ if flat:
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
 	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
 
-# End of customisation functions		
+# End of customisation functions	
 

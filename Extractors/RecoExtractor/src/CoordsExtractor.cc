@@ -140,7 +140,8 @@ void CoordsExtractor::init(const edm::EventSetup *setup, bool isFlat)
     std::cout << " / " << std::setw(7) << std::fixed << std::setprecision(2) << z; 
     std::cout << " / " << std::setw(7) << std::fixed << std::setprecision(2) << phi; 
     std::cout << " / " << std::setw(7) << std::fixed << m_c_modid;
-    std::cout << " / " << binary << std::endl;
+    std::cout << " / " << binary;
+    std::cout << " / " << static_cast<int>(tTopo->stack(detid)) << std::endl;
 
     if (!m_skim)
     {

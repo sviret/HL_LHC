@@ -86,6 +86,7 @@ PixelExtractor::PixelExtractor(TFile *a_file)
   m_pixclus_simhit   = new std::vector<int>;      
   m_pixclus_simhitID = new std::vector< std::vector<int> >;  
   m_pixclus_evtID    = new std::vector< std::vector<int> >; 
+  m_pixclus_bcID     = new std::vector< std::vector<int> >;  
   m_pixclus_layer    = new std::vector<int>;    
   m_pixclus_module   = new std::vector<int>; 
   m_pixclus_ladder   = new std::vector<int>;    
@@ -125,6 +126,7 @@ PixelExtractor::PixelExtractor(TFile *a_file)
   m_tree->SetBranchAddress("PIX_simhit",    &m_pixclus_simhit);
   m_tree->SetBranchAddress("PIX_simhitID",  &m_pixclus_simhitID);
   m_tree->SetBranchAddress("PIX_evtID",     &m_pixclus_evtID);
+  m_tree->SetBranchAddress("PIX_bcID",      &m_pixclus_bcID);
   m_tree->SetBranchAddress("PIX_layer",     &m_pixclus_layer);
   m_tree->SetBranchAddress("PIX_module",    &m_pixclus_module);
   m_tree->SetBranchAddress("PIX_ladder",    &m_pixclus_ladder);

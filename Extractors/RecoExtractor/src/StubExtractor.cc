@@ -48,6 +48,7 @@ StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< 
   m_stub_layer   = new  std::vector<int>; 
   m_stub_module  = new  std::vector<int>;  
   m_stub_ladder  = new  std::vector<int>; 
+  m_stub_detid   = new  std::vector<int>;  
   m_stub_seg     = new  std::vector<int>;  
   m_stub_type    = new  std::vector<int>; 
   m_stub_chip    = new  std::vector<int>;  
@@ -123,6 +124,7 @@ StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< 
     m_tree->Branch("L1TkSTUB_type",      &m_stub_type);
     m_tree->Branch("L1TkSTUB_chip",      &m_stub_chip);
     m_tree->Branch("L1TkSTUB_strip",     &m_stub_strip);
+    m_tree->Branch("L1TkSTUB_detid",     &m_stub_detid);
     m_tree->Branch("L1TkSTUB_x",         &m_stub_x);
     m_tree->Branch("L1TkSTUB_y",         &m_stub_y);
     m_tree->Branch("L1TkSTUB_z",         &m_stub_z);
@@ -150,6 +152,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_clus_strip   = new  std::vector<float>; 
   m_clus_used    = new  std::vector<int>;  
   m_clus_sat     = new  std::vector<int>; 
+  m_clus_bot     = new  std::vector<int>; 
   m_clus_nstrips = new  std::vector<int>; 
   m_clus_matched = new  std::vector<int>;  
   m_clus_PS      = new  std::vector<int>;  
@@ -176,6 +179,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_stub_type    = new  std::vector<int>;  
   m_stub_strip   = new  std::vector<float>; 
   m_stub_chip    = new  std::vector<int>; 
+  m_stub_detid   = new  std::vector<int>; 
   m_stub_x       = new  std::vector<float>;  
   m_stub_y       = new  std::vector<float>;  
   m_stub_z       = new  std::vector<float>;  
@@ -255,6 +259,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1TkSTUB_type",      &m_stub_type);
   m_tree->SetBranchAddress("L1TkSTUB_strip",     &m_stub_strip);
   m_tree->SetBranchAddress("L1TkSTUB_chip",      &m_stub_chip);
+  m_tree->SetBranchAddress("L1TkSTUB_detid",     &m_stub_detid);
   m_tree->SetBranchAddress("L1TkSTUB_x",         &m_stub_x);
   m_tree->SetBranchAddress("L1TkSTUB_y",         &m_stub_y);
   m_tree->SetBranchAddress("L1TkSTUB_z",         &m_stub_z);
@@ -286,12 +291,10 @@ void StubExtractor::init(const edm::EventSetup *setup, bool isFlat)
   int n_tilted_rings[6];
   int n_flat_rings[6];
 
-  if (!m_tilted)
-  {
-    for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
-    for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
-  }
-  else
+  for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+  for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+
+  if (m_tilted)
   {
     n_tilted_rings[0]=11;
     n_tilted_rings[1]=12;
@@ -544,6 +547,7 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 	m_stub_seg->push_back(m_clus_seg->at(clust1));
 	m_stub_chip->push_back(m_clus_strip->at(clust1)/(rows/8));
 	m_stub_strip->push_back(m_clus_strip->at(clust1));
+	m_stub_detid->push_back(static_cast<int>(tTopo->stack(detid)));
 	m_stub_deltas->push_back(displStub-offsetStub);
 	m_stub_cor->push_back(offsetStub);
 	//m_stub_pt->push_back(theStackedGeometry->findRoughPt( mMagneticFieldStrength, &(*tempStubPtr) ));
@@ -561,6 +565,8 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 	    ladder = static_cast<int>(tTopo->module(detid))-1;
 	    module = static_cast<int>(tTopo->tobRod(detid))-1+limits[layer-5][type-1];
 	  }
+
+	  //  std::cout << type << "/" << layer-5 << " / " << limits[layer-5][type-1] << std::endl;
 	}
 	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
@@ -669,6 +675,7 @@ void StubExtractor::reset()
   m_stub_type->clear();
   m_stub_chip->clear();   
   m_stub_strip->clear(); 
+  m_stub_detid->clear(); 
   m_stub_x->clear(); 
   m_stub_y->clear(); 
   m_stub_z->clear(); 

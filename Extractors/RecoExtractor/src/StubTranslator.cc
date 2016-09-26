@@ -12,6 +12,7 @@ StubTranslator::StubTranslator()
   m_stub_z       = new  std::vector<float>;
   m_stub_bend    = new  std::vector<float>;    
   m_stub_modid   = new  std::vector<int>;  
+  m_stub_detid   = new  std::vector<int>;
   m_stub_X0      = new  std::vector<float>;  
   m_stub_Y0      = new  std::vector<float>;  
   m_stub_Z0      = new  std::vector<float>;
@@ -32,6 +33,7 @@ StubTranslator::StubTranslator()
   m_tree_L1TrackTrigger->Branch("STUB_z",           &m_stub_z);
   m_tree_L1TrackTrigger->Branch("STUB_bend",        &m_stub_bend);
   m_tree_L1TrackTrigger->Branch("STUB_modid",       &m_stub_modid);
+  m_tree_L1TrackTrigger->Branch("STUB_detid",       &m_stub_detid);
   m_tree_L1TrackTrigger->Branch("STUB_strip",       &m_stub_strip);
   m_tree_L1TrackTrigger->Branch("STUB_X0",          &m_stub_X0);
   m_tree_L1TrackTrigger->Branch("STUB_Y0",          &m_stub_Y0);
@@ -56,6 +58,7 @@ void StubTranslator::reset()
   m_stub_z->clear();
   m_stub_bend->clear();
   m_stub_modid->clear();  
+  m_stub_detid->clear();
   m_stub_X0->clear();
   m_stub_Y0->clear();
   m_stub_Z0->clear();
@@ -72,7 +75,7 @@ void StubTranslator::do_translation(StubExtractor *st)
 
   for (int i=0;i<n_stubs;++i)
   {
-    if (st->getStub_tp(i)!=0 && st->getStub_tp(i)!=1) continue;
+    // if (st->getStub_tp(i)!=0 && st->getStub_tp(i)!=1) continue;
 
     ++m_stub;
     
@@ -80,6 +83,7 @@ void StubTranslator::do_translation(StubExtractor *st)
     m_stub_strip->push_back(st->getStub_strip(i)); 
     m_stub_ptGEN->push_back(st->getStub_ptGen(i));
     m_stub_modid->push_back(st->getStub_ID(i)); 
+    m_stub_detid->push_back(st->getStub_DETID(i)); 
     m_stub_x->push_back(st->getStub_x(i)); 
     m_stub_y->push_back(st->getStub_y(i)); 
     m_stub_z->push_back(st->getStub_z(i)); 

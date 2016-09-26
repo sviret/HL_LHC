@@ -112,12 +112,12 @@ for path in process.paths:
 if flat:
 	print 'You choose the flat geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023LReco
-	process = cust_2023LReco(process)
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
+	process = cust_2023flat(process)
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted
-	process = cust_2023tilted(process)
+	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
+	process = cust_2023tilted4021(process)
 
 # End of customisation functions

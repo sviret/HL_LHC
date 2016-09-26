@@ -188,6 +188,7 @@ void RecoExtractor::retrieve()
   m_MC         = new MCExtractor(m_infile);
   m_PIX        = new PixelExtractor(m_infile);
   m_STUB       = new StubExtractor(m_infile);
+  m_L1TRK      = new L1TrackExtractor(m_infile);
 
   // We set some variables wrt the info retrieved 
   // (if the tree is not there, don't go further...)  
@@ -195,7 +196,7 @@ void RecoExtractor::retrieve()
   do_PIX_      = m_PIX->isOK();
   do_MC_       = m_MC->isOK();
   do_STUB_     = m_STUB->isOK();
-
+  do_L1TRK_    = m_L1TRK->isOK();
 }
 
 

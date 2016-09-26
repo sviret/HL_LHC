@@ -14,7 +14,7 @@
 # Here you choose if you want flat (True) or tilted (False) geometry
 #
 
-flat=True
+flat=False
 
 ###################
 
@@ -40,7 +40,7 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(500)
+    input = cms.untracked.int32(2000)
 )
 
 # Input source
@@ -140,14 +140,17 @@ for path in process.paths:
 if flat:
 	print 'You choose the flat geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
 	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
 	process = cust_2023flat(process)
+	process = TkOnlyDigi(process)
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted
-	process = cust_2023tilted(process)
+	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
+	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
+	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
+	process = cust_2023tilted4021(process)
+	process = TkOnlyDigi(process)
 	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
 
 # End of customisation functions	
-

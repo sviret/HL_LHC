@@ -47,7 +47,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('file:PGun_example_TkOnly_TILTED.root'),
+                            fileNames = cms.untracked.vstring('file:PGun_example.root'),
                             #fileNames = cms.untracked.vstring('file:PU_30_sample.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
@@ -73,7 +73,7 @@ if flat:
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
 
 # End of customisation functions
 
