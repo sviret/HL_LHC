@@ -4,10 +4,10 @@
 # production in Tracker-Only geometry 
 #
 #
-# Author: S.Viret (viret@in2p3.fr)
-# Date        : 21/06/2016
+# Author: S.Viret (s.viret@ipnl.in2p3.fr)
+# Date        : 24/05/2016
 #
-# Script tested with release CMSSW_8_1_0_pre7
+# Script tested with release CMSSW_9_2_0
 #
 #########################
 #
@@ -33,6 +33,16 @@ process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+from L1Trigger.TrackTrigger.TrackTrigger_cff import *
+
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True) # Tilted is the new default
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
 )
@@ -40,7 +50,6 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring('file:PGun_example.root'),
-                            #fileNames = cms.untracked.vstring('file:PU_30_sample.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
 
@@ -68,7 +77,7 @@ process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
 process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_simSi*_*_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
 
@@ -80,16 +89,4 @@ process.RAWSIMoutput_step     = cms.EndPath(process.RAWSIMoutput)
 
 process.schedule = cms.Schedule(process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
-
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-
-if flat:
-	print 'You choose the flat geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-else:
-	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
-	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
-
-# End of customisation functions	
 

@@ -5,10 +5,10 @@
 #
 # UE tuning is UE_P8M1
 #
-# Author: S.Viret (viret@in2p3.fr)
-# Date  : 21/06/2016
+# Author: S.Viret (s.viret@ipnl.in2p3.fr)
+# Date  : 24/05/2017
 #
-# Script tested with release CMSSW_8_1_0_pre7
+# Script tested with release CMSSW_9_2_0
 #
 #########################
 #
@@ -40,6 +40,12 @@ from Configuration.Generator.Pythia8CommonSettings_cfi import *
 from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
 
 
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(100)
@@ -65,7 +71,7 @@ process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
 # Generate particle gun events
 
 # From
-# http://cmslxr.fnal.gov/lxr/source/Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCUETP8M1_cfi.py?v=CMSSW_8_1_0_pre7 
+# http://cmslxr.fnal.gov/lxr/source/Configuration/Generator/python/MinBias_14TeV_pythia8_TuneCUETP8M1_cfi.py
 #
 
 process.generator = cms.EDFilter("Pythia8GeneratorFilter",
@@ -96,7 +102,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('MBias_100.root'),
+    fileName = cms.untracked.string('MBias.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM')
@@ -108,8 +114,8 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
-process.simulationTkOnly_step   = cms.Path(process.psim)
-process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
+process.simulationTkOnly_step= cms.Path(process.psim)
+process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
@@ -120,18 +126,4 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
-	
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
 
-if flat:
-	print 'You choose the flat geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023LReco
-	process = cust_2023LReco(process)
-else:
-	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
-	process = cust_2023tilted4021(process)
-
-# End of customisation functions

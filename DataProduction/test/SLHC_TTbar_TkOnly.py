@@ -1,13 +1,13 @@
 #########################
 #
-# Configuration file for 4 tops events
+# Configuration file for ttbar events
 # production in tracker only
 #
 # Switch between flat and tilted geometry if provided at the end
 #
-# Date  : 05/07/2016
+# Date  : 24/05/2017
 #
-# Script tested with release CMSSW_8_1_0_pre7
+# Script tested with release CMSSW_9_2_0
 #
 #########################
 #
@@ -41,15 +41,27 @@ process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+from Configuration.Generator.Pythia8CommonSettings_cfi import *
+from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
+
+from L1Trigger.TrackTrigger.TTStubAlgorithmRegister_cfi import *
+from L1Trigger.TrackTrigger.TTStub_cfi import *
+
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True) # Tilted is the new default
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+
+
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(10)
 )
 
 # Input source
-process.source = cms.Source("LHESource",
-#    fileNames = cms.untracked.vstring('file:/afs/cern.ch/work/s/sviret/public/LHE/4tops_SM_10000_events.lhe')
-    fileNames = cms.untracked.vstring('file:/gridgroup/cms/viret/TTTT/4tops_SM_10000_events.lhe')
-)
+process.source = cms.Source("EmptySource")
 
 # Additional output definition
 
@@ -65,40 +77,29 @@ process.RandomNumberGeneratorService.g4SimHits.initialSeed      = 3
 process.RandomNumberGeneratorService.mix.initialSeed            = 4
 
 
-# for top events
+# for TTbar events
+# https://github.com/cms-sw/cmssw/blob/master/Configuration/Generator/python/TTbar_14TeV_TuneCUETP8M1_cfi.py
 
-process.generator = cms.EDFilter("Pythia6HadronizerFilter",
-    pythiaHepMCVerbosity = cms.untracked.bool(True),
-    maxEventsToPrint = cms.untracked.int32(0),
-    pythiaPylistVerbosity = cms.untracked.int32(1),
-    comEnergy = cms.double(14000.0),
-    PythiaParameters = cms.PSet(
-        pythiaUESettingsBlock,
-        processParameters = cms.vstring('MSEL=0         ! User defined processes', 
-                        'PMAS(5,1)=4.4   ! b quark mass',
-                        'PMAS(6,1)=172.4 ! t quark mass',
-			'MSTJ(1)=1       ! Fragmentation/hadronization on or off',
-			'MSTP(61)=1      ! Parton showering on or off'),
-        # This is a vector of ParameterSet names to be read, in this order
-        parameterSets = cms.vstring('pythiaUESettings', 
-            'processParameters')
-    ),
-    jetMatching = cms.untracked.PSet(
-       scheme = cms.string("Madgraph"),
-       mode = cms.string("auto"),	# soup, or "inclusive" / "exclusive"
-       MEMAIN_etaclmax = cms.double(5.0),
-       MEMAIN_qcut = cms.double(30.0),
-       MEMAIN_minjets = cms.int32(0),
-       MEMAIN_maxjets = cms.int32(12),
-       MEMAIN_showerkt = cms.double(0),   # use 1=yes only for pt-ordered showers !
-       MEMAIN_nqmatch = cms.int32(5), #PID of the flavor until which the QCD radiation are kept in the matching procedure; 
-                                      # if nqmatch=4, then all showered partons from b's are NOT taken into account
-				      # Note (JY): I'm not sure what the default is, but -1 results in a throw...
-       MEMAIN_excres = cms.string(""),
-       outTree_flag = cms.int32(0)        # 1=yes, write out the tree for future sanity check
-    )    
+process.generator = cms.EDFilter("Pythia8GeneratorFilter",
+                         pythiaHepMCVerbosity = cms.untracked.bool(False),
+                         maxEventsToPrint = cms.untracked.int32(0),
+                         pythiaPylistVerbosity = cms.untracked.int32(0),
+                         filterEfficiency = cms.untracked.double(1.0),
+                         comEnergy = cms.double(14000.0),
+                         PythiaParameters = cms.PSet(
+        pythia8CommonSettingsBlock,
+        pythia8CUEP8M1SettingsBlock,
+        processParameters = cms.vstring(
+            'Top:gg2ttbar = on ',
+            'Top:qqbar2ttbar = on ',
+            '6:m0 = 175 ',
+            ),
+        parameterSets = cms.vstring('pythia8CommonSettings',
+                                    'pythia8CUEP8M1Settings',
+                                    'processParameters',
+                                    )
+        )
 )
-
 
 # Output definition
 
@@ -106,7 +107,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('TTTT_example.root'),
+    fileName = cms.untracked.string('TT_example.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM-DIGI-RAW-FEVT')
@@ -120,9 +121,10 @@ process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
 process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_simSi*_*_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
+
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
@@ -142,22 +144,8 @@ for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
 
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-
-if flat:
-	print 'You choose the flat geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
-	process = cust_2023flat(process)
-	process = TkOnlyDigi(process)
-else:
-	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
-	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
-	process = cust_2023tilted4021(process)
-	process = TkOnlyDigi(process)
-	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
-
-# End of customisation functions	
+# Automatic addition of the customisation function
+from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
+process = TkOnlyDigi(process)
+# End of customisation functions
+	

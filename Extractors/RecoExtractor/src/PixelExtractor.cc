@@ -152,16 +152,14 @@ void PixelExtractor::init(const edm::EventSetup *setup, bool isFlat)
   int n_tilted_rings[6];
   int n_flat_rings[6];
 
-  if (!m_tilted)
+  for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+  for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+
+  if (m_tilted)
   {
-    for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
-    for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
-  }
-  else
-  {
-    n_tilted_rings[0]=11;
+    n_tilted_rings[0]=12;
     n_tilted_rings[1]=12;
-    n_tilted_rings[2]=13;
+    n_tilted_rings[2]=12;
     n_flat_rings[0]=7;
     n_flat_rings[1]=11;
     n_flat_rings[2]=15;

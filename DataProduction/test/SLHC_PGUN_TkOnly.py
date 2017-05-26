@@ -5,9 +5,9 @@
 #
 # Switch between flat and tilted geometry if provided at the end
 #
-# Date  : 05/07/2016
+# Date  : 24/05/2017
 #
-# Script tested with release CMSSW_8_1_0_pre7
+# Script tested with release CMSSW_9_2_0
 #
 #########################
 #
@@ -39,8 +39,21 @@ process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+from L1Trigger.TrackTrigger.TTStubAlgorithmRegister_cfi import *
+from L1Trigger.TrackTrigger.TTStub_cfi import *
+
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True) # Tilted is the new default
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+
+
+
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(2000)
+    input = cms.untracked.int32(1000)
 )
 
 # Input source
@@ -82,19 +95,18 @@ process.generator = cms.EDFilter("Pythia8PtGun",
     PGunParameters = cms.PSet(
         AddAntiParticle = cms.bool(True),
         MaxEta = cms.double(2.5),
-        MaxPhi = cms.double(3.14159265359),
+        MaxPhi = cms.double(6.28),
         MaxPt = cms.double(200.0),
         MinEta = cms.double(-2.5),
-        MinPhi = cms.double(-3.14159265359),
-        MinPt = cms.double(0.9),
-        ParticleID = cms.vint32(-13, -13)
+        MinPhi = cms.double(0.0),
+        MinPt = cms.double(1.),
+        ParticleID = cms.vint32(-13)
     ),
     PythiaParameters = cms.PSet(
         parameterSets = cms.vstring()
     ),
     Verbosity = cms.untracked.int32(0),
-    firstRun = cms.untracked.uint32(1),
-    psethack = cms.string('Four mu pt 1 to 200')
+    firstRun = cms.untracked.uint32(1)
 )
 
 
@@ -104,16 +116,7 @@ process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
 process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
 process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
-process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
-process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
-
-
-process.RAWSIMoutput.outputCommands.append('keep  *_*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_mix_*_STUBS')
-process.RAWSIMoutput.outputCommands.append('drop  PCaloHits_*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_ak*_*_*')
-process.RAWSIMoutput.outputCommands.append('drop  *_simSiPixelDigis_*_*')
+process.RAWSIMoutput.outputCommands.append('drop  *_simSi*_*_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_*_MergedTrackTruth_*')
 process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
 
@@ -134,23 +137,11 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
-	
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
+# Automatic addition of the customisation function 
 
-if flat:
-	print 'You choose the flat geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
-	process = cust_2023flat(process)
-	process = TkOnlyDigi(process)
-else:
-	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
-	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
-	process = cust_2023tilted4021(process)
-	process = TkOnlyDigi(process)
-	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
+from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
+
+process = TkOnlyDigi(process) # TkOnly digitization
 
 # End of customisation functions	
+	

@@ -1,13 +1,18 @@
 #include "../interface/StubExtractor.h"
 
 
-StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > ctoken,edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stoken, edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > cttoken, edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > sttoken, bool doTree)
+StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > ctoken,edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stoken, edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > cttoken, edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > sttoken, edm::EDGetTokenT< std::vector< TrackingParticle > > tptoken, edm::EDGetTokenT< std::vector< TrackingVertex > > tvtoken, edm::EDGetTokenT< edm::SimTrackContainer > simttoken, edm::EDGetTokenT< edm::SimVertexContainer > simvtoken, bool doTree)
 {
 
   m_ctoken = ctoken;
   m_cttoken= cttoken;
   m_stoken = stoken;
   m_sttoken= sttoken;
+  m_tptoken= tptoken;
+  m_tvtoken= tvtoken;
+  m_simttoken=simttoken;
+  m_simvtoken=simvtoken;
+
 
   m_OK = false;
   n_tot_evt=0;
@@ -61,7 +66,9 @@ StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< 
   m_stub_cw1     = new  std::vector<int>;  
   m_stub_cw2     = new  std::vector<int>;  
   m_stub_deltas  = new  std::vector<float>;  
+  m_stub_deltasf = new  std::vector<float>;  
   m_stub_cor     = new  std::vector<float>;  
+  m_stub_corf    = new  std::vector<float>;  
   m_stub_tp      = new  std::vector<int>;  
   m_stub_pdg     = new  std::vector<int>;  
   m_stub_pid     = new  std::vector<int>;  
@@ -108,6 +115,7 @@ StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< 
     m_tree->Branch("L1TkSTUB_clust1",    &m_stub_clust1);
     m_tree->Branch("L1TkSTUB_clust2",    &m_stub_clust2);
     m_tree->Branch("L1TkSTUB_cor",       &m_stub_cor);
+    m_tree->Branch("L1TkSTUB_corf",      &m_stub_corf);
     m_tree->Branch("L1TkSTUB_PHI0",      &m_stub_PHI0);
     m_tree->Branch("L1TkSTUB_tp",        &m_stub_tp);
     m_tree->Branch("L1TkSTUB_pdgID",     &m_stub_pdg);
@@ -129,6 +137,7 @@ StubExtractor::StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< 
     m_tree->Branch("L1TkSTUB_y",         &m_stub_y);
     m_tree->Branch("L1TkSTUB_z",         &m_stub_z);
     m_tree->Branch("L1TkSTUB_deltas",    &m_stub_deltas);
+    m_tree->Branch("L1TkSTUB_deltasf",   &m_stub_deltasf);
     m_tree->Branch("L1TkSTUB_X0",        &m_stub_X0);
     m_tree->Branch("L1TkSTUB_Y0",        &m_stub_Y0);
     m_tree->Branch("L1TkSTUB_Z0",        &m_stub_Z0);
@@ -188,7 +197,9 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_stub_cw1     = new  std::vector<int>;  
   m_stub_cw2     = new  std::vector<int>;  
   m_stub_deltas  = new  std::vector<float>;  
+  m_stub_deltasf = new  std::vector<float>;  
   m_stub_cor     = new  std::vector<float>;  
+  m_stub_corf    = new  std::vector<float>;  
   m_stub_tp      = new  std::vector<int>;  
   m_stub_pdg     = new  std::vector<int>;  
   m_stub_pid     = new  std::vector<int>; 
@@ -243,6 +254,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1TkSTUB_clust1",    &m_stub_clust1);
   m_tree->SetBranchAddress("L1TkSTUB_clust2",    &m_stub_clust2);
   m_tree->SetBranchAddress("L1TkSTUB_cor",       &m_stub_cor);
+  m_tree->SetBranchAddress("L1TkSTUB_corf",      &m_stub_corf);
   m_tree->SetBranchAddress("L1TkSTUB_PHI0",      &m_stub_PHI0);
   m_tree->SetBranchAddress("L1TkSTUB_tp",        &m_stub_tp);
   m_tree->SetBranchAddress("L1TkSTUB_pdgID",     &m_stub_pdg);
@@ -264,6 +276,7 @@ StubExtractor::StubExtractor(TFile *a_file)
   m_tree->SetBranchAddress("L1TkSTUB_y",         &m_stub_y);
   m_tree->SetBranchAddress("L1TkSTUB_z",         &m_stub_z);
   m_tree->SetBranchAddress("L1TkSTUB_deltas",    &m_stub_deltas);
+  m_tree->SetBranchAddress("L1TkSTUB_deltasf",   &m_stub_deltasf);
   m_tree->SetBranchAddress("L1TkSTUB_X0",        &m_stub_X0);
   m_tree->SetBranchAddress("L1TkSTUB_Y0",        &m_stub_Y0);
   m_tree->SetBranchAddress("L1TkSTUB_Z0",        &m_stub_Z0);
@@ -296,9 +309,9 @@ void StubExtractor::init(const edm::EventSetup *setup, bool isFlat)
 
   if (m_tilted)
   {
-    n_tilted_rings[0]=11;
+    n_tilted_rings[0]=12;
     n_tilted_rings[1]=12;
-    n_tilted_rings[2]=13;
+    n_tilted_rings[2]=12;
     n_flat_rings[0]=7;
     n_flat_rings[1]=11;
     n_flat_rings[2]=15;
@@ -341,8 +354,15 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 
   if (MCinfo) mc->clearTP(0.001,10000000.0);
   /// Sim Tracks and Vtx
-  event->getByLabel( "g4SimHits", SimTrackHandle );
-  event->getByLabel( "g4SimHits", SimVtxHandle );
+
+
+  event->getByToken(m_simttoken,SimTrackHandle);  
+  event->getByToken(m_simvtoken,SimVtxHandle);  
+
+  //  event->getByLabel( "g4SimHits", SimTrackHandle );
+  // event->getByLabel( "g4SimHits", SimVtxHandle );
+  //  event->getByLabel( "mix", "MergedTrackTruth", TrackingParticleHandle );
+  //  event->getByLabel( "mix", "MergedTrackTruth", TrackingVertexHandle );
 
   /// Track Trigger
   event->getByToken( m_ctoken, PixelDigiL1TkClusterHandle );
@@ -354,8 +374,10 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 
 
   /// TrackingParticles
-  event->getByLabel( "mix", "MergedTrackTruth", TrackingParticleHandle );
-  event->getByLabel( "mix", "MergedTrackTruth", TrackingVertexHandle );
+
+  event->getByToken(m_tptoken,TrackingParticleHandle);  
+  event->getByToken(m_tvtoken,TrackingVertexHandle);  
+
 
   int layer  = 0;
   int ladder = 0;
@@ -372,6 +394,8 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
   LocalPoint  clustlp;
   GlobalPoint posClu;  
   GlobalPoint posStub;
+
+  //  std::cout << "A" << std::endl;
 
   /// Go on only if there are L1TkCluster from PixelDigis
   if ( PixelDigiL1TkClusterHandle->size() > 0 )
@@ -396,9 +420,15 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 	edm::Ref< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_  > >, TTCluster< Ref_Phase2TrackerDigi_  > > tempCluRef = 
 	  edmNew::makeRefTo( PixelDigiL1TkClusterHandle, clusterIter );
 
+	//	std::cout << "A1" << std::endl;
+
        	bool genuineClu = MCTruthTTClusterHandle->isGenuine( tempCluRef );
 	
-	MeasurementPoint coords = tempCluRef->findAverageLocalCoordinates();
+	//	std::cout << "A2" << std::endl;
+
+	//	std::cout << "B " << genuineClu << std::endl;
+
+	MeasurementPoint coords = tempCluRef->findAverageLocalCoordinatesCentered();
 
 	clustlp = topol->localPosition(coords);
 	posClu  =  theGeomDet->surface().toGlobal(clustlp);
@@ -457,24 +487,48 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 	m_clus_type->push_back(type);
 	m_clus_PS->push_back(segs);
 
-				      	
+	//	std::cout << "A3 / " << genuineClu  << std::endl;				      	
 	if (genuineClu)
 	{
+	  //	  std::cout << "A4" << std::endl;				      	
+
 	  edm::Ptr< TrackingParticle > tpPtr = MCTruthTTClusterHandle->findTrackingParticlePtr( tempCluRef );
 
-	  m_clus_matched->push_back(1);
-	  m_clus_ptGEN->push_back(tpPtr->p4().pt()); 
-	  m_clus_pdgID->push_back(tpPtr->pdgId());
-	  if (MCinfo) m_clus_tp->push_back(mc->getMatchingTP(tpPtr->vertex().x(),tpPtr->vertex().y(),tpPtr->vertex().z(),
-							     tpPtr->p4().px(),tpPtr->p4().py(),tpPtr->p4().pz()));
+	  //	  std::cout << "A5" << std::endl;				      	
+
+	  if ( tpPtr.isNull() )  
+	  {
+	    //std::cout << "glaglagla" << std::endl;
+	    m_clus_matched->push_back(0);
+	    m_clus_ptGEN->push_back(0); 
+	    m_clus_pdgID->push_back(0);
+	    m_clus_tp->push_back(-1);
+	  }
+	  else
+	  {
+	    m_clus_matched->push_back(1);
+	    m_clus_ptGEN->push_back(tpPtr->p4().pt()); 
+	    m_clus_pdgID->push_back(tpPtr->pdgId());
+
+	    //	    std::cout << "A6" << std::endl;				      	
+
+	    if (MCinfo) m_clus_tp->push_back(mc->getMatchingTP(tpPtr->vertex().x(),tpPtr->vertex().y(),tpPtr->vertex().z(),
+							       tpPtr->p4().px(),tpPtr->p4().py(),tpPtr->p4().pz()));
+	  }
+
+	  //	  std::cout << "A7" << std::endl;				      	
+
 	}
 	else
 	{
+	  //	  std::cout << m_clus << std::endl;
 	  m_clus_matched->push_back(0);
 	  m_clus_ptGEN->push_back(0); 
 	  m_clus_pdgID->push_back(0);
 	  m_clus_tp->push_back(-1);
 	}
+
+	//	std::cout << "A4 "  << std::endl;				      	
 
 	m_clus_sat->push_back(0);
 	m_clus_nrows->push_back(rows);
@@ -483,7 +537,7 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
     }
   } /// End of if ( PixelDigiL1TkClusterHandle->size() > 0 )
   
-
+  //  std::cout << "B" << std::endl;
   // Clusters are built, now look at the stubs
     
   int clust1     = -1;
@@ -520,16 +574,19 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 	// The stub position is the inner cluster position
 	//
 
-	MeasurementPoint coords = tempStubPtr->getClusterRef(0)->findAverageLocalCoordinates();
+	MeasurementPoint coords = tempStubPtr->getClusterRef(0)->findAverageLocalCoordinatesCentered();
 
 	clustlp = topol->localPosition(coords);
-	posStub  =  theGeomDet->surface().toGlobal(clustlp);
+	posStub =  theGeomDet->surface().toGlobal(clustlp);
 
 	++m_stub;
 
 	double displStub    = tempStubPtr->getTriggerDisplacement();
 	double offsetStub   = tempStubPtr->getTriggerOffset();
-	
+	double offsetRStub  = tempStubPtr->getRealTriggerOffset();
+
+
+
 	bool genuineStub    = MCTruthTTStubHandle->isGenuine( tempStubPtr );
 	//bool genuineStub    = false;
 	
@@ -550,6 +607,9 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
 	m_stub_detid->push_back(static_cast<int>(tTopo->stack(detid)));
 	m_stub_deltas->push_back(displStub-offsetStub);
 	m_stub_cor->push_back(offsetStub);
+	m_stub_deltasf->push_back(displStub-offsetRStub);
+	m_stub_corf->push_back(offsetRStub);
+
 	//m_stub_pt->push_back(theStackedGeometry->findRoughPt( mMagneticFieldStrength, &(*tempStubPtr) ));
 	m_stub_pt->push_back(0);
 
@@ -615,6 +675,8 @@ void StubExtractor::writeInfo(const edm::Event *event, MCExtractor *mc, bool MCi
     } 
   } /// End of if ( PixelDigiL1TkStubHandle->size() > 0 ) 
   
+  //  std::cout << "C" << std::endl;
+
   StubExtractor::fillTree();
 }
 
@@ -685,6 +747,8 @@ void StubExtractor::reset()
   m_stub_cw2->clear(); 
   m_stub_deltas->clear(); 
   m_stub_cor->clear(); 
+  m_stub_deltasf->clear(); 
+  m_stub_corf->clear();
   m_stub_pdg->clear();
   m_stub_pid->clear();
   m_stub_rank->clear(); 

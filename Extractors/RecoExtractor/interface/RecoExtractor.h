@@ -90,6 +90,12 @@ class RecoExtractor : public edm::EDAnalyzer{
   edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > tcToken_;
   edm::EDGetTokenT< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > > trkToken_;
 
+  edm::EDGetTokenT< std::vector< TrackingParticle > > tpToken2_;
+  edm::EDGetTokenT< std::vector< TrackingVertex > > tvToken_;
+  edm::EDGetTokenT< edm::SimTrackContainer > simtToken_;
+  edm::EDGetTokenT< edm::SimVertexContainer > simvToken_;
+
+
   //
   // Definition of root-tuple :
   //

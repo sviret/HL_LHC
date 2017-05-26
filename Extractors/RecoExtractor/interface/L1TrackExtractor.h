@@ -101,6 +101,8 @@ class L1TrackExtractor
 
   bool m_tilted;
 
+  int limits[6][3];
+
   /// Geometry handles etc
 
   edm::ESHandle<TrackerTopology> tTopoHandle;

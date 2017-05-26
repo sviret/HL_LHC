@@ -36,6 +36,11 @@ RecoExtractor::RecoExtractor(const edm::ParameterSet& config) :
   tcToken_       = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(config.getParameter< edm::InputTag >( "L1tc_tag" )); 
   trkToken_       = consumes< std::vector< TTTrack< Ref_Phase2TrackerDigi_ > > >(config.getParameter< edm::InputTag >( "L1track_tag" )); 
 
+  tpToken2_      = consumes< std::vector< TrackingParticle > >(config.getParameter< edm::InputTag >( "TrkParticles" ));  
+  tvToken_       = consumes< std::vector< TrackingVertex > >(config.getParameter< edm::InputTag >( "TrkParticles" ));  
+  simtToken_     = consumes< edm::SimTrackContainer >(config.getParameter< edm::InputTag >( "SimHits" )); 
+  simvToken_     = consumes< edm::SimVertexContainer >(config.getParameter< edm::InputTag >( "SimHits" ));   
+
   // We parse the analysis settings
   m_ana_settings = new AnalysisSettings(&m_settings_);
   m_ana_settings->parseSettings();
@@ -168,7 +173,7 @@ void RecoExtractor::initialize()
 {
   m_outfile  = new TFile(outFilename_.c_str(),"RECREATE");
   m_MC       = new MCExtractor(gpToken_,tpToken_,do_MC_);
-  m_STUB     = new StubExtractor(clustersToken_,stubsToken_,clustersTToken_,stubsTToken_,do_STUB_);
+  m_STUB     = new StubExtractor(clustersToken_,stubsToken_,clustersTToken_,stubsTToken_,tpToken2_,tvToken_,simtToken_,simvToken_,do_STUB_);
   m_L1TRK    = new L1TrackExtractor(stubsToken_,pattToken_,tcToken_,trkToken_,do_L1TRK_);
   m_PIX      = new PixelExtractor(pixToken_,pixslToken_,puToken_,do_PIX_,do_MATCH_);
   m_COORDS   = new CoordsExtractor(do_COORDS_,fullinfo_);

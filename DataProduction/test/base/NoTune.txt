@@ -1,9 +1,9 @@
 #No stub window tuning
 
 process.TTStubAlgorithm_official_Phase2TrackerDigi_.BarrelCut = cms.vdouble( 0, 10, 10, 10, 10., 10., 10. )
-process.TTStubAlgorithm_official_Phase2TrackerDigi_.TiltedCutSet = cms.VPSet(
+process.TTStubAlgorithm_official_Phase2TrackerDigi_.TiltedBarrelCutSet = cms.VPSet(
 							cms.PSet( TiltedCut = cms.vdouble( 0 ) ),
-       				    		        cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
+       				    		        cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
     							cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
       							cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
    )

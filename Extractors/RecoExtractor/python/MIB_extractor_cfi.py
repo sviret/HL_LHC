@@ -32,7 +32,7 @@ MIBextraction = cms.EDAnalyzer("RecoExtractor",
   doMC             = cms.untracked.bool(False),          # Extract the MC information (MC tree)
   GenParticles     = cms.InputTag("genParticles", ""),
   TrkParticles     = cms.InputTag("mix" , "MergedTrackTruth"),
-
+  SimHits          = cms.InputTag("g4SimHits"),
 
 
   doSTUB           = cms.untracked.bool(False),          # Extract the official STUB information (TkStub tree)

@@ -74,6 +74,15 @@ class CoordsExtractor
   float  m_c_x;
   float  m_c_y;
   float  m_c_z;
+  float  m_c_xm;
+  float  m_c_ym;
+  float  m_c_zm;
+  float  m_c_stdx;
+  float  m_c_stdy;
+  float  m_c_stdz;
+  float  m_c_sedx;
+  float  m_c_sedy;
+  float  m_c_sedz;
 
   bool m_skim;
 };

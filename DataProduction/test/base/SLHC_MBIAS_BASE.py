@@ -16,10 +16,16 @@ process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.load("SimG4Core.Application.g4SimHits_cfi")
 
 from Configuration.Generator.Pythia8CommonSettings_cfi import *
 from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
+
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(NEVTS)
@@ -82,20 +88,20 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     )
 )
 
-process.g4SimHits.TrackerSD = cms.PSet(
-        ZeroEnergyLoss = cms.bool(False),
-        PrintHits = cms.bool(False),
-        ElectronicSigmaInNanoSeconds = cms.double(12.06),
-        NeverAccumulate = cms.bool(False),
-        EnergyThresholdForPersistencyInGeV = cms.double(0.001),
-        EnergyThresholdForHistoryInGeV = cms.double(0.001)
-    )
+#process.g4SimHits.TrackerSD = cms.PSet(
+#        ZeroEnergyLoss = cms.bool(False),
+#        PrintHits = cms.bool(False),
+#        ElectronicSigmaInNanoSeconds = cms.double(12.06),
+#        NeverAccumulate = cms.bool(False),
+#        EnergyThresholdForPersistencyInGeV = cms.double(0.001),
+#        EnergyThresholdForHistoryInGeV = cms.double(0.001)
+#    )
 
 
 # Path and EndPath definitions
 process.generation_step      = cms.Path(process.pgen)
 process.simulation_step      = cms.Path(process.psim)
-process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
+process.genfiltersummary_step= cms.EndPath(process.genFilterSummary)
 process.endjob_step          = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
 
@@ -106,18 +112,3 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
-	
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
-
-if flat:
-	print 'You choose the flat geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
-	process = cust_2023flat(process)
-else:
-	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
-	process = cust_2023tilted4021(process)
-
-# End of customisation functions

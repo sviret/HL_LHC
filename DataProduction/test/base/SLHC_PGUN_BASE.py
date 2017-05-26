@@ -21,6 +21,17 @@ process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+from L1Trigger.TrackTrigger.TrackTrigger_cff import *
+
+if flat:
+	print 'You choose the flat geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
+	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True) # Tilted is the new default
+else:
+	print 'You choose the tilted geometry'
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
+
+
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(NEVTS)
 )
@@ -90,14 +101,14 @@ process.RAWSIMoutput.outputCommands.append('keep  *_mix_Tracker_*')
 
 
 # Path and EndPath definitions
-process.generation_step      = cms.Path(process.pgen)
-process.simulation_step      = cms.Path(process.psim)
+process.generation_step         = cms.Path(process.pgen)
+process.simulation_step         = cms.Path(process.psim)
 process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
 process.digitisationTkOnly_step = cms.Path(process.pdigi_valid)
-process.L1TrackTrigger_step  = cms.Path(process.TrackTriggerClustersStubs)
-process.L1TTAssociator_step  = cms.Path(process.TrackTriggerAssociatorClustersStubs)
-process.endjob_step          = cms.EndPath(process.endOfProcess)
-process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
+process.L1TrackTrigger_step     = cms.Path(process.TrackTriggerClustersStubs)
+process.L1TTAssociator_step     = cms.Path(process.TrackTriggerAssociatorClustersStubs)
+process.endjob_step             = cms.EndPath(process.endOfProcess)
+process.RAWSIMoutput_step       = cms.EndPath(process.RAWSIMoutput)
 
 
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulation_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
@@ -106,25 +117,13 @@ process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary
 for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq
 
-	
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
+# Automatic addition of the customisation function 
 
-if flat:
-	print 'You choose the flat geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023flat
-	process = cust_2023flat(process)
-	process = TkOnlyDigi(process)
-else:
-	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
-	from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
-	from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2023tilted4021
-	process = cust_2023tilted4021(process)
-	process = TkOnlyDigi(process)
-	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True)
+from L1Trigger.TrackTrigger.TkOnlyDigi_cff import TkOnlyDigi
 
-# End of customisation functions	
+process = TkOnlyDigi(process) # TkOnly digitization
+
+# End of customisation functions
+
 
 

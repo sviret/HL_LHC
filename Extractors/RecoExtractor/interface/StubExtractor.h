@@ -75,11 +75,8 @@ class StubExtractor
 
  public:
 
-  StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > ctoken,
-		edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stoken, 
-		edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > cttoken, 
-		edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > sttoken, 
-		bool doTree);
+
+  StubExtractor(edm::EDGetTokenT< edmNew::DetSetVector< TTCluster< Ref_Phase2TrackerDigi_ > > > ctoken,edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > stoken, edm::EDGetTokenT< TTClusterAssociationMap< Ref_Phase2TrackerDigi_ > > cttoken, edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > sttoken, edm::EDGetTokenT< std::vector< TrackingParticle > > tptoken, edm::EDGetTokenT< std::vector< TrackingVertex > > tvtoken, edm::EDGetTokenT< edm::SimTrackContainer > simttoken, edm::EDGetTokenT< edm::SimVertexContainer > simvtoken, bool doTree);
 
   StubExtractor(TFile *a_file);
   ~StubExtractor();
@@ -133,6 +130,12 @@ class StubExtractor
 
   edm::EDGetTokenT< edmNew::DetSetVector< TTStub< Ref_Phase2TrackerDigi_ > > > m_stoken;
   edm::EDGetTokenT< TTStubAssociationMap< Ref_Phase2TrackerDigi_ > > m_sttoken;
+
+  edm::EDGetTokenT< std::vector< TrackingParticle > > m_tptoken;
+  edm::EDGetTokenT< std::vector< TrackingVertex > > m_tvtoken;
+
+  edm::EDGetTokenT< edm::SimTrackContainer > m_simttoken;
+  edm::EDGetTokenT< edm::SimVertexContainer > m_simvtoken;
 
   edm::ESHandle<TrackerTopology> tTopoHandle;
   edm::ESHandle<TrackerGeometry> tGeomHandle;
@@ -235,8 +238,10 @@ class StubExtractor
   std::vector<int>    *m_stub_clust2; // top cluster index of stub i 
   std::vector<int>    *m_stub_cw1;    // bottom cluster width (in strips) 
   std::vector<int>    *m_stub_cw2;    // top cluster width (in strips) 
-  std::vector<float>  *m_stub_deltas; // corrected stub width (in half-strips)
-  std::vector<float>  *m_stub_cor;    // stub wirdth applied correction (in half-strips)
+  std::vector<float>  *m_stub_deltas; // corrected stub width at FE level (in half-strips)
+  std::vector<float>  *m_stub_deltasf; // corrected stub width with full parallax info (in half-strips)
+  std::vector<float>  *m_stub_cor;    // stub width parallax correction at FE level (in half-strips)
+  std::vector<float>  *m_stub_corf;   // stub width parallax correction full (in half-strips)
   std::vector<int>    *m_stub_tp;     // index of the TP inducing the stub in the MC tree
   std::vector<int>    *m_stub_pdg;    // PDG code of the particle inducing the stub
   std::vector<int>    *m_stub_pid;    // process id inducing cluster i (see MCExtractor.h)

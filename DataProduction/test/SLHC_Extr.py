@@ -5,10 +5,10 @@
 # 
 # Usage: cmsRun SLHC_Extr.py
 #
-# Author: S.Viret (viret@in2p3.fr)
-# Date  : 21/06/2016
+# Author: S.Viret (s.viret@ipnl.in2p3.fr)
+# Date  : 24/05/2017
 #
-# Script tested with release CMSSW_8_1_0_pre7 (works either for Tilted of Flat geometries)
+# Script tested with release CMSSW_9_2_0 (works either for Tilted of Flat geometries)
 #
 #########
 #
@@ -47,12 +47,14 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('file:PGun_example.root'),
-                            #fileNames = cms.untracked.vstring('file:PU_30_sample.root'),       
+                            fileNames = cms.untracked.vstring('file:PGun_example.root'),       
+                            #fileNames = cms.untracked.vstring('file:PU_sample.root'),
+			    #fileNames = cms.untracked.vstring('file:TT_example.root'),       
+			    #fileNames = cms.untracked.vstring('file:QCD_example.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )
 )
 
-# Load the extracto
+# Load the extractor
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")
 
 # Tune some options (see MIB_extractor_cfi.py for details)
@@ -65,7 +67,6 @@ process.MIBextraction.flatBarrel       = flat
 
 process.p = cms.Path(process.MIBextraction)
 
-
 # Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.combinedCustoms
 
 if flat:
@@ -73,7 +74,7 @@ if flat:
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
 
 # End of customisation functions
 

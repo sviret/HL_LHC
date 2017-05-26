@@ -13,7 +13,7 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 16/04/2015
 #
-# Script tested with release CMSSW_8_1_0_pre11
+# Script tested with release CMSSW_9_2_0
 #
 #########
 #
@@ -68,7 +68,7 @@ if flat:
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
 else:
 	print 'You choose the tilted geometry'
-	process.load('L1Trigger.TrackTrigger.TkOnlyTilted4021Geom_cff') # Special config file for TkOnly geometry
+	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
 
 # End of customisation functions
 

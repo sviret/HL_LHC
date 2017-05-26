@@ -27,11 +27,10 @@ PHIMIN=${11}            # ==> The particle gun parameters
 PHIMAX=${12}            #
 ETAMIN=${13}            #
 ETAMAX=${14}            #
-PUDIR=${15}             # Minbias storage repository
-NPU=${16}               # PU events number
-THRESH=${17}            # pt threshold for stub windows
-TID=${18}               # trigger tower ID in which the PGun particles are sent
-GEOM=${19}              # geometry type: FLAT (True) or TILTED (False)
+NPU=${15}               # Average PU events number
+THRESH=${16}            # pt threshold for stub windows
+TID=${17}               # trigger tower ID in which the PGun particles are sent
+GEOM=${18}              # geometry type: FLAT (True) or TILTED (False)
 PU=0 
 BANK=0
 
@@ -81,42 +80,38 @@ echo $PTYPE
 cd $TOP
 
 # Download the main config script (Default is particle gun)
-cp $PACK_DIR/test/base/SLHC_PGUN_BASE.py BH_dummy.py 
-cp $PACK_DIR/test/base/SLHC_EXTR_BASE.py BH_dummy2.py 
+cp $PACK_DIR/test/base/SLHC_PU_BASE.py BH_dummy.py 
 
 # Script for Jets production
 if [ "$PTYPE" -eq 1 ]; then
-    cp $PACK_DIR/test/base/SLHC_JETS_BASE.py BH_dummy.py 
+    cp $PACK_DIR/test/base/SLHC_JET_BASE.py BH_dummy.py 
 fi
 
-# Script for MinBias production
-if [ "$PTYPE" -eq 666 ]; then
-    cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummy.py 
+# Script for TTbar production
+if [ "$PTYPE" -eq 2 ]; then
+    cp $PACK_DIR/test/base/SLHC_TT_BASE.py BH_dummy.py 
 fi
 
-# Scripts for Track trigger production
+cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 
+cp $PACK_DIR/test/base/SLHC_EXTR_BASE.py BH_dummy2.py 
+
+
+# Scripts for AM bank sample production
 
 if [ "$PTYPE" -eq 1013 ]; then
     PTYPE=13
     BANK=1
     cp $PACK_DIR/test/base/SLHC_BANKSIM_BASE.py BH_dummy.py 
-    cp $PACK_DIR/test/base/SLHC_EXTR_BASE.py BH_dummy2.py 
-    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy3.py 
+    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy2.py 
 fi
 
-if [ "$PTYPE" -eq -1013 ]; then
-    PTYPE=-13
+if [ "$PTYPE" -eq 1011 ]; then
+    PTYPE=11
     BANK=1
     cp $PACK_DIR/test/base/SLHC_BANKSIM_BASE.py BH_dummy.py 
-    cp $PACK_DIR/test/base/SLHC_EXTR_BASE.py BH_dummy2.py 
-    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy3.py 
+    cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy2.py 
 fi
 
-if [ "$PTYPE" -eq 999 ]; then
-    echo "here!!!"
-    PTYPE=$NRUN
-    cp $PACK_DIR/test/base/SLHC_translate_BASE.py BH_dummy.py 
-fi
 
 # Choice of the stub windows
 
@@ -130,35 +125,9 @@ else
     cp $PACK_DIR/test/base/${THRESH}GevTune.txt tune 
 fi
 
-# Script for Pileup production
-
-# Pile up requires a bit of tweaking
-# We create beforehand a mbias sample of 300 events, which are then used for the mix
-# Of course seed for the minbias file is different from one run to the other
-#
-
-
 SWTUN=`cat tune`
 
 echo $SWTUN
-
-if [ "$PTYPE" -eq 777 ]; then
-    PTYPE=-13
-    PU=1 
-    cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 
-    cp $PACK_DIR/test/base/SLHC_PU_BASE.py    BH_dummy.py 
-    cp $PACK_DIR/test/base/SLHC_EXTR_BASE.py  BH_dummy2.py 
-    tag=${TYPE}_${NPU}_${NRUN}
-fi
-
-
-if [ "$PTYPE" -eq 888 ]; then
-    PU=1 
-    cp $PACK_DIR/test/base/SLHC_MBIAS_BASE.py BH_dummyMinBias.py 
-    cp $PACK_DIR/test/base/SLHC_PU_4T_BASE.py BH_dummy.py 
-    cp $PACK_DIR/test/base/SLHC_EXTR_BASE.py  BH_dummy2.py 
-    tag=${TYPE}_${NPU}_${NRUN}
-fi
 
 # Finally the script is modified according to the requests
 
@@ -166,7 +135,6 @@ sed "s/TILTEDORFLAT/$GEOM/"                            -i BH_dummy.py
 sed "s/NEVTS/$EVTS/"                                   -i BH_dummy.py
 sed "s/RUN/$START/"                                    -i BH_dummy.py
 sed "s/PTYPE/$PTYPE/"                                  -i BH_dummy.py
-sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummy.py
 sed "s/NSEEDA/$SEED1/g"                                -i BH_dummy.py
 sed "s/NSEEDB/$SEED2/g"                                -i BH_dummy.py
 sed "s/NSEEDC/$SEED3/g"                                -i BH_dummy.py
@@ -179,8 +147,6 @@ sed "s/PHIMAX/$PHIMAX/"                                -i BH_dummy.py
 sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummy.py
 sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummy.py
 sed "s/NPU/$NPU/"                                      -i BH_dummy.py
-sed "s/THRESHOLD/$THRESH/"                             -i BH_dummy.py
-sed "s/TRIGGERTOWER/$TID/"                             -i BH_dummy.py
 sed "s#PUFILEA#$TOP/MBiasSample.root#"                 -i BH_dummy.py
 
 sed "s/TILTEDORFLAT/$GEOM/"                            -i BH_dummy2.py
@@ -188,32 +154,18 @@ sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
 
 perl -i.bak -pe 's/SWTUNING/'"${SWTUN}"'/g' BH_dummy.py
 
-if [ "$PU" -eq 1 ]; then
-    PTYPE=777
-    EVTS=300
-    sed "s/TILTEDORFLAT/$GEOM/"                            -i BH_dummyMinBias.py
-    sed "s/NEVTS/$EVTS/"                                   -i BH_dummyMinBias.py
-    sed "s/PTYPE/$PTYPE/"                                  -i BH_dummyMinBias.py
-    sed "s#INPUTFILENAME#$TOP/SLHC_extr_PU_${NRUN}.root#"  -i BH_dummyMinBias.py
-    sed "s/NSEEDA/$SEED5/g"                                -i BH_dummyMinBias.py
-    sed "s/NSEEDB/$SEED6/g"                                -i BH_dummyMinBias.py
-    sed "s/NSEEDC/$SEED7/g"                                -i BH_dummyMinBias.py
-    sed "s/NSEEDD/$SEED8/g"                                -i BH_dummyMinBias.py
-    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummyMinBias.py
-    sed "s/PTMIN/$PTMIN/"                                  -i BH_dummyMinBias.py
-    sed "s/PTMAX/$PTMAX/"                                  -i BH_dummyMinBias.py
-    sed "s/PHIMIN/$PHIMIN/"                                -i BH_dummyMinBias.py
-    sed "s/PHIMAX/$PHIMAX/"                                -i BH_dummyMinBias.py
-    sed "s/ETAMIN/$ETAMIN/"                                -i BH_dummyMinBias.py
-    sed "s/ETAMAX/$ETAMAX/"                                -i BH_dummyMinBias.py
-    sed "s/NPU/$NPU/"                                      -i BH_dummyMinBias.py
-    sed "s/THRESHOLD/$THRESH/"                             -i BH_dummyMinBias.py
-    sed "s/TRIGGERTOWER/$TID/"                             -i BH_dummyMinBias.py
-fi
+
+EVTS=$(( 5 * $NPU + 1 )) 
+sed "s/TILTEDORFLAT/$GEOM/"                            -i BH_dummyMinBias.py
+sed "s/NEVTS/$EVTS/"                                   -i BH_dummyMinBias.py
+sed "s/NSEEDA/$SEED5/g"                                -i BH_dummyMinBias.py
+sed "s/NSEEDB/$SEED6/g"                                -i BH_dummyMinBias.py
+sed "s/NSEEDC/$SEED7/g"                                -i BH_dummyMinBias.py
+sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummyMinBias.py
 
 if [ "$BANK" -eq 1 ]; then
-    sed "s/NEVTS/$EVTS/"                                   -i BH_dummy3.py
-    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy3.py
+    sed "s/NEVTS/$EVTS/"                                   -i BH_dummy2.py
+    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
 fi
 
 # Set output filenames
@@ -224,7 +176,7 @@ DATA_NAME=SLHC_extr_$tag.root
 # Launch the whole thing
 #
 
-if [ "$PTYPE" -eq 777 ]; then
+if [ "$BANK" -eq 0 ]; then
     cmsRun BH_dummyMinBias.py
 fi
 
@@ -232,7 +184,6 @@ cmsRun BH_dummy.py
 cmsRun BH_dummy2.py
 
 if [ "$BANK" -eq 1 ]; then
-    cmsRun BH_dummy3.py
     rm PGun_example.root
     mv extracted_skimmed.root extracted.root
 fi
@@ -241,5 +192,5 @@ fi
 #
 
 ls -l
-lcg-cp file://$TOP/extracted.root $STOR_DIR/$DATA_NAME
-lcg-cp file://$TOP/PGun_example.root $STOR_DIR/EDM_$DATA_NAME
+gfal-copy file://$TOP/extracted.root $STOR_DIR/$DATA_NAME
+gfal-copy file://$TOP/PGun_example.root $STOR_DIR/EDM_$DATA_NAME

@@ -161,6 +161,34 @@ void L1TrackExtractor::init(const edm::EventSetup *setup, bool isFlat)
 
   m_tilted = (!isFlat);
 
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
+
+  for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+  for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+
+  if (m_tilted)
+  {
+    n_tilted_rings[0]=11;
+    n_tilted_rings[1]=12;
+    n_tilted_rings[2]=12;
+    n_flat_rings[0]=7;
+    n_flat_rings[1]=11;
+    n_flat_rings[2]=15;
+  }
+
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 3; ++j)
+    {
+      limits[i][j]=0;
+
+      if (n_tilted_rings[i]==0) continue;
+
+      limits[i][j]=(j%2)*n_flat_rings[i]+(j>0)*n_tilted_rings[i];
+    }
+  }
+
   /// Magnetic Field
   //  edm::ESHandle< MagneticField > magneticFieldHandle;
   // setup->get< IdealMagneticFieldRecord >().get(magneticFieldHandle);
@@ -177,6 +205,10 @@ void L1TrackExtractor::init(const edm::EventSetup *setup, bool isFlat)
 
 void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub) 
 {
+
+  const TrackerTopology* const tTopo = tTopoHandle.product();
+  const TrackerGeometry* const theTrackerGeom = tGeomHandle.product();
+
   L1TrackExtractor::reset();
   ++n_tot_evt;    
 
@@ -190,10 +222,11 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
   event->getByToken( m_PATT_tag, TTPatternHandle );
   event->getByToken( m_TC_tag,   TTTCHandle );
   event->getByToken( m_TRCK_tag, TTTrackHandle );
-
+  
   int layer  = 0;
   int ladder = 0;
   int module = 0;
+  int type;
   std::vector<int> stub_list;
 
   /// STEP 1
@@ -252,26 +285,32 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 
 	/// Calculate average coordinates col/row for inner/outer Cluster
 	/// These are already corrected for being at the center of each pixel
-	MeasurementPoint coords = tempStubRef->getClusterRef(0)->findAverageLocalCoordinates();
-	LocalPoint clustlp   = topol->localPosition(coords);
-	GlobalPoint posStub  =  theGeomDet->surface().toGlobal(clustlp);
+	MeasurementPoint coords = tempStubRef->getClusterRef(0)->findAverageLocalCoordinatesCentered();
+	LocalPoint clustlp      = topol->localPosition(coords);
+	GlobalPoint posStub     =  theGeomDet->surface().toGlobal(clustlp);
 
 
-	/// Find pixel pitch and topology related information
-
-	// Here we rearrange the number in order to be compatible with the AM emulator
 	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = static_cast<int>(tTopoHandle->layer(detid))+4;
-	  ladder = static_cast<int>(tTopoHandle->tobRod(detid));
-	  module = static_cast<int>(tTopoHandle->module(detid));
+	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1+limits[layer-5][type-1];
+
+	  if (type<3)
+	  {
+	    ladder = static_cast<int>(tTopo->module(detid))-1;
+	    module = static_cast<int>(tTopo->tobRod(detid))-1+limits[layer-5][type-1];
+	  }
 	}
 	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
-	  layer  = 10+static_cast<int>(tTopoHandle->tidWheel(detid))+abs(2-static_cast<int>(tTopoHandle->side(detid)))*7;
-	  ladder = static_cast<int>(tTopoHandle->tidRing(detid));
-	  module = static_cast<int>(tTopoHandle->module(detid));
+	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+	  ladder = static_cast<int>(tTopo->tidRing(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1;
+	  type   = 0;
 	}
+
 
 	double SW = tempStubRef->getTriggerDisplacement();
 
@@ -346,25 +385,29 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 
 	/// Calculate average coordinates col/row for inner/outer Cluster
 	/// These are already corrected for being at the center of each pixel
-	MeasurementPoint coords = tempStubRef->getClusterRef(0)->findAverageLocalCoordinates();
+	MeasurementPoint coords = tempStubRef->getClusterRef(0)->findAverageLocalCoordinatesCentered();
 	LocalPoint clustlp   = topol->localPosition(coords);
 	GlobalPoint posStub  =  theGeomDet->surface().toGlobal(clustlp);
 
-
-	/// Find pixel pitch and topology related information
-
-	// Here we rearrange the number in order to be compatible with the AM emulator
 	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = static_cast<int>(tTopoHandle->layer(detid))+4;
-	  ladder = static_cast<int>(tTopoHandle->tobRod(detid));
-	  module = static_cast<int>(tTopoHandle->module(detid));
+	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1+limits[layer-5][type-1];
+
+	  if (type<3)
+	  {
+	    ladder = static_cast<int>(tTopo->module(detid))-1;
+	    module = static_cast<int>(tTopo->tobRod(detid))-1+limits[layer-5][type-1];
+	  }
 	}
 	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
-	  layer  = 10+static_cast<int>(tTopoHandle->tidWheel(detid))+abs(2-static_cast<int>(tTopoHandle->side(detid)))*7;
-	  ladder = static_cast<int>(tTopoHandle->tidRing(detid));
-	  module = static_cast<int>(tTopoHandle->module(detid));
+	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+	  ladder = static_cast<int>(tTopo->tidRing(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1;
+	  type   = 0;
 	}
 
 	double SW = tempStubRef->getTriggerDisplacement();
@@ -437,25 +480,32 @@ void L1TrackExtractor::writeInfo(const edm::Event *event, StubExtractor *stub)
 
 	/// Calculate average coordinates col/row for inner/outer Cluster
 	/// These are already corrected for being at the center of each pixel
-	MeasurementPoint coords = tempStubRef->getClusterRef(0)->findAverageLocalCoordinates();
+	MeasurementPoint coords = tempStubRef->getClusterRef(0)->findAverageLocalCoordinatesCentered();
 	LocalPoint clustlp   = topol->localPosition(coords);
 	GlobalPoint posStub  =  theGeomDet->surface().toGlobal(clustlp);
 
 
 	/// Find pixel pitch and topology related information
 
-	// Here we rearrange the number in order to be compatible with the AM emulator
 	if ( detid.subdetId()==StripSubdetector::TOB )
 	{
-	  layer  = static_cast<int>(tTopoHandle->layer(detid))+4;
-	  ladder = static_cast<int>(tTopoHandle->tobRod(detid));
-	  module = static_cast<int>(tTopoHandle->module(detid));
+	  type   = static_cast<int>(tTopo->tobSide(detid)); // Tilt-/Tilt+/Flat <-> 1/2/3
+	  layer  = static_cast<int>(tTopo->layer(detid))+4;
+	  ladder = static_cast<int>(tTopo->tobRod(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1+limits[layer-5][type-1];
+
+	  if (type<3)
+	  {
+	    ladder = static_cast<int>(tTopo->module(detid))-1;
+	    module = static_cast<int>(tTopo->tobRod(detid))-1+limits[layer-5][type-1];
+	  }
 	}
 	else if ( detid.subdetId()==StripSubdetector::TID )
 	{	
-	  layer  = 10+static_cast<int>(tTopoHandle->tidWheel(detid))+abs(2-static_cast<int>(tTopoHandle->side(detid)))*7;
-	  ladder = static_cast<int>(tTopoHandle->tidRing(detid));
-	  module = static_cast<int>(tTopoHandle->module(detid));
+	  layer  = 10+static_cast<int>(tTopo->tidWheel(detid))+abs(2-static_cast<int>(tTopo->side(detid)))*7;
+	  ladder = static_cast<int>(tTopo->tidRing(detid))-1;
+	  module = static_cast<int>(tTopo->module(detid))-1;
+	  type   = 0;
 	}
 
 	double SW = tempStubRef->getTriggerDisplacement();
