@@ -50,7 +50,7 @@ from L1Trigger.TrackTrigger.TTStub_cfi import *
 if flat:
 	print 'You choose the flat geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(True) # Tilted is the new default
+	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(False) # Tilted is the new default
 else:
 	print 'You choose the tilted geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
