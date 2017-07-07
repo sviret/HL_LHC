@@ -5,24 +5,24 @@
 
 // Main constructor
 
-rates::rates(std::string filename, std::string outfile)
+rates::rates(std::string filename, std::string outfile, bool fe)
 {
-  rates::initTuple(filename,outfile);
-  rates::initVars();
-  rates::get_rates();
+    rates::initTuple(filename,outfile);
+    rates::initVars();
+    rates::get_rates(fe);
 }
 
 
-void rates::get_rates()
+void rates::get_rates(bool fe)
 {
   // Initialize some params
  
   int B_id,E_id;   // The detector module IDs (defined in the header)
-  int Bl_id,El_id; // This ID is for the averages per ladder (for 1D plots)
-
+  int Bl_id,El_id; // This ID is for the averages per ladder/rings (for 1D plots)
+  
   int disk,layer,ladder,module,chip,seg,nseg;
 
-  float IP,PT;
+  float IP,PT,cor;
 
   bool is_prim;
   bool is_prim2;
@@ -30,36 +30,36 @@ void rates::get_rates()
 
   int n_entries = L1TT->GetEntries();
   double fact   = 1./static_cast<float>(n_entries); // Normalization factor
-
+  
   // Then loop over events
-
+  
   for (int j=0;j<n_entries;++j)
   {
-    L1TT->GetEntry(j); 
-
+    L1TT->GetEntry(j);
+    
     if (j%100==0) cout << j << endl;
-
+    
     if (m_clus == 0) continue; // No clusters, don't go further
-
+    
     for (int i=0;i<m_clus;++i) // Loop over clusters
     {
       disk  = 0;
-      layer = m_clus_layer[i]; 
-      ladder= m_clus_ladder[i]; 
-      module= m_clus_module[i]; 
-
+      layer = m_clus_layer[i];
+      ladder= m_clus_ladder[i];
+      module= m_clus_module[i];
+      
       if (layer>10 && layer<=17) disk=(layer-10)%8;
       if (layer>17 && layer<=24) disk=(layer-17)%8+7;
-
+      
       // Get the ids
-
-      B_id  = (layer-5)*10000 + (ladder-1)*100 + (module-1)/2;
-      E_id  = (disk-1)*10000 + (ladder-1)*100 + (module-1)/2;
-      Bl_id = (layer-5)*100 + (module-1)/2;
-      El_id = (disk-1)*100 + (ladder-1);
-
+      
+      B_id  = (layer-5)*10000 + ladder*100 + module;
+      E_id  = (disk-1)*10000 + ladder*100 + module;
+      Bl_id = (layer-5)*100 + module;
+      El_id = (disk-1)*100 + ladder;
+      
       // Then increment the rates
-
+      
       if (disk==0) // Barrel
       {
 	m_b_crate[B_id]      += fact;
@@ -71,79 +71,80 @@ void rates::get_rates()
 	m_e_bylc_rate[El_id] += fact;
       }
     } // End of loop over clusters
-
+        
     if (m_stub == 0) continue; // No stubs, don't go further
    
     for (int i=0;i<m_stub;++i) // Loop over stubs
-    {  
+    {     
+      cor   = m_stub_cor[i];
+ 
+      if (fe && (cor>100 && cor<300)) continue;
+
       disk  = 0;
-      layer = m_stub_layer[i]; 
-      ladder= m_stub_ladder[i]; 
-      module= m_stub_module[i]; 
-      seg   = m_stub_seg[i]; 
-      chip  = m_stub_chip[i]; 
+      layer = m_stub_layer[i];
+      ladder= m_stub_ladder[i];
+      module= m_stub_module[i];
+      seg   = m_stub_seg[i];     
+      chip  = m_stub_chip[i];
       nseg  = m_clus_nseg[m_stub_clust1[i]];
-
+      
       if (seg/(nseg/2)==1) chip += 8;
-
+      
       if (layer>10 && layer<=17) disk=(layer-10)%8;
       if (layer>17 && layer<=24) disk=(layer-17)%8+7;
-         
-      // Get the ids
-
+      
       B_id  = (layer-5)*10000 + ladder*100 + module;
       E_id  = (disk-1)*10000 + ladder*100 + module;
       Bl_id = (layer-5)*100 + module;
       El_id = (disk-1)*100 + ladder;
-
-      // Then we look if the stub is fake/secondary/primary 
-
+      
+      
+      // Then we look if the stub is fake/secondary/primary
+      
       is_prim=false;
       is_prim2=false;
       is_fake=false;
-
+      
       IP = sqrt(m_stub_X0[i]*m_stub_X0[i]+m_stub_Y0[i]*m_stub_Y0[i]);
       PT = sqrt(m_stub_pxGEN[i]*m_stub_pxGEN[i]+m_stub_pyGEN[i]*m_stub_pyGEN[i]);
 
-      if (m_stub_tp[i]>=0 && IP<0.2)         is_prim=true; // OK, perfectible
-      if (m_stub_tp[i]<0)                    is_fake=true;
-      if (m_stub_tp[i]>=0 && IP<0.2 && PT>2) is_prim2=true; // OK, perfectible
-
+      if (m_stub_tp[i]>=0 && fabs(IP)<1.)          is_prim=true; // OK, perfectible
+      if (m_stub_tp[i]<0)                          is_fake=true;
+      if (m_stub_tp[i]>=0 && fabs(IP)<1. && PT>2)  is_prim2=true; // OK, perfectible
+      
       if (disk==0) // Barrel
       {
 	m_b_rate[chip][B_id] += fact;
 	m_b_byls_rate[Bl_id] += fact;
-
-	if (is_fake)              m_b_rate_f[B_id]  += fact; 
-	if (!is_fake && !is_prim) m_b_rate_s[B_id]  += fact; 
+	
+	if (is_fake)              m_b_rate_f[B_id]  += fact;
+	if (!is_fake && !is_prim) m_b_rate_s[B_id]  += fact;
 	if (is_prim)              m_b_rate_p[B_id]  += fact;
-	if (is_prim2)             m_b_rate_pp[B_id] += fact;	
+	if (is_prim2)             m_b_rate_pp[B_id] += fact;
       }
       else // Disk
       {
 	m_e_rate[chip][E_id] += fact;
 	m_e_byls_rate[El_id] += fact;
-
-	if (is_fake)              m_e_rate_f[E_id]  += fact; 
-	if (!is_fake && !is_prim) m_e_rate_s[E_id]  += fact; 
+	
+	if (is_fake)              m_e_rate_f[E_id]  += fact;
+	if (!is_fake && !is_prim) m_e_rate_s[E_id]  += fact;
 	if (is_prim)              m_e_rate_p[E_id]  += fact;
-	if (is_prim2)             m_e_rate_pp[E_id] += fact;	
+	if (is_prim2)             m_e_rate_pp[E_id] += fact;
       }
     } // End of loop over stubs
   } // End of loop over events
-
+      
   // The main tree is filled up at this point
   // In the following we just fill up some infos
 
-
   // Here we fill some debug information
-
-
+  
   for (int i=0;i<58000;++i) // Barrel
   {
     if (m_b_rate_f[i]+m_b_rate_s[i]+m_b_rate_p[i]==0.) continue;
-
-    for (int j=0;j<16;++j) 
+    
+    for (int j=0;j<16;++j)
     {
       m_disk= 0;
       m_lay = static_cast<int>(i/10000);
@@ -152,10 +153,10 @@ void rates::get_rates()
       m_sen = j/8+1;
       m_chp = j%8+1;
       m_rate= m_b_rate[j][i];
-      m_dbgtree->Fill(); 
+      m_dbgtree->Fill();
     }
   }
-
+  
   for (int i=0;i<140000;++i) // Endcap
   {
     if (m_e_rate_f[i]+m_e_rate_s[i]+m_e_rate_p[i]==0.) continue;
@@ -194,11 +195,11 @@ void rates::initVars()
   for (int i=0;i<58000;++i)
   {
     for (int j=0;j<16;++j) m_b_rate[j][i]   = 0.;
-    m_b_rate_p[i] = 0.;
+    m_b_rate_p[i]  = 0.;
     m_b_rate_pp[i] = 0.;
-    m_b_rate_s[i] = 0.;
-    m_b_rate_f[i] = 0.;
-    m_b_crate[i]  = 0.;
+    m_b_rate_s[i]  = 0.;
+    m_b_rate_f[i]  = 0.;
+    m_b_crate[i]   = 0.;
   }
 
   for (int i=0;i<600;++i)
@@ -216,11 +217,11 @@ void rates::initVars()
   for (int i=0;i<142000;++i)
   {
     for (int j=0;j<16;++j) m_e_rate[j][i]   = 0.;
-    m_e_rate_p[i] = 0.;
+    m_e_rate_p[i]  = 0.;
     m_e_rate_pp[i] = 0.;
-    m_e_rate_s[i] = 0.;
-    m_e_rate_f[i] = 0.;
-    m_e_crate[i]  = 0.;
+    m_e_rate_s[i]  = 0.;
+    m_e_rate_f[i]  = 0.;
+    m_e_crate[i]   = 0.;
   }
 }
 
@@ -267,12 +268,15 @@ void rates::initTuple(std::string in,std::string out)
   pm_clus_layer=&m_clus_layer;
   pm_clus_ladder=&m_clus_ladder;
   pm_clus_module=&m_clus_module;
+  pm_clus_type=&m_clus_type;
   pm_clus_nrows=&m_clus_nrows;
   pm_clus_nseg=&m_clus_nseg;
-
+  pm_clus_z=&m_clus_z;
+    
   pm_stub_layer=&m_stub_layer;
   pm_stub_ladder=&m_stub_ladder;
   pm_stub_module=&m_stub_module;
+  pm_stub_type=&m_stub_type;
   pm_stub_tp=&m_stub_tp;
   pm_stub_pt=&m_stub_pt;
   pm_stub_pxGEN=&m_stub_pxGEN;
@@ -280,16 +284,19 @@ void rates::initTuple(std::string in,std::string out)
   pm_stub_etaGEN=&m_stub_etaGEN;
   pm_stub_X0=&m_stub_X0;
   pm_stub_Y0=&m_stub_Y0;
+  pm_stub_z=&m_stub_z;
   pm_stub_seg=&m_stub_seg;
   pm_stub_chip=&m_stub_chip;
   pm_stub_pdgID=&m_stub_pdgID;
   pm_stub_clust1=&m_stub_clust1;
+  pm_stub_cor=&m_stub_cor;
 
 
   L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
   L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
   L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
   L1TT->SetBranchAddress("L1TkSTUB_module",    &pm_stub_module);
+  L1TT->SetBranchAddress("L1TkSTUB_type",      &pm_stub_type);
   L1TT->SetBranchAddress("L1TkSTUB_pxGEN",     &pm_stub_pxGEN);
   L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
   L1TT->SetBranchAddress("L1TkSTUB_etaGEN",    &pm_stub_etaGEN);
@@ -297,15 +304,20 @@ void rates::initTuple(std::string in,std::string out)
   L1TT->SetBranchAddress("L1TkSTUB_pt",        &pm_stub_pt);
   L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
   L1TT->SetBranchAddress("L1TkSTUB_Y0",        &pm_stub_Y0);
+  L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
+  L1TT->SetBranchAddress("L1TkSTUB_z",         &pm_stub_z);
   L1TT->SetBranchAddress("L1TkSTUB_seg",       &pm_stub_seg);
   L1TT->SetBranchAddress("L1TkSTUB_chip",      &pm_stub_chip);
   L1TT->SetBranchAddress("L1TkSTUB_pdgID",     &pm_stub_pdgID);
   L1TT->SetBranchAddress("L1TkSTUB_clust1",    &pm_stub_clust1);
+  L1TT->SetBranchAddress("L1TkSTUB_cor",       &pm_stub_cor);
 
   L1TT->SetBranchAddress("L1TkCLUS_n",         &m_clus);
   L1TT->SetBranchAddress("L1TkCLUS_layer",     &pm_clus_layer);
+  L1TT->SetBranchAddress("L1TkCLUS_z",         &pm_clus_z);
   L1TT->SetBranchAddress("L1TkCLUS_ladder",    &pm_clus_ladder);
   L1TT->SetBranchAddress("L1TkCLUS_module",    &pm_clus_module);
+  L1TT->SetBranchAddress("L1TkCLUS_type",      &pm_clus_type);
   L1TT->SetBranchAddress("L1TkCLUS_nrows",     &pm_clus_nrows);
   L1TT->SetBranchAddress("L1TkCLUS_PS",        &pm_clus_nseg);
 
@@ -322,7 +334,7 @@ void rates::initTuple(std::string in,std::string out)
   m_ratetree->Branch("CLUS_b_rates",         &m_b_crate,     "CLUS_b_rates[58000]/F");
   m_ratetree->Branch("STUB_b_l_rates",       &m_b_byls_rate, "STUB_b_l_rates[600]/F");
   m_ratetree->Branch("CLUS_b_l_rates",       &m_b_bylc_rate, "CLUS_b_l_rates[600]/F");
-
+    
   m_ratetree->Branch("STUB_e_rates",         &m_e_rate,      "STUB_e_rates[16][142000]/F");
   m_ratetree->Branch("STUB_e_rates_prim2",   &m_e_rate_pp,    "STUB_e_rates_prim2[142000]/F"); 
   m_ratetree->Branch("STUB_e_rates_prim",    &m_e_rate_p,    "STUB_e_rates_prim[142000]/F"); 

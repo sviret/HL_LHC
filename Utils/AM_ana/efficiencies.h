@@ -62,9 +62,8 @@ class efficiencies
 
  private:
 
-  TChain *L1TT_O;      // The trees 
-  TChain *L1TT_P;    
-  TChain *Pix;      
+  TChain *L1TT;      // The trees
+  TChain *Pix;
   TChain *MC;      
 
   TFile *m_outfile;  // The output file
@@ -72,32 +71,26 @@ class efficiencies
 
   float pt_val[100];
   float eta_val[50];
-  float entries_pt[11][15][100];
-  float entries_eta[11][15][50];
-  float entries_pt_lay[11][15][100];
-  float entries_eta_lay[11][15][50];
+  float entries_pt[30][100];
+  float entries_eta[30][50];
+  float entries_pt_lay[30][100];
+  float entries_eta_lay[30][50];
 
-  float digi_pt[11][15][100]; // Digi efficiencies as function of pT (between 0 and 20 GeV/c)
-  float digi_eta[11][15][50]; // Digi efficiencies as function of eta (between -2.5 and 2.5)
+  float digi_pt[30][100]; // Digi efficiencies as function of pT (between 0 and 20 GeV/c)
+  float digi_eta[30][50]; // Digi efficiencies as function of eta (between -2.5 and 2.5)
 
   // Module efficiencies
-  float clus_off_pt[11][15][100]; // Official cluster efficiencies as function of pT
-  float stub_off_pt[11][15][100]; // Official stub efficiencies as function of pT
-  float clus_off_eta[11][15][50]; // Official cluster efficiencies as function of eta
-  float stub_off_eta[11][15][50]; // Official stub efficiencies as function of eta
+  float clus_pt[30][100]; // Official cluster efficiencies as function of pT
+  float stub_pt[30][100]; // Official stub efficiencies as function of pT
+  float clus_eta[30][50]; // Official cluster efficiencies as function of eta
+  float stub_eta[30][50]; // Official stub efficiencies as function of eta
 
-  float clus_pri_pt[11][15][100]; // Private cluster efficiencies as function of pT
-  float stub_pri_pt[11][15][100]; // Private stub efficiencies as function of pT
-  float clus_pri_eta[11][15][50]; // Private cluster efficiencies as function of eta
-  float stub_pri_eta[11][15][50]; // Private stub efficiencies as function of eta
 
-  // Layer efficiencies (only for stubs)
-  float stub_off_pt_lay[11][15][100]; // Official stub efficiencies as function of pT
-  float stub_off_eta_lay[11][15][50]; // Official stub efficiencies as function of eta
-
-  float stub_pri_pt_lay[11][15][100]; // Private stub efficiencies as function of pT
-  float stub_pri_eta_lay[11][15][50]; // Private stub efficiencies as function of eta
-
+  // Layer efficiencies 
+  float clus_pt_lay[30][100]; // Official clus efficiencies as function of pT
+  float clus_eta_lay[30][50]; // Official clus efficiencies as function of eta
+  float stub_pt_lay[30][100]; // Official stub efficiencies as function of pT
+  float stub_eta_lay[30][50]; // Official stub efficiencies as function of eta
 
   // Here are the parameters needed from the data
   // Details on these might be found on
@@ -106,7 +99,7 @@ class efficiencies
   //
 
   int                 m_type;
-  int    	      m_part_n;
+  int    	          m_part_n;
   int                 m_pclus;
   int                 m_clus;            
   int                 m_stub;  
@@ -117,7 +110,9 @@ class efficiencies
   std::vector<int>    *m_pixclus_column;
   std::vector<int>    *m_pixclus_layer;
   std::vector<int>    *m_pixclus_module;
+  std::vector<int>    *m_pixclus_bottom;
   std::vector<int>    *m_pixclus_ladder;
+  std::vector<int>    *m_pixclus_type;
   std::vector<float>  *m_pixclus_x;
   std::vector<float>  *m_pixclus_y;
   std::vector< std::vector<int> > *m_pixclus_simhitID; 
@@ -135,7 +130,8 @@ class efficiencies
 
   std::vector<int>    *m_clus_nstrips;
   std::vector<int>    *m_clus_layer; 
-  std::vector<int>    *m_clus_module;								       
+  std::vector<int>    *m_clus_module;	
+  std::vector<int>    *m_clus_bottom;							       
   std::vector<int>    *m_clus_ladder;				      
   std::vector<int>    *m_clus_seg;   
   std::vector<float>  *m_clus_strip;
@@ -144,19 +140,23 @@ class efficiencies
   std::vector<int>    *m_stub_clust1;
   std::vector<int>    *m_stub_clust2;
   std::vector<int>    *m_stub_tp;
+  std::vector<int>    *m_stub_type;
 
   std::vector<int>    *m_tkclus_nstrips;
   std::vector<int>    *m_tkclus_layer; 
-  std::vector<int>    *m_tkclus_module;								       
+  std::vector<int>    *m_tkclus_module;	
+  std::vector<int>    *m_tkclus_bottom;								       
   std::vector<int>    *m_tkclus_ladder;				      
   std::vector<int>    *m_tkclus_seg;   
   std::vector<float>  *m_tkclus_strip;
   std::vector<int>    *m_tkstub_layer;
+  std::vector<int>    *m_tkstub_type;
   std::vector<int>    *m_tkstub_ladder;
   std::vector<int>    *m_tkstub_clust1;
   std::vector<int>    *m_tkstub_clust2;
   std::vector<int>    *m_tkstub_tp;
-
+  std::vector<int>    *m_tkclus_tp;
+  std::vector<int>    *m_tkclus_pdg;
 };
 
 #endif

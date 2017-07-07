@@ -5,10 +5,13 @@
 // Internal includes
 
 #include "rates.h"
+//#include "TC_win.h"
 #include "track_eff.h"
 #include "efficiencies.h"
+#include "windows.h"
 #include "jobparams.h"
 #include "TROOT.h"
+//#include "latency.h"
 
 using namespace std;
 
@@ -43,17 +46,16 @@ int main(int argc, char** argv) {
   // Documented in part 3.2.2 of the mentioned tutorial page
   if (params.option()=="rates")
   {
-    rates* my_rates = new rates(params.inputfile(),params.outfile());
+    rates* my_rates = new rates(params.inputfile(),params.outfile(),params.dbg());
     delete my_rates;    
   }
-
   
   // Option 2: basic stub efficiencies calculation
   // Documented in part 3.2.3 of the official tutorial page
   if (params.option()=="stub_eff")
   {
-    efficiencies* my_effs = new efficiencies(params.inputfile(),params.outfile(),params.type());
-    delete my_effs;
+      efficiencies* my_effs = new efficiencies(params.inputfile(),params.outfile(),params.type());
+      delete my_effs;
   }
 
 
@@ -67,6 +69,35 @@ int main(int argc, char** argv) {
 
     delete my_test;
   }
+
+  //    // Option 4: pattern reco efficiency from official stubs
+  //    // Documented in part 6.2.2 of the official tutorial page
+  //    if (params.option()=="latency")
+  //    {
+  //      latency* my_test = new latency(params.testfile(),params.inputfile(),
+     //                                    params.outfile(),params.nevt(),12,10,15,10000,1);
+  //                                    params.outfile(),params.nevt(),12,10,15,10000,params.ptmin(),1);
+  //     
+  //    delete my_test;
+  //}
+    
+    
+    // Option 5: stub windows calculation
+    //
+    if (params.option()=="stub_win")
+    {
+      windows* my_effs = new windows(params.inputfile(),params.ptmin(),params.nevt()*params.ptmin(),params.qmax(),params.type());
+      delete my_effs;
+    }
+    
+//  if (params.option()=="get_windows")
+//  {
+//    TC_win* my_test = new TC_win(params.testfile(),params.outfile(),params.nevt(),params.ptmin(),
+//				 params.qmax(),params.dbg());
+//
+//    delete my_test;
+ // }
+
 
   return 0;
 }

@@ -30,15 +30,16 @@ using namespace std;
 //
 // filename : the name and directory of the input ROOT file containing the STUB information
 // outfile  : the name of the output ROOT file containing the rates 
+// fe       : take into account the FE inefficiencies (1) or not (0). For the moment only CBC/MPA 
 //
 // Info about the code:
 //
 //  http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto620 (Part 3.2.2)
 // 
-// This code was developped for the BE classic geometry, but also works for 
-// the 5 disks alternative
+// This code was developped for the TDR tilted geometry (D5), but also works for 
+// other types 
 //
-//  Author: viret@in2p3_dot_fr
+//  Author: s.viret@ipnl_dot_in2p3_dot_fr
 //
 ///////////////////////////////////
 
@@ -48,9 +49,9 @@ class rates
 {
  public:
 
-  rates(std::string filename, std::string outfile);
+  rates(std::string filename, std::string outfile, bool fe);
 
-  void  get_rates();  // The main method  
+  void  get_rates(bool fe);  // The main method  
   void  initVars();
   void  initTuple(std::string in,std::string out);
 
@@ -65,10 +66,11 @@ class rates
   // Coding conventions for barrel and endcap module IDs
   
   // We define a barrel ID and an endcap ID as follows:
+  // For the tilted barrel layers the module/ladder ambiguity 
+  // is dealt with in the extractor, there is no need to care about it
 
-  // B_id = (layer-1)*10000 + ladder*100 + module (0 to 57523)
-
-  // E_id = (disk-1)*10000 + ladder*100 + module (0 to 131377)
+  // B_id = (layer-1)*10000 + ladder*100 + module 
+  // E_id = (disk-1)*10000 + ladder*100 + module 
 
   // Disks 0 to 6  (towards positive Z)  (0 to  4 for 5D)
   // Disks 7 to 13 (towards negative Z)  (7 to 11 for 5D)
@@ -96,7 +98,7 @@ class rates
   // Here are the parameters needed from the data
   // Details on these might be found on
   //
-  // https://github.com/sviret/HL_LHC/blob/master/Extractors/RecoExtractor/interface/L1TrackTrigger_analysis.h
+  // https://github.com/sviret/HL_LHC/blob/Stub_builder_for_9_2_X/Extractors/RecoExtractor/interface/StubExtractor.h
   //
 
 
@@ -104,19 +106,24 @@ class rates
   std::vector<int>   m_clus_layer;
   std::vector<int>   m_clus_ladder;
   std::vector<int>   m_clus_module;
+  std::vector<int>   m_clus_type;
   std::vector<int>   m_clus_nrows;
   std::vector<int>   m_clus_nseg;
-
+  std::vector<float> m_clus_z;
+    
   std::vector<int>   *pm_clus_layer;
   std::vector<int>   *pm_clus_ladder;
   std::vector<int>   *pm_clus_module;
+  std::vector<int>   *pm_clus_type;
   std::vector<int>   *pm_clus_nrows;
   std::vector<int>   *pm_clus_nseg;
-
+  std::vector<float> *pm_clus_z;
+    
   int m_stub;
   std::vector<int>   m_stub_layer;
   std::vector<int>   m_stub_ladder;
   std::vector<int>   m_stub_module;
+  std::vector<int>   m_stub_type;
   std::vector<int>   m_stub_tp;
   std::vector<float> m_stub_pt;
   std::vector<float> m_stub_pxGEN;
@@ -124,14 +131,17 @@ class rates
   std::vector<float> m_stub_etaGEN;
   std::vector<float> m_stub_X0;
   std::vector<float> m_stub_Y0;
+  std::vector<float> m_stub_z;
   std::vector<int>   m_stub_seg;
   std::vector<int>   m_stub_chip;
   std::vector<int>   m_stub_pdgID;
   std::vector<int>   m_stub_clust1;
+  std::vector<float> m_stub_cor;
 
   std::vector<int>   *pm_stub_layer;
   std::vector<int>   *pm_stub_ladder;
   std::vector<int>   *pm_stub_module;
+  std::vector<int>   *pm_stub_type;
   std::vector<int>   *pm_stub_tp;
   std::vector<float> *pm_stub_pt;
   std::vector<float> *pm_stub_pxGEN;
@@ -139,11 +149,12 @@ class rates
   std::vector<float> *pm_stub_etaGEN;
   std::vector<float> *pm_stub_X0;
   std::vector<float> *pm_stub_Y0;
+  std::vector<float> *pm_stub_z;
   std::vector<int>   *pm_stub_seg;
   std::vector<int>   *pm_stub_chip;
   std::vector<int>   *pm_stub_pdgID;
   std::vector<int>   *pm_stub_clust1;
-
+  std::vector<float> *pm_stub_cor;
 
   // Some parameters for the debug tree
 
@@ -154,6 +165,8 @@ class rates
   int m_sen;
   int m_chp;
   float m_rate;
+    
+  bool m_tilt;
 
 };
 
