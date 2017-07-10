@@ -1,6 +1,6 @@
 CXX = g++
 LD  = g++
-CFLAGS = -Wall -g -std=c++11
+CFLAGS = -Wall -g -std=c++14
 
 INCS = $(ROOTSYS)/include/ $(PWD)/../Macros/AM_ana_tools/tclap-1.2.1/include/ .
 
