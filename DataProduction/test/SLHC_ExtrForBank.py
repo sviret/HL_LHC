@@ -22,7 +22,7 @@ process.source = cms.Source("EmptySource")
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Load the extracto
 process.load("Extractors.RecoExtractor.MIB_extractor_cff")

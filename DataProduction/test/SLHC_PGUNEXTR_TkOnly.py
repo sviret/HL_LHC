@@ -1,20 +1,20 @@
 #########################
 #
 # Configuration file for PGUN events
-# production in tracker only
+# production in tracker only, along with the extracted file
 #
 # Switch between flat and tilted geometry if provided at the end
 #
 # Date  : 05/07/2016
 #
-# Script tested with release CMSSW_8_1_0_pre7
+# Script tested with release CMSSW_10_0_0_pre1
 #
 #########################
 #
 # Here you choose if you want flat (True) or tilted (False) geometry
 #
 
-flat=False
+flat=True
 
 ###################
 
@@ -27,7 +27,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.Digi_cff')
@@ -46,14 +46,22 @@ from L1Trigger.TrackTrigger.TTStub_cfi import *
 if flat:
 	print 'You choose the flat geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(False) # Tilted is the new default
+	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(False) 
+	process.TTStubAlgorithm_official_Phase2TrackerDigi_.EndcapCutSet = cms.VPSet(
+		cms.PSet( EndcapCut = cms.vdouble( 0 ) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 2, 3.5, 2, 3.5, 5.5, 6, 6.5, 6.5, 6.5, 6.5, 6.5, 6.5, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 1.5, 3, 2, 3, 5, 6, 6.5, 6.5, 6.5, 5, 6.5, 6.5, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 0.5, 0.5, 1, 1.5, 3, 4.5, 6, 6.5, 6.5, 7, 7, 7, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 0.5, 0.5, 0.5, 1.5, 2., 3.5, 5., 6.5, 6.5, 6.5, 6, 7, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 0.5, 0.5, 0.5, 1., 1.5, 2.5, 4., 5, 7, 5.5, 7, 7, 7, 7) ),
+		)
 else:
 	print 'You choose the tilted geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(200)
 )
 
 #You can turn on the FE ineffs 
@@ -93,7 +101,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 process.mix.digitizers = cms.PSet(process.theDigitizersValid)
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 
 # Random seeds
@@ -141,13 +149,12 @@ process.genfiltersummary_step   = cms.EndPath(process.genFilterSummary)
 process.digitisationTkOnly_step = cms.Path(process.pdigi_valid)
 process.L1TrackTrigger_step     = cms.Path(process.TrackTriggerClustersStubs)
 process.L1TTAssociator_step     = cms.Path(process.TrackTriggerAssociatorClustersStubs)
-process.p = cms.Path(process.MIBextraction)
-process.endjob_step          = cms.EndPath(process.endOfProcess)
-process.RAWSIMoutput_step    = cms.EndPath(process.RAWSIMoutput)
+process.p                       = cms.Path(process.MIBextraction)
+process.endjob_step             = cms.EndPath(process.endOfProcess)
+process.RAWSIMoutput_step       = cms.EndPath(process.RAWSIMoutput)
 
 
 process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulationTkOnly_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.p,process.endjob_step,process.RAWSIMoutput_step)
-#process.schedule = cms.Schedule(process.generation_step,process.genfiltersummary_step,process.simulationTkOnly_step,process.digitisationTkOnly_step,process.L1TrackTrigger_step,process.L1TTAssociator_step,process.endjob_step,process.RAWSIMoutput_step)
 
 # filter all path with the production filter sequence
 for path in process.paths:

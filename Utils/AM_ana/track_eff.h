@@ -121,6 +121,7 @@ class track_eff
   std::vector<float> m_stub_sw_c;
   std::vector<int>   m_stub_tp;
   std::vector<int>   m_stub_pdg;
+  std::vector<int>   m_stub_chip;
   std::vector<float> m_stub_pxGEN;
   std::vector<float> m_stub_pyGEN;
   std::vector<float> m_stub_etaGEN;
@@ -137,12 +138,21 @@ class track_eff
   std::vector<int>   m_stub_clust1;
   std::vector<int>   m_stub_clust2;
   std::vector<int>   m_clus_cw;
+  std::vector<float>   m_clus_strip;
+
+  std::vector<int>   m_clus_layer;
+  std::vector<int>   m_clus_ladder;
+  std::vector<int>   m_clus_module;
+  std::vector<int>   m_clus_segment;
+  std::vector<int>   m_clus_bottom;
+  std::vector<int>   m_clus_tp;
 
   std::vector<int>   *pm_stub_layer;
   std::vector<int>   *pm_stub_ladder;
   std::vector<int>   *pm_stub_module;
   std::vector<int>   *pm_stub_segment;
   std::vector<int>   *pm_stub_did;
+  std::vector<int>   *pm_stub_chip;
   std::vector<float> *pm_stub_strip;
   std::vector<float> *pm_stub_sw;
   std::vector<float> *pm_stub_sw_c;
@@ -164,6 +174,14 @@ class track_eff
   std::vector<int>   *pm_stub_clust1;
   std::vector<int>   *pm_stub_clust2;
   std::vector<int>   *pm_clus_cw;
+  std::vector<float>   *pm_clus_strip;
+
+  std::vector<int>   *pm_clus_layer;
+  std::vector<int>   *pm_clus_ladder;
+  std::vector<int>   *pm_clus_module;
+  std::vector<int>   *pm_clus_segment;
+  std::vector<int>   *pm_clus_bottom;
+  std::vector<int>   *pm_clus_tp;
 
   // The output tree has one entry per event
 
@@ -201,11 +219,14 @@ class track_eff
   std::vector<int>     *stub_seg;    // segment number of ALL the stubs
   std::vector<float>   *stub_strip;  // strip number of ALL the stubs
   std::vector<int>     *stub_did;    // detid number of ALL the stubs
+  std::vector<int>     *stub_chip;
   std::vector<float>   *stub_sw;     // stub width at FE level of ALL the stubs
   std::vector<float>   *stub_sw_c;   // stub width at offline level of ALL the stubs
   std::vector<float>   *stub_sw_truth;// stub width at offline level of ALL the stubs
   std::vector<int>     *stub_cw1;
   std::vector<int>     *stub_cw2;
+  std::vector<int>     *stub_cn1;
+  std::vector<int>     *stub_cn2;
   std::vector<int>     *stub_tp;     // tp index of ALL the stubs (in part_*** vectors of this tree!!!!)
   std::vector<int>     *stub_fe;     // 0 passing CIC, 1 passing CBC/MPA, 2 not passing CBC/MPA 
   std::vector<float>   *stub_ptGEN;  // PT gen of the particle inducing the stub (-1 if bad)

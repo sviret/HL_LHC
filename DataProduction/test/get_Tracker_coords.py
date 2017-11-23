@@ -13,14 +13,14 @@
 # Author: S.Viret (viret@in2p3.fr)
 # Date  : 16/04/2015
 #
-# Script tested with release CMSSW_9_2_0
+# Script tested with release CMSSW_10_0_0_pre1
 #
 #########
 #
 # Here you choose if you want flat (True) or tilted (False) geometry
 #
 
-flat=False
+flat=True
 
 ###################
 
@@ -37,7 +37,7 @@ process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
 
 # Global tag for PromptReco
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Number of events
 process.maxEvents = cms.untracked.PSet(

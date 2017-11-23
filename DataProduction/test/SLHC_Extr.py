@@ -8,7 +8,7 @@
 # Author: S.Viret (s.viret@ipnl.in2p3.fr)
 # Date  : 24/05/2017
 #
-# Script tested with release CMSSW_9_2_0 (works either for Tilted of Flat geometries)
+# Script tested with release CMSSW_10_0_0_pre1 (works either for Tilted of Flat geometries)
 #
 #########
 #
@@ -26,7 +26,7 @@ process = cms.Process("MIBextractor")
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('L1Trigger.TrackTrigger.TrackTrigger_cff')
 process.load('SimTracker.TrackTriggerAssociation.TrackTriggerAssociator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
@@ -34,7 +34,7 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 # Global tag for PromptReco
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 process.options = cms.untracked.PSet(
     SkipEvent = cms.untracked.vstring('ProductNotFound')
@@ -47,8 +47,8 @@ process.maxEvents = cms.untracked.PSet(
 
 # The file you want to extract
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('file:PGun_example.root'),       
-                            #fileNames = cms.untracked.vstring('file:PU_sample.root'),
+                            #fileNames = cms.untracked.vstring('file:PGun_example.root'),       
+                            fileNames = cms.untracked.vstring('file:PU_sample.root'),
 			    #fileNames = cms.untracked.vstring('file:TT_example.root'),       
 			    #fileNames = cms.untracked.vstring('file:QCD_example.root'),       
                             duplicateCheckMode = cms.untracked.string( 'noDuplicateCheck' )

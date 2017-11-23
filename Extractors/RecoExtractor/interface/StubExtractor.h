@@ -240,6 +240,7 @@ class StubExtractor
   std::vector<int>    *m_stub_cw2;    // top cluster width (in strips) 
   std::vector<float>  *m_stub_deltas; // corrected stub width at FE level (in half-strips)
   std::vector<float>  *m_stub_deltasf; // corrected stub width with full parallax info (in half-strips)
+  std::vector<float>  *m_stub_deltash; // corrected stub width with hardware degradation
   std::vector<float>  *m_stub_cor;    // stub width parallax correction at FE level (in half-strips)
   std::vector<float>  *m_stub_corf;   // stub width parallax correction full (in half-strips)
   std::vector<int>    *m_stub_tp;     // index of the TP inducing the stub in the MC tree

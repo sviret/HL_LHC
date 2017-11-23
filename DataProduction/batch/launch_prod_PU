@@ -1,0 +1,90 @@
+#
+# Example list of batch jobs 
+#
+
+#
+#Banks for AM approach
+#
+
+#source launch_SLHC.sh auto:upgradePLS3 2000 100000 MUBANK 0.01 0.05  0 6.28 -2.5 2.5 -1 0 BANK_T5_hig TILT 0 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 2000 100000 MUBANK 0.05 0.2  0 6.28 -2.5 2.5 -1 0 BANK_T5_mid TILT 0 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 2000 200000 MUBANK 0.2 0.5  0 6.28 -2.5 2.5 -1 0 BANK_T5_low TILT 0 BATCH
+
+#
+#Stub windows
+#
+
+# PGUN PU0 samples with hardware bend limits
+source launch_SLHC.sh auto:upgradePLS3 200 20000 MU   1.5 10 0 6.28 -3. 3. -1 0 SWtune_noSW_hlim  TILT 0 BATCH
+source launch_SLHC.sh auto:upgradePLS3 200 10000 ELE  1.5 40 0 6.28 -3. 3. -1 0 SWtune_noSW_hlim  TILT 0 BATCH
+
+# QCD samples from relval at PU140 and PU200, stubs reco with h/lim
+source launch_SLHC.sh auto:upgradePLS3 0 0 SWSTEP1 0.01 0.05  0 6.28 -2.5 2.5 -1 0 QCD_Pt-15 TILT 140 BATCH
+source launch_SLHC.sh auto:upgradePLS3 0 0 SWSTEP1 0.01 0.05  0 6.28 -2.5 2.5 -1 0 QCD_Pt-15 TILT 200 BATCH
+
+# MinBias samples from relval at PU140 and PU200, stubs reco with h/lim
+source launch_SLHC.sh auto:upgradePLS3 0 0 SWSTEP1 0.01 0.05  0 6.28 -2.5 2.5 -1 0 SingleMuPt1Extended TILT 140 BATCH
+source launch_SLHC.sh auto:upgradePLS3 0 0 SWSTEP1 0.01 0.05  0 6.28 -2.5 2.5 -1 0 SingleMuPt1Extended TILT 200 BATCH
+
+
+#PU0 samples with SW140 tuning
+#source launch_SLHC.sh auto:upgradePLS3 200 20000 MU   0.5 50 0 6.28 -3. 3. -1 140  Mu_SW140     TILT 0 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 200 10000 ELE  0.5 50 0 6.28 -3. 3. -1 140  Ele_SW140    TILT 0 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 16    TT   8 100 0 6.28 -3 3 -1 140     TTbar_SW140  TILT 0 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 16    JETS 8 100 0 6.28 -3 3 -1 140     JETS_SW140   TILT 0 BATCH
+
+
+#PU140 with SW140
+#source launch_SLHC.sh auto:upgradePLS3 500 8 MU   0.5 50 0 6.28 -3. 3. -1 140 Mu_SW140    TILT 140 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 ELE  0.5 50 0 6.28 -3. 3. -1 140 Ele_SW140   TILT 140 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 TT   8 100 0 6.28  -3  3  -1 140 TTbar_SW140 TILT 140 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 JETS 8 100 0 6.28  -3  3  -1 140 JETS_SW140  TILT 140 BATCH
+
+#PU200 with SW200
+#source launch_SLHC.sh auto:upgradePLS3 500 8 MU   0.5 50 0 6.28 -3. 3. -1 200 Mu_SW200    TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 ELE  0.5 50 0 6.28 -3. 3. -1 200 Ele_SW200   TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 TT   8 100 0 6.28  -3  3  -1 200 TTbar_SW200 TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 JETS 8 100 0 6.28  -3  3  -1 200 JETS_SW200  TILT 200 BATCH
+
+
+# PU scan with SW200 tuning
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 20 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 40 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 60 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 100 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 120 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 140 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 160 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 200 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 120 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 140 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 160 BATCH
+source launch_SLHC.sh auto:upgradePLS3 100 8 MU   0.5 50 0 6.28 -3. 3. -1 200 PUSCAN_SW200    TILT 200 BATCH
+
+
+source launch_SLHC.sh auto:upgradePLS3 500 8 MU   8 100 0 6.28 -3 3 -1 200 920_SW200_EOF  TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 1000 8 ELE  8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 1000 8 TT   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 2 JETS 8 100 0 6.28 -3 3 -1 -1 920_PU200_tuning_final_0917  TILT 200 BATCH
+#PU250
+#source launch_SLHC.sh auto:upgradePLS3 500 8 MU   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 250 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 ELE  8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 250 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 TT   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 250 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 JETS 8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 250 BATCH
+#PU300
+#source launch_SLHC.sh auto:upgradePLS3 500 8 MU   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 300 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 ELE  8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 300 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 TT   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 300 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 JETS 8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 300 BATCH
+#PU350
+#source launch_SLHC.sh auto:upgradePLS3 500 8 MU   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 350 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 ELE  8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 350 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 TT   8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 350 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 8 JETS 8 100 0 6.28 -3 3 -1 -1 920_stress_0717  TILT 350 BATCH
+
+
+
+#source launch_SLHC.sh auto:upgradePLS3 500 2 MU 0.1 0.1 0. 6.28 -2.5 2.5 -1 -1 920_PU_TDR_140_0617 TILT 140 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 2 MU 0.1 0.1 0. 6.28 -2.5 2.5 -1 -1 920_PU_TDR_200_0617 TILT 200 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 2 MU 0.1 0.1 0. 6.28 -2.5 2.5 -1 -1 920_PU_TDR_250_0617 TILT 250 BATCH
+#source launch_SLHC.sh auto:upgradePLS3 500 2 MU 0.1 0.1 0. 6.28 -2.5 2.5 -1 -1 920_PU_TDR_300_0617 TILT 300 BATCH

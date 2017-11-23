@@ -8,7 +8,7 @@
 # Author: S.Viret (s.viret@ipnl.in2p3.fr)
 # Date  : 24/05/2017
 #
-# Script tested with release CMSSW_9_2_0
+# Script tested with release CMSSW_10_0_0_pre1
 #
 #########################
 #
@@ -28,7 +28,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('IOMC.EventVertexGenerators.VtxSmearedGauss_cfi')
@@ -60,7 +60,7 @@ process.source = cms.Source("EmptySource")
 # Global tag for PromptReco
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 # Random seeds
 process.RandomNumberGeneratorService.generator.initialSeed      = 1

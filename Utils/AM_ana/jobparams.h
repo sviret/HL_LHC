@@ -32,6 +32,7 @@ class jobparams{
   std::string pattfile() const;
   float       qmax() const;
   float       ptmin() const;
+  float       maxlosses() const;
   int         nevt() const;
   int         type() const;
   int         rate() const;
@@ -46,6 +47,7 @@ class jobparams{
   std::string  m_pattfile;  
   float        m_rmax;
   float        m_ptmin;
+  float        m_maxlosses;
   int          m_nevt;
   int          m_type;
   int          m_rate;
@@ -81,6 +83,10 @@ inline float jobparams::qmax() const{
 
 inline float jobparams::ptmin() const{
   return m_ptmin;
+}
+
+inline float jobparams::maxlosses() const{
+  return m_maxlosses;
 }
 
 inline int jobparams::nevt() const{

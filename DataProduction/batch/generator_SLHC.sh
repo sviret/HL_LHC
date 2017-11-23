@@ -31,8 +31,10 @@ NPU=${15}               # Average PU events number
 THRESH=${16}            # pt threshold for stub windows
 TID=${17}               # trigger tower ID in which the PGun particles are sent
 GEOM=${18}              # geometry type: FLAT (True) or TILTED (False)
+FILE=${19}              # input file name (for SW tuning only)
 PU=0 
 BANK=0
+SW=0
 
 #
 # Setting up environment variables
@@ -112,6 +114,11 @@ if [ "$PTYPE" -eq 1011 ]; then
     cp $PACK_DIR/test/base/SLHC_BANK_BASE.py BH_dummy2.py 
 fi
 
+if [ "$PTYPE" -eq 666 ]; then
+    SW=1
+    cp $PACK_DIR/test/base/SLHC_StubsExtr_BASE.py BH_dummy.py 
+fi
+
 
 # Choice of the stub windows
 
@@ -121,6 +128,12 @@ if [ "$THRESH" -eq 0 ]; then
 elif [ "$THRESH" -eq -1 ]; then
     echo 'Using the default stub windows'
     cp $PACK_DIR/test/base/BaseTune.txt tune 
+elif [ "$THRESH" -eq 140 ]; then
+    echo 'Using the SW140 stub windows'
+    cp $PACK_DIR/test/base/BaseTune_SW140.txt tune 
+elif [ "$THRESH" -eq 200 ]; then
+    echo 'Using the SW200 stub windows'
+    cp $PACK_DIR/test/base/BaseTune_SW200.txt tune 
 else
     cp $PACK_DIR/test/base/${THRESH}GevTune.txt tune 
 fi
@@ -128,6 +141,7 @@ fi
 SWTUN=`cat tune`
 
 echo $SWTUN
+echo $FILE
 
 # Finally the script is modified according to the requests
 
@@ -154,6 +168,11 @@ sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
 
 perl -i.bak -pe 's/SWTUNING/'"${SWTUN}"'/g' BH_dummy.py
 
+if [ "$BANK" -eq 1 ]; then
+    sed "s/NEVTS/$EVTS/"                                   -i BH_dummy2.py
+    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
+fi
+
 
 EVTS=$(( 5 * $NPU + 1 )) 
 sed "s/TILTEDORFLAT/$GEOM/"                            -i BH_dummyMinBias.py
@@ -163,10 +182,6 @@ sed "s/NSEEDB/$SEED6/g"                                -i BH_dummyMinBias.py
 sed "s/NSEEDC/$SEED7/g"                                -i BH_dummyMinBias.py
 sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummyMinBias.py
 
-if [ "$BANK" -eq 1 ]; then
-    sed "s/NEVTS/$EVTS/"                                   -i BH_dummy2.py
-    sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
-fi
 
 # Set output filenames
 #
@@ -181,7 +196,10 @@ if [ "$BANK" -eq 0 ]; then
 fi
 
 cmsRun BH_dummy.py
-cmsRun BH_dummy2.py
+
+if [ "$SW" -eq 0 ]; then
+    cmsRun BH_dummy2.py
+fi
 
 if [ "$BANK" -eq 1 ]; then
     rm PGun_example.root
@@ -193,4 +211,8 @@ fi
 
 ls -l
 gfal-copy file://$TOP/extracted.root $STOR_DIR/$DATA_NAME
-gfal-copy file://$TOP/PGun_example.root $STOR_DIR/EDM_$DATA_NAME
+
+if [ "$SW" -eq 0 ]; then
+    gfal-copy file://$TOP/PGun_example.root $STOR_DIR/EDM_$DATA_NAME
+fi
+

@@ -43,6 +43,11 @@ jobparams::jobparams(int argc, char** argv){
      ValueArg<float> ptmin("p","ptmin","minimal pt value for primary selection (in GeV/c)",
 			   false, 2., "float");
      cmd.add(ptmin);
+
+     ValueArg<float> maxlosses("m","maxlosses","max proportion of CIC segments with good stub losses accepted (in %)",
+			   false, 1., "float");
+     cmd.add(maxlosses);
+
  
      ValueArg<float> qmax("q","qmax","maximal d0 value for primary selection (in cm)",
 			  false, 0.1, "float");
@@ -69,6 +74,7 @@ jobparams::jobparams(int argc, char** argv){
      m_type         = type.getValue();
      m_rmax         = qmax.getValue();
      m_ptmin        = ptmin.getValue();
+     m_maxlosses    = maxlosses.getValue();
      m_rate         = rate.getValue();
    }
    catch (ArgException &e){ // catch exception from parse

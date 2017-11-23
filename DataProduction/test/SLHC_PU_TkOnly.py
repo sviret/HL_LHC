@@ -27,7 +27,7 @@ process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
-process.load('Configuration.StandardSequences.MagneticField_38T_PostLS1_cff')
+process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
 process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.Digi_cff')
@@ -47,10 +47,20 @@ process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(10)
 )
 
+process.TTStubsFromPhase2TrackerDigis.FEineffs = cms.bool(True) # Add FE dynamic inefficiencies
+
 if flat:
 	print 'You choose the flat geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyFlatGeom_cff') # Special config file for TkOnly geometry
-	TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(False) # Tilted is the new default
+	process.TTStubAlgorithm_official_Phase2TrackerDigi_.zMatchingPS = cms.bool(False) 
+	process.TTStubAlgorithm_official_Phase2TrackerDigi_.EndcapCutSet = cms.VPSet(
+		cms.PSet( EndcapCut = cms.vdouble( 0 ) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 2, 3.5, 2, 3.5, 5.5, 6, 6.5, 6.5, 6.5, 6.5, 6.5, 6.5, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 1.5, 3, 2, 3, 5, 6, 6.5, 6.5, 6.5, 5, 6.5, 6.5, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 0.5, 0.5, 1, 1.5, 3, 4.5, 6, 6.5, 6.5, 7, 7, 7, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 0.5, 0.5, 0.5, 1.5, 2., 3.5, 5., 6.5, 6.5, 6.5, 6, 7, 7, 7) ),
+		cms.PSet( EndcapCut = cms.vdouble( 0, 0.5, 0.5, 0.5, 0.5, 1., 1.5, 2.5, 4., 5, 7, 5.5, 7, 7, 7, 7) ),
+		)
 else:
 	print 'You choose the tilted geometry'
 	process.load('L1Trigger.TrackTrigger.TkOnlyTiltedGeom_cff') # Special config file for TkOnly geometry
@@ -62,14 +72,14 @@ process.source = cms.Source("EmptySource")
 process.mix.minBunch                           = cms.int32(-12)
 process.mix.bunchspace                         = cms.int32(25)
 process.mix.input.nbPileupEvents.averageNumber = cms.double(10.0)  # The average number of pileup events you want  
-process.mix.input.fileNames     = cms.untracked.vstring('file:MBias.root') # The file where to pick them up
+process.mix.input.fileNames                    = cms.untracked.vstring('file:MBias.root') # The file where to pick them up
 
 # Additional output definition
 
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:upgradePLS3', '')
 
 process.RandomNumberGeneratorService.generator.initialSeed      = 20
 process.RandomNumberGeneratorService.VtxSmeared.initialSeed     = 2

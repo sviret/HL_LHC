@@ -1,17 +1,17 @@
 #No stub window tuning
 
-process.TTStubAlgorithm_official_Phase2TrackerDigi_.BarrelCut = cms.vdouble( 0, 10, 10, 10, 10., 10., 10. )
+process.TTStubAlgorithm_official_Phase2TrackerDigi_.BarrelCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8 )
 process.TTStubAlgorithm_official_Phase2TrackerDigi_.TiltedBarrelCutSet = cms.VPSet(
 							cms.PSet( TiltedCut = cms.vdouble( 0 ) ),
-       				    		        cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
-    							cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
-      							cms.PSet( TiltedCut = cms.vdouble( 0, 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10., 10.) ),
+       				    		        cms.PSet( TiltedCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8) ),
+    							cms.PSet( TiltedCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8) ),
+      							cms.PSet( TiltedCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8) ),
    )
 process.TTStubAlgorithm_official_Phase2TrackerDigi_.EndcapCutSet = cms.VPSet(
 							cms.PSet( EndcapCut = cms.vdouble( 0 ) ), 
-							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
-							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
-							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
-							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
-							cms.PSet( EndcapCut = cms.vdouble( 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ) ),
+							cms.PSet( EndcapCut = cms.vdouble( 0, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 ) ),
 							)						
