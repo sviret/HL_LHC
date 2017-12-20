@@ -31,7 +31,11 @@ jobparams::jobparams(int argc, char** argv){
      ValueArg<std::string> inputfile("i","input","path and name of the input file",
 				false, "/scratch/viret/data.root", "string");
      cmd.add(inputfile);
-
+       
+     ValueArg<std::string> inputfileQCD("j","jinput","path and name of the input QCD file",
+                                        false, "/scratch/viret/data.root", "string");
+     cmd.add(inputfileQCD);
+       
      ValueArg<int> nevt("n","nevt","number of events for the eff test?",
 			false, 0, "int");
      cmd.add(nevt);
@@ -43,7 +47,23 @@ jobparams::jobparams(int argc, char** argv){
      ValueArg<float> ptmin("p","ptmin","minimal pt value for primary selection (in GeV/c)",
 			   false, 2., "float");
      cmd.add(ptmin);
-
+       
+     ValueArg<float> sptminmu("y","sptminmu","minimal pt value for muon for SW tuning (in GeV/c)",
+                            false, 2., "float");
+     cmd.add(sptminmu);
+  
+     ValueArg<float> sptmaxmu("z","sptmaxmu","maximal pt value for muon for SW tuning (in GeV/c)",
+                            false, 6., "float");
+     cmd.add(sptmaxmu);
+       
+     ValueArg<float> sptminele("k","sptminele","minimal pt value for electron for SW tuning (in GeV/c)",
+                            false, 5., "float");
+     cmd.add(sptminele);
+       
+     ValueArg<float> sptmaxele("l","sptmaxele","maximal pt value for electron for SW tuning (in GeV/c)",
+                            false, 20., "float");
+     cmd.add(sptmaxele);
+       
      ValueArg<float> maxlosses("m","maxlosses","max proportion of CIC segments with good stub losses accepted (in %)",
 			   false, 1., "float");
      cmd.add(maxlosses);
@@ -65,6 +85,7 @@ jobparams::jobparams(int argc, char** argv){
      cmd.parse(argc, argv);
      
      m_inputfile    = inputfile.getValue();
+     m_inputfileQCD = inputfileQCD.getValue();
      m_outfile      = outfile.getValue();
      m_testfile     = testfile.getValue();
      m_pattfile     = pattfile.getValue();
@@ -74,6 +95,10 @@ jobparams::jobparams(int argc, char** argv){
      m_type         = type.getValue();
      m_rmax         = qmax.getValue();
      m_ptmin        = ptmin.getValue();
+     m_ptminmu      = sptminmu.getValue();
+     m_ptmaxmu      = sptmaxmu.getValue();
+     m_ptminele     = sptminele.getValue();
+     m_ptmaxele     = sptmaxele.getValue();
      m_maxlosses    = maxlosses.getValue();
      m_rate         = rate.getValue();
    }
@@ -82,4 +107,3 @@ jobparams::jobparams(int argc, char** argv){
      abort();
    }
 }
-

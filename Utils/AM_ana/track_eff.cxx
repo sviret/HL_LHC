@@ -15,7 +15,6 @@ stub_module(new std::vector<int>),
 stub_seg(new std::vector<int>),
 stub_strip(new std::vector<float>),
 stub_did(new std::vector<int>),
-stub_chip(new std::vector<int>),
 stub_sw(new std::vector<float>),
 stub_sw_c(new std::vector<float>),
 stub_sw_truth(new std::vector<float>),
@@ -94,7 +93,7 @@ dtc_mult_FE(new std::vector<int>)
   m_dbg    = dbg;
   m_d0_min = d0_min;
   m_pt_min = pt_min;
-  has_patt = false;
+  has_patt = true;
 
   m_tilted = true;
     
@@ -126,7 +125,9 @@ dtc_mult_FE(new std::vector<int>)
     }
   }  
     
+  cout << "PT A" << endl;
   track_eff::initTuple(filename,outfile);
+  cout << "PT B" << endl;  
 
   if (has_patt)
   {
@@ -137,6 +138,7 @@ dtc_mult_FE(new std::vector<int>)
     if (!track_eff::convert_cabling(secfilename)) return; 
   }
 
+  cout << "PT C" << endl;
   track_eff::do_test(nevt); // Launch the test loop over n events
 }
 
@@ -156,6 +158,8 @@ void track_eff::do_test(int nevt)
   if (!has_patt) m_sec_mult=1; // We don't deal with trigger towers then
 
   const int m_nsec = m_sec_mult; // How many sectors are in the file (from convert_tower)
+
+  //  cout << nevt << " / " << m_L1TT->GetEntries() << endl;
 
   int ndat = std::min(nevt,static_cast<int>(m_L1TT->GetEntries())); // How many events will we test
 
@@ -208,10 +212,9 @@ void track_eff::do_test(int nevt)
     nb_patterns =0;
     nb_tcs =0;
     nb_tracks =0;
-
+    
     m_L1TT->GetEntry(i);
     m_PIX->GetEntry(i);
-
     if (has_patt) m_PATT->GetEntry(i);
 
     if (i%1000==0)
@@ -385,7 +388,28 @@ void track_eff::do_test(int nevt)
 	if (m_stub_chip[j] != m_stub_chip[jj]) continue;
 	++nchip;	   
       }
+      /*
+      for (int jj=0;jj<m_clus;++jj)
+      {	    
+	//if (m_stub_tp[j] != m_clus_tp[jj]) continue;
+	if (layer   != m_clus_layer[jj]) continue;
+	if (ladder  != m_clus_ladder[jj]) continue;
+	if (module  != m_clus_module[jj]) continue;
+	if (!isPS && (m_clus_segment[jj] != m_stub_segment[j])) continue;
+	if (isPS && m_clus_bottom[jj] && (m_stub_segment[j]/16 != m_clus_segment[jj])/16) continue;
+	if (isPS && !m_clus_bottom[jj] && (m_stub_segment[j]/16 != m_clus_segment[jj])) continue;
+	
+	//cout << m_stub_chip[j] << " / " << int(m_clus_strip[jj]/120) << endl;
 
+	if (isPS && m_clus_bottom[jj] && (m_stub_chip[j] != int(m_clus_strip[jj]/120))) continue;
+	if (isPS && !m_clus_bottom[jj] && (m_stub_chip[j] != int(m_clus_strip[jj]/127))) continue;
+	if (!isPS && (m_stub_chip[j] != int(m_clus_strip[jj]/127))) continue;
+
+	(m_clus_bottom[jj]) 
+	  ? ncn1+=m_clus_cw[jj]
+	  : ncn2+=m_clus_cw[jj];
+      }
+      */
       if (has_patt)
       {
 	if (m_modules.at(id).size()>0)
@@ -452,7 +476,8 @@ void track_eff::do_test(int nevt)
       stub_strip->push_back(m_stub_strip[j]);
       stub_chip->push_back(1000*ncic+nchip);
       stub_sw->push_back(m_stub_sw[j]);
-      stub_sw_c->push_back(m_stub_sw_c[j]);      
+      //stub_sw_c->push_back(m_stub_sw_c[j]);
+      stub_sw_c->push_back(0);
       stub_sw_truth->push_back(0);
       stub_cw1->push_back(-1);
       stub_cw2->push_back(-1);
@@ -460,9 +485,30 @@ void track_eff::do_test(int nevt)
       stub_cn2->push_back(ncn2);
       stub_tp->push_back(-1);
       stub_fe->push_back(0);
+      /*
+      if (ncn1+ncn2>12 && layer>7 && layer<11) stub_fe->at(j) = 1;
+      if (ncn1+ncn2<2 && layer>7 && layer<11) stub_fe->at(j) = 1;
+      
+      if (ncn1+ncn2<1 && layer<=7) stub_fe->at(j) = 1;
+      if (ncn1+ncn2>20 && layer<=7) stub_fe->at(j) = 1;
 
-      if (m_stub_c[j]>300) stub_fe->at(j) = 1;
-      if (m_stub_c[j]<300 && m_stub_c[j]>50) stub_fe->at(j) = 2;
+      if (ncn1+ncn2<1 && layer>10 && (layer-11)%7>1 && ladder<6) stub_fe->at(j) = 1;
+      if (ncn1+ncn2>15 && layer>10 && (layer-11)%7>1 && ladder<6) stub_fe->at(j) = 1;
+    
+    if (ncn1+ncn2<1 && layer>10 && (layer-11)%7>1 && ladder>=6) stub_fe->at(j) = 1;
+    if (ncn1+ncn2>10 && layer>10 && (layer-11)%7>1 && ladder>=6) stub_fe->at(j) = 1;
+  
+  if (ncn1+ncn2<1 && layer>10 && (layer-11)%7<=1 && ladder<9) stub_fe->at(j) = 1;
+  if (ncn1+ncn2>18 && layer>10 && (layer-11)%7<=1 && ladder<9) stub_fe->at(j) = 1;
+if (ncn1+ncn2<1 && layer>10 && (layer-11)%7<=1 && ladder>=9) stub_fe->at(j) = 1;
+if (ncn1+ncn2>8 && layer>10 && (layer-11)%7<=1 && ladder>=9) stub_fe->at(j) = 1;
+      */
+
+      if (isPS && nchip>3) stub_fe->at(j) = 1;
+      if (!isPS && nchip>2) stub_fe->at(j) = 1;
+
+      //     if (m_stub_c[j]>300) stub_fe->at(j) = 1;
+      //      if (m_stub_c[j]<300 && m_stub_c[j]>50) stub_fe->at(j) = 2;
 
       stub_ptGEN->push_back(-1);
       stub_d0GEN->push_back(-1);
@@ -496,6 +542,10 @@ void track_eff::do_test(int nevt)
 	stub_cw2->at(j)    = m_clus_cw[m_stub_clust1[j]];
 	stub_cw1->at(j)    = m_clus_cw[m_stub_clust2[j]];
       }
+
+      //stub_cw1->at(j)     = m_clus_cw[m_stub_clust1[j]];
+      //stub_cw2->at(j)     = m_clus_cw[m_stub_clust2[j]];
+
 
       // Basic particle selection (pt and d0 cuts)
       if (sqrt(m_stub_pxGEN[j]*m_stub_pxGEN[j]+m_stub_pyGEN[j]*m_stub_pyGEN[j])<m_pt_min) continue;      
@@ -962,6 +1012,7 @@ void track_eff::initTuple(std::string test,std::string out)
   m_L1TT->SetBranchAddress("L1TkCLUS_seg",       &pm_clus_segment);
   m_L1TT->SetBranchAddress("L1TkCLUS_bottom",    &pm_clus_bottom);
   m_L1TT->SetBranchAddress("L1TkCLUS_strip",     &pm_clus_strip);
+  //  m_L1TT->SetBranchAddress("L1TkCLUS_n",         &m_clus); 
   m_L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
   m_L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
   m_L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);

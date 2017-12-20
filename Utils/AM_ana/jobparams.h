@@ -27,11 +27,16 @@ class jobparams{
   bool        dbg() const;
   std::string option() const;
   std::string inputfile() const;
+  std::string inputfileQCD() const;
   std::string testfile() const;
   std::string outfile() const;
   std::string pattfile() const;
   float       qmax() const;
   float       ptmin() const;
+  float       sptminmu() const;
+  float       sptmaxmu() const;
+  float       sptminele() const;
+  float       sptmaxele() const;
   float       maxlosses() const;
   int         nevt() const;
   int         type() const;
@@ -41,12 +46,17 @@ class jobparams{
 
   bool         m_dbg;   
   std::string  m_opt;  
-  std::string  m_inputfile; 
+  std::string  m_inputfile;
+  std::string  m_inputfileQCD;
   std::string  m_outfile;
   std::string  m_testfile; 
   std::string  m_pattfile;  
   float        m_rmax;
   float        m_ptmin;
+  float        m_ptminmu;
+  float        m_ptmaxmu;
+  float        m_ptminele;
+  float        m_ptmaxele;
   float        m_maxlosses;
   int          m_nevt;
   int          m_type;
@@ -59,6 +69,10 @@ inline std::string jobparams::option() const{
 
 inline std::string jobparams::inputfile() const{
   return m_inputfile;
+}
+
+inline std::string jobparams::inputfileQCD() const{
+    return m_inputfileQCD;
 }
 
 inline std::string jobparams::outfile() const{
@@ -83,6 +97,22 @@ inline float jobparams::qmax() const{
 
 inline float jobparams::ptmin() const{
   return m_ptmin;
+}
+
+inline float jobparams::sptminmu() const{
+    return m_ptminmu;
+}
+
+inline float jobparams::sptmaxmu() const{
+    return m_ptmaxmu;
+}
+
+inline float jobparams::sptminele() const{
+    return m_ptminele;
+}
+
+inline float jobparams::sptmaxele() const{
+    return m_ptmaxele;
 }
 
 inline float jobparams::maxlosses() const{

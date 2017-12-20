@@ -165,8 +165,7 @@ class rates
   int m_sen;
   int m_chp;
   float m_rate;
-    
-  bool m_tilt;
+
 
 };
 

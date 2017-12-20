@@ -5,23 +5,34 @@
 
 // Main constructor
 
-windows::windows(std::string file_r, std::string file_e, float pmin, float pmax, float prop, float CIC_lim, int ptype)
+windows::windows(std::string file_r, std::string file_e, float pminm, float pmaxm, float pmine, float pmaxe, float prop, float CIC_lim)
 {
-  m_pmin=pmin;
-  m_pmax=pmax;
+  m_pmin=pminm;
+  m_pmax=pmaxm;
   m_prop=prop;
-  m_ptype=ptype;
   m_lim=CIC_lim;
-
-
+    
   windows::initTuple(file_r,file_e);
   windows::reset();
   windows::initVars();
   windows::get_rates();
   windows::get_losses();
-  windows::get_effs();
-  windows::print_result();
-}
+    
+  windows::get_effs(0);
+
+  m_pmin=pmine;
+  m_pmax=pmaxe;
+  windows::get_effs(1);
+  windows::get_result(1,0);
+  windows::get_result(1,1);
+  windows::print_result(0);
+  windows::print_result(1);
+    
+    m_ratetree->Fill();
+    m_outfile->Write();
+    delete L1TT;
+    
+    delete m_outfile;}
 
 
 //////////////////////////////////////////////
@@ -46,7 +57,7 @@ void windows::get_rates()
   {
     Losses->GetEntry(j);
     
-    if (j%1000==0) cout << j << endl;
+    //if (j%1000==0) cout << j << endl;
 
     for (int k=0;k<6;++k)
     {
@@ -127,7 +138,7 @@ void windows::get_losses()
   
   double fact   = 100./static_cast<float>(n_r); // Normalization factor
 
-  double n_mod_tilt[6]  = {31,35,39,24,24,24};
+  double n_mod_tilt[6]      = {31,35,39,24,24,24};
   // Then loop over events
   
   int rank;
@@ -136,60 +147,63 @@ void windows::get_losses()
   {
     Losses->GetEntry(j);
     
-    if (j%1000==0) cout << j << endl;
+    //if (j%1000==0) cout << j << endl;
 
     for (int k=0;k<6;++k)
     {
       for (int l=0;l<40;++l)
       {
-	rank=0;
-	if (k<=2)
-	{	       
-	  if (l<12) rank=12-l;
-	  if (l>=n_mod_tilt[k]-12) rank=l+13-n_mod_tilt[k];
-	}
+          rank=0;
+          if (k<=2)
+          {
+              if (l<12) rank=12-l;
+              if (l>=n_mod_tilt[k]-12) rank=l+13-n_mod_tilt[k];
+          }
 
-	for (int m=0;m<16;++m) // Loop over all the particles
-	{
-	  if (m_ovflow_b[k][l][m][0][1]==0) continue;
+          for (int m=0;m<16;++m) // Loop over all the particles
+          {
+              if (k>2)
+              {
+                  barrel_w[k][0][m][1] += (fact/n_mod_tilt[k])*m_ovflow_b[k][l][m][2][1]/m_ovflow_b[k][l][m][0][1];
+                  barrel_w[k][0][m][3] += (fact/n_mod_tilt[k])*m_loss_b[k][l][m][2][1];
+              }
+              else
+              {
+                  if (rank==0)
+                  {
+                      barrel_w[k][rank][m][1] += (fact/(n_mod_tilt[k]-24))*m_ovflow_b[k][l][m][2][1]/m_ovflow_b[k][l][m][0][1];
+                      barrel_w[k][rank][m][3] += (fact/(n_mod_tilt[k]-24))*m_loss_b[k][l][m][2][1];
+                  }
+                  else
+                  {
+                      barrel_w[k][rank][m][1] += fact*m_ovflow_b[k][l][m][2][1]/m_ovflow_b[k][l][m][0][1];
+                      barrel_w[k][rank][m][3] += fact*m_loss_b[k][l][m][2][1];
 
-	  if (k>2)
-	  {
-	    barrel_w[k][0][m][1] += (fact/n_mod_tilt[k])*m_ovflow_b[k][l][m][2][1]/m_ovflow_b[k][l][m][0][1];
-	  }
-	  else
-	  {
-	    if (rank==0)
-	    {
-	      barrel_w[k][rank][m][1] += (fact/(n_mod_tilt[k]-24))*m_ovflow_b[k][l][m][2][1]/m_ovflow_b[k][l][m][0][1];
-	    }
-	    else
-	    {
-	      barrel_w[k][rank][m][1] += fact*m_ovflow_b[k][l][m][2][1]/m_ovflow_b[k][l][m][0][1];
-	    }
-	  }
-	}
+                  }
+              }
+          }
       }
     }
 
     for (int k=0;k<5;++k)
     {
-      for (int l=0;l<15;++l)
-      {
-	for (int m=0;m<16;++m) // Loop over all the particles
-	{
-	  if (m_ovflow_d[k][l][m][0][1]==0) continue;
+        for (int l=0;l<15;++l)
+        {
+            for (int m=0;m<16;++m) // Loop over all the particles
+            {
+                if (m_ovflow_d[k][l][m][0][1]==0) continue;
 
-	  disk_w[k][l][m][1] += fact*m_ovflow_d[k][l][m][2][1]/m_ovflow_d[k][l][m][0][1];	  
-	}
-      }
+                disk_w[k][l][m][1] += fact*m_ovflow_d[k][l][m][2][1]/m_ovflow_d[k][l][m][0][1];
+                disk_w[k][l][m][3] += fact*m_loss_d[k][l][m][2][1];
+            }
+        }
     }
   } // End of loop over events
 
   delete Losses;
 }
 
-void windows::get_effs()
+void windows::get_effs(int ptype)
 {
   // Initialize some params
   
@@ -197,11 +211,15 @@ void windows::get_effs()
   
   int stub_per_lay[10][20];
     
-   // n_e=1000000;
+//  n_e=300000;
 
+    (ptype==0)
+    ? m_ptype = 13
+    : m_ptype = 11;
+    
   for (int j=0;j<n_e;++j)
   {
-    if (j%100000==0) cout << j <<endl;
+   // if (j%100000==0) cout << j <<endl;
     
     L1TT->GetEntry(j);
      
@@ -266,7 +284,7 @@ void windows::get_effs()
       if (layer<=5)
       {
           isba=true;
-          for (int l=0;l<idx+1;++l) ++barrel_w[layer][ladder][l][2];
+          for (int l=0;l<idx+1;++l) ++barrel_w[layer][ladder][l][2+2*ptype];
       }
             
       if (isba) continue;
@@ -278,7 +296,7 @@ void windows::get_effs()
 
       //      if (layer>1) ladder+=3;
 
-      for (int l=0;l<idx+1;++l) ++disk_w[layer][ladder][l][2];
+      for (int l=0;l<idx+1;++l) ++disk_w[layer][ladder][l][2+2*ptype];
                                     
     } // End for (int k=0;k<m_stub;++k)
   }   // End of loop over events
@@ -287,13 +305,13 @@ void windows::get_effs()
   {
     for (int l=0;l<13;++l)
     {
-      int ntot = barrel_w[j][l][0][2];
+      int ntot = barrel_w[j][l][0][2+2*ptype];
 
       if (ntot==0) continue;
 
       for (int i=0;i<16;++i)
       {
-          barrel_w[j][l][i][2] = (ntot-barrel_w[j][l][i][2])/ntot;
+          barrel_w[j][l][i][2+2*ptype] = (ntot-barrel_w[j][l][i][2+2*ptype])/ntot;
       }
     }
   }      
@@ -302,30 +320,26 @@ void windows::get_effs()
   {
     for (int l=0;l<15;++l) 
     {
-      int ntot = disk_w[j][l][0][2];
+      int ntot = disk_w[j][l][0][2+2*ptype];
 
       if (ntot==0) continue;
 
       for (int i=0;i<16;++i)
       {
-          disk_w[j][l][i][2] = (ntot-disk_w[j][l][i][2])/ntot;
+          disk_w[j][l][i][2+2*ptype] = (ntot-disk_w[j][l][i][2+2*ptype])/ntot;
       }
     }
   }
 
 //  windows::print_result();
   
-  m_ratetree->Fill();  
-  m_outfile->Write();
-  delete L1TT;
- 
-  delete m_outfile;
+
 }
 
 
 void windows::initVars()
 {
-  for (int k=0;k<3;++k)
+  for (int k=0;k<5;++k)
   {
     for (int i=0;i<16;++i)
     {
@@ -341,6 +355,19 @@ void windows::initVars()
     }
   }
 
+    for (int k=0;k<2;++k)
+    {
+        for (int j=0;j<6;++j)
+        {
+            for (int l=0;l<13;++l) barrel_tune[j][l][k] = 0;
+        }
+            
+        for (int j=0;j<5;++j)
+        {
+            for (int l=0;l<15;++l) disk_tune[j][l][k] = 0;
+        }
+    }
+    
 
     for (int i=0;i<16;++i)
     {
@@ -365,282 +392,224 @@ void windows::initVars()
     }
 }
 
-void windows::print_result()
+void windows::get_result(int ltype, int ptype)
 {
-  cout << "# "<< m_pmin << "GeV/c Threshold" << endl;
-  cout << "# --> Good stub losses should be below " << m_lim << "%"<< endl;
-  cout << "# --> Keep " << static_cast<int>(100*m_prop) << "% of the good stubs between " << m_pmin << " and " << m_pmax << " GeV/c" << endl;
-  cout << "process.TTStubAlgorithm_official_Phase2TrackerDigi_.BarrelCut = cms.vdouble( 0, " ;
-
-  float cut,loss,eff,raeff,raeff_p,rate;
-  int i,it,it1,it2;
-  
-  for(it=0;it<6;it++)
-  {
-    for(i=0 ; i< 16 ; i++)
-    {
-        loss = barrel_w[it][0][i][1];
-        eff  = barrel_w[it][0][i][2];
-        rate = barrel_w[it][0][i][0];
-        raeff= eff*sqrt(1-rate);
-        raeff_p = raeff;
-        
-        if (i>0) raeff_p = barrel_w[it][0][i-1][2]*sqrt(1-barrel_w[it][0][i-1][0]);
-        
-        if (loss>m_lim)
-        {
-            i--;
-            break;
-        }
-        
-        if (eff>=m_prop && raeff<raeff_p)
-        {
-            if (barrel_w[it][0][i-1][2]>=m_prop)
-            {
-                i--;
-                break;
-            }
-        }
- 
-    }
-
-    cut=float(i)/2.;                
-    cout << cut;
-		
-    if (it<5)
-    {
-      cout << ", ";
-    }else{
-      cout << ") " << endl;
-    }
-  }
-
-  // Special case barrel tilted
-        
-  cout << "process.TTStubAlgorithm_official_Phase2TrackerDigi_.TiltedBarrelCutSet = cms.VPSet(" << endl;
-  cout << "cms.PSet( TiltedCut = cms.vdouble( 0 ) ),"<< endl;
-        
-  for(it1=0;it1<3;it1++)
-  {
-    cout << "cms.PSet( TiltedCut = cms.vdouble( 0, ";
-        
-    for(it2=1;it2<13;it2++)
+    float cut,loss,eff,raeff,raeff_p,rate;
+    int i,it,it1,it2;
+    
+    for(it=0;it<6;it++)
     {
         for(i=0 ; i< 16 ; i++)
         {
-            loss = barrel_w[it1][it2][i][1];
-            eff  = barrel_w[it1][it2][i][2];
-            rate = barrel_w[it1][it2][i][0];
+            loss = barrel_w[it][0][i][ltype];
+            eff  = barrel_w[it][0][i][2+2*ptype];
+            rate = barrel_w[it][0][i][0];
             raeff= eff*sqrt(1-rate);
             raeff_p = raeff;
-        
-            if (i>0) raeff_p = barrel_w[it1][it2][i-1][2]*sqrt(1-barrel_w[it1][it2][i-1][0]);
-        
+            
+            if (i>0) raeff_p = barrel_w[it][0][i-1][2+2*ptype]*sqrt(1-barrel_w[it][0][i-1][0]);
+            
             if (loss>m_lim)
             {
                 i--;
                 break;
             }
-        
+            
             if (eff>=m_prop && raeff<raeff_p)
             {
-                if (barrel_w[it1][it2][i-1][2]>=m_prop)
+                if (barrel_w[it][0][i-1][2+2*ptype]>=m_prop)
                 {
                     i--;
                     break;
                 }
             }
+            
         }
         
-        cut=float(i)/2;
+        cut=float(i)/2.;
+        barrel_tune[it][0][ptype] = cut;
+    }
+    
+    // Special case barrel tilted
+ 
+    
+    for(it1=0;it1<3;it1++)
+    {
+        for(it2=1;it2<13;it2++)
+        {
+            for(i=0 ; i< 16 ; i++)
+            {
+                loss = barrel_w[it1][it2][i][ltype];
+                eff  = barrel_w[it1][it2][i][2+2*ptype];
+                rate = barrel_w[it1][it2][i][0];
+                raeff= eff*sqrt(1-rate);
+                raeff_p = raeff;
+                
+                if (i>0) raeff_p = barrel_w[it1][it2][i-1][2+2*ptype]*sqrt(1-barrel_w[it1][it2][i-1][0]);
+                
+                if (loss>m_lim)
+                {
+                    i--;
+                    break;
+                }
+                
+                if (eff>=m_prop && raeff<raeff_p)
+                {
+                    if (barrel_w[it1][it2][i-1][2+2*ptype]>=m_prop)
+                    {
+                        i--;
+                        break;
+                    }
+                }
+            }
+            
+            cut=float(i)/2;
+            barrel_tune[it1][it2][ptype] = cut;
+        }
+    }
+
+    // Then finally the endcap cuts
+    
+    for(it1=0;it1<5;it1++)
+    {
+        for(it2=0;it2<15;it2++)
+        {
+            if (it1>1 && it2>11) continue;
+            
+            for(i=0 ; i< 16 ; i++)
+            {
+                loss = disk_w[it1][it2][i][ltype];
+                eff  = disk_w[it1][it2][i][2+2*ptype];
+                rate = disk_w[it1][it2][i][0];
+                raeff= eff*sqrt(1-rate);
+                raeff_p = raeff;
+                
+                if (i>0) raeff_p = disk_w[it1][it2][i-1][2+2*ptype]*sqrt(1-disk_w[it1][it2][i-1][0]);
+                
+                if (loss>m_lim)
+                {
+                    i--;
+                    break;
+                }
+                
+                if (eff>=m_prop && raeff<raeff_p)
+                {
+                    if (disk_w[it1][it2][i-1][2+2*ptype]>=m_prop)
+                    {
+                        i--;
+                        break;
+                    }
+                }
+            }
+            
+            cut=float(i)/2;
+            disk_tune[it1][it2][ptype] = cut;
+        }
+    }//end loop on endcaps
+}
+
+void windows::print_result(int type)
+{
+    cout << endl;
+
+    
+    (type==0) // Muon-based tuning
+    ? cout << "# --> Tight SW tuning (Muon-based)"<< endl
+    : cout << "# --> Loose SW tuning (Muon/Electron-based)"<< endl;
+
+    cout << "# --> Good stub losses should be below " << m_lim << "%"<< endl;
+      
+    cout << "process.TTStubAlgorithm_official_Phase2TrackerDigi_.BarrelCut = cms.vdouble( 0, " ;
+
+    float cut_mu,cut_ele,cut;
+    int it,it1,it2;
+  
+    for(it=0;it<6;it++)
+    {
+        cut_mu  = barrel_tune[it][0][0];
+        cut_ele = barrel_tune[it][0][1];
+      
+        (it<1)
+        ? cut = cut_mu
+        : cut = std::max(cut_mu,type*cut_ele);
+      
+        if (cut>7) cut=7;
+      
         cout << cut;
-        
-        if (it2<12)
+		
+        if (it<5)
         {
             cout << ", ";
         }else{
-            cout << ") )," << endl;
+            cout << ") " << endl;
         }
     }
-  }
-  cout <<")" << endl;
 
-  // Then finally the endcap cuts
+    // Special case barrel tilted
+        
+    cout << "process.TTStubAlgorithm_official_Phase2TrackerDigi_.TiltedBarrelCutSet = cms.VPSet(" << endl;
+    cout << "cms.PSet( TiltedCut = cms.vdouble( 0 ) ),"<< endl;
+        
+    for(it1=0;it1<3;it1++)
+    {
+        cout << "cms.PSet( TiltedCut = cms.vdouble( 0, ";
+        
+        for(it2=1;it2<13;it2++)
+        {
+            cut_mu  = barrel_tune[it1][it2][0];
+            cut_ele = barrel_tune[it1][it2][1];
+        
+            (it1<1)
+            ? cut = cut_mu
+            : cut = std::max(cut_mu,type*cut_ele);
+        
+            if (cut>7) cut=7;
+            cout << cut;
+        
+            if (it2<12)
+            {
+                cout << ", ";
+            }else{
+                cout << ") )," << endl;
+            }
+        }
+    }
+    cout <<")" << endl;
+
+    // Then finally the endcap cuts
   
-  cout << "process.TTStubAlgorithm_official_Phase2TrackerDigi_.EndcapCutSet = cms.VPSet(" << endl;
-  cout << "cms.PSet( EndcapCut = cms.vdouble( 0 ) ),"<< endl;
+    cout << "process.TTStubAlgorithm_official_Phase2TrackerDigi_.EndcapCutSet = cms.VPSet(" << endl;
+    cout << "cms.PSet( EndcapCut = cms.vdouble( 0 ) ),"<< endl;
 
-  for(it1=0;it1<5;it1++)
-  {
-    cout << "cms.PSet( EndcapCut = cms.vdouble( 0, ";
+    for(it1=0;it1<5;it1++)
+    {
+        cout << "cms.PSet( EndcapCut = cms.vdouble( 0, ";
     
-    for(it2=0;it2<15;it2++)
-    {
-      if (it1>1 && it2>11) continue;
-
-      for(i=0 ; i< 16 ; i++)
-      {
-          loss = disk_w[it1][it2][i][1];
-          eff  = disk_w[it1][it2][i][2];
-          rate = disk_w[it1][it2][i][0];
-          raeff= eff*sqrt(1-rate);
-          raeff_p = raeff;
-          
-          if (i>0) raeff_p = disk_w[it1][it2][i-1][2]*sqrt(1-disk_w[it1][it2][i-1][0]);
-          
-          if (loss>m_lim)
-          {
-              i--;
-              break;
-          }
-          
-          if (eff>=m_prop && raeff<raeff_p)
-          {
-              if (disk_w[it1][it2][i-1][2]>=m_prop)
-              {
-                  i--;
-                  break;
-              }
-          }
-      }
+        for(it2=0;it2<15;it2++)
+        {
+            if (it1>1 && it2>11) continue;
         
-      cut=float(i)/2;
-      cout << cut;
+            cut_mu  = disk_tune[it1][it2][0];
+            cut_ele = disk_tune[it1][it2][1];
+        
+            (it1<2 && it2<3)
+            ? cut = cut_mu
+            : cut = std::max(cut_mu,type*cut_ele);
+        
+            if (cut>7) cut=7;
+            cout << cut;
                             
-      if ((it2<14 && it1<=1) || (it2<11 && it1>1))
-      {
-        cout << ", ";
-      }else{
-        cout << ") )," << endl;
-      }
-    }
-  }//end loop on endcaps
-  cout <<")" << endl;    
+            if ((it2<14 && it1<=1) || (it2<11 && it1>1))
+            {
+                cout << ", ";
+            }else{
+                cout << ") )," << endl;
+            }
+        }
+    }//end loop on endcaps
+    cout <<")" << endl;
 
-  cout << endl; // Then we print the final eff/losses couples
-/*
-  cout << "Flat Barrel Perf = (" ;
-
-  for(it=0;it<6;it++)
-  {    
-    diff=0;
-    diff15=loss_b[it][0][15][1]-loss_b[it][0][15][0];
-
-    for(i=0 ; i< 16 ; i++)
-    {
-      diff = loss_b[it][0][i][1]-loss_b[it][0][i][0];
-
-      if (i>0 && barrel_w[it][0][i][1]==barrel_w[it][0][15][1]) break;
-      if (diff>0 && diff==diff15) break;
-
-      if (diff>m_lim) 
-      {
-	i--;
-	diff = loss_b[it][0][i][1]-loss_b[it][0][i][0];
-	break;
-      }
-
-      if(barrel_w[it][0][i][1] >= m_prop) break; // Thresh limit is passed
-    }
-
-    cut=float(i)/2.;                
-    cout << std::setprecision(2) << "[" << barrel_w[it][0][i][1] << "," << diff << "]";
-		
-    if (it<5)
-    {
-      cout << ", ";
-    }else{
-      cout << ")" << endl;
-    }
-  }
-
-  // Special case barrel tilted
-        
-  cout << "Tilted Barrel Perf = (" << endl;
-        
-  for(it1=0;it1<3;it1++)
-  {
-    cout << "TIB" << it1 << " = (";
-        
-    for(it2=1;it2<13;it2++)
-    {
-      diff15=loss_b[it1][it2][15][1]-loss_b[it1][it2][15][0];
-
-      for(i=0 ; i< 16 ; i++)
-      {
-	diff =  loss_b[it1][it2][i][1]-loss_b[it1][it2][i][0];
-
-	if (i>0 && disk_w[it1][it2][i][1]==barrel_w[it1][it2][15][1]) break;
-	if (diff>0 && diff==diff15) break;
-
-	if (diff>m_lim) 
-	{
-	  i--;
-	  diff =  loss_b[it1][it2][i][1]-loss_b[it1][it2][i][0];
-	  break;
-	}
-
-	if (barrel_w[it1][it2][i][1] >= m_prop) break; // Limit is passed
-      }
-	    
-      cut=float(i)/2;
-      cout << std::setprecision(2)<< "[" << barrel_w[it1][it2][i][1] << "," << diff << "]";
-                    
-      if (it2<12)
-      {
-	cout << ", ";
-      }else{
-	cout << ")" << endl;
-      }	  
-    }
-  }
-  cout <<")" << endl;
-
-  // Then finally the endcap cuts
-        
-  cout << "Disk Perf = (" << endl;
-
-  for(it1=0;it1<5;it1++)
-  {
-    cout << "Disk" << it1 << " = ( ";
-    
-    for(it2=0;it2<15;it2++)
-    {
-      if (it1>1 && it2>11) continue;
-
-      diff15 = loss_d[it1][it2][15][1]-loss_d[it1][it2][15][0];
-
-      for(i=0 ; i< 16 ; i++)
-      {
-	diff   = loss_d[it1][it2][i][1]-loss_d[it1][it2][i][0];
-	
-	if (i>0 && disk_w[it1][it2][i][1]==disk_w[it1][it2][15][1]) break;
-	if (diff>0 && diff==diff15) break;
-
-	if (diff>m_lim) 
-	{
-	  i--;
-	  diff   = loss_d[it1][it2][i][1]-loss_d[it1][it2][i][0];
-	  break;
-	}
-            
-	if(disk_w[it1][it2][i][1] >= m_prop) break; // Limit is passed
-      }
-
-      cut=float(i)/2;
-      cout << std::setprecision(2)<< "[" << disk_w[it1][it2][i][1] << "," << diff << "]";
-                            
-      if ((it2<14 && it1<=1) || (it2<11 && it1>1))
-      {
-	cout << ", ";
-      }else{
-	cout << ")" << endl;
-      }
-    }
-  }//end loop on endcaps
-  cout <<")" << endl;    
-
-*/
+    cout << endl; // Then we print the final eff/losses couples
 }
 
 
@@ -664,7 +633,7 @@ void windows::initTuple(std::string in_r,std::string in_e)
 {
 
   L1TT   = new TChain("TkStubs");
-  Losses = new TChain("Trigger_Loss");
+  Losses = new TChain("Trigger_SUM");
 
   L1TT->Add(in_e.c_str());
   Losses->Add(in_r.c_str());
@@ -699,12 +668,14 @@ void windows::initTuple(std::string in_r,std::string in_e)
   //  Losses->SetBranchStatus("*",0);
   Losses->SetBranchAddress("BAR_OVFLOW_I",       &m_ovflow_b);
   Losses->SetBranchAddress("DIS_OVFLOW_I",       &m_ovflow_d);
-  Losses->SetBranchAddress("BAR_MULT",           &m_rate_b);
-  Losses->SetBranchAddress("DIS_MULT",           &m_rate_d);
-
+  Losses->SetBranchAddress("BAR_MULT",       &m_rate_b);
+  Losses->SetBranchAddress("DIS_MULT",       &m_rate_d);
+  Losses->SetBranchAddress("BAR_LOSS",       &m_loss_b);
+  Losses->SetBranchAddress("DIS_LOSS",       &m_loss_d);
+    
   m_outfile  = new TFile("stub_windows.root","recreate");
   m_ratetree = new TTree("Windows","Stub Windows info");
   
-  m_ratetree->Branch("barrel_summary",  &barrel_w,  "barrel_w[6][13][16][3]/F");
-  m_ratetree->Branch("disk_summary",    &disk_w,    "disk_w[5][15][16][3]/F");
+  m_ratetree->Branch("barrel_summary",  &barrel_w,  "barrel_w[6][13][16][5]/F");
+  m_ratetree->Branch("disk_summary",    &disk_w,    "disk_w[5][15][16][5]/F");
 }

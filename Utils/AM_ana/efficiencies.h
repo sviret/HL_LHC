@@ -101,8 +101,6 @@ class efficiencies
   int                 m_type;
   int    	          m_part_n;
   int                 m_pclus;
-  int                 m_clus;            
-  int                 m_stub;  
   int                 m_tkclus;            
   int                 m_tkstub; 
 
@@ -127,20 +125,6 @@ class efficiencies
   std::vector<float>  *m_part_y;
   std::vector<int>    *m_part_evtId;//
   std::vector< std::vector<int> > *m_part_stId;// 
-
-  std::vector<int>    *m_clus_nstrips;
-  std::vector<int>    *m_clus_layer; 
-  std::vector<int>    *m_clus_module;	
-  std::vector<int>    *m_clus_bottom;							       
-  std::vector<int>    *m_clus_ladder;				      
-  std::vector<int>    *m_clus_seg;   
-  std::vector<float>  *m_clus_strip;
-  std::vector<int>    *m_stub_layer;
-  std::vector<int>    *m_stub_ladder;
-  std::vector<int>    *m_stub_clust1;
-  std::vector<int>    *m_stub_clust2;
-  std::vector<int>    *m_stub_tp;
-  std::vector<int>    *m_stub_type;
 
   std::vector<int>    *m_tkclus_nstrips;
   std::vector<int>    *m_tkclus_layer; 

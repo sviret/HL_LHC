@@ -23,7 +23,7 @@ using namespace std;
 ///////////////////////////////////
 //
 //
-// Base class for stub efficiencies calculation (in stubs/module/BX)
+// Base class for stub window tuning definition 
 //
 // This code computes the efficiencies per module or the efficiencies per layer
 // both for official and private stub producer
@@ -53,16 +53,17 @@ class windows
 {
  public:
 
-  windows(std::string file_r, std::string file_e, float pmin, float pmax, float prop, float CIC_lim, int ptype);
+  windows(std::string file_r, std::string file_e, float pminm, float pmaxm, float pmine, float pmaxe, float prop, float CIC_lim);
 
   void  get_rates();  // The main method
   void  get_losses();  // The main method
-  void  get_effs();  // The main method
+  void  get_effs(int ptype);  // The main method
   void  initVars();
   void  reset();
   void  initTuple(std::string in_r,std::string in_e);
-  void  print_result();
-  
+  void  get_result(int ltype, int ptype);
+  void  print_result(int type);
+    
  private:
   
   float m_pmin;
@@ -99,17 +100,24 @@ class windows
   std::vector<int>    *m_stub_tp;
   std::vector<int>    *m_stub_pdg;
 
-  float barrel_w[6][13][16][3];
-  float disk_w[5][15][16][3];   
+  float barrel_w[6][13][16][5];
+  float disk_w[5][15][16][5];
   
   float   m_ovflow_b[6][40][40][3][2];
   float   m_ovflow_d[5][15][40][3][2];
      
   float   m_rate_b[6][40][40][3][2];
   float   m_rate_d[5][15][40][3][2];
-
+ 
+  float   m_loss_b[6][40][40][3][2];
+  float   m_loss_d[5][15][40][3][2];
+    
   float   loss_b[6][13][40][2];
   float   loss_d[5][15][40][2];
+    
+  float barrel_tune[6][13][2];
+  float disk_tune[5][15][2];
+    
 };
 
 #endif

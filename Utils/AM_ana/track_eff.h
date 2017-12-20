@@ -188,7 +188,6 @@ class track_eff
   int   evt;        // Event number (for PU event, where there is more than 1 primary)
   int   pdg;        // The pdg ID of the particle
   int   nsec;       // The number of sectors containing at least 5 stubs of the prim. track
-  float pt;         // The pT of the prim. track
   float eta;        // The eta of the prim. track
   float phi;        // The phi of the prim. track
   float pt_f;       // The fitted pT of the prim. track
