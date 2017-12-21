@@ -28,22 +28,13 @@ using namespace std;
 // This code computes the efficiencies per module or the efficiencies per layer
 // both for official and private stub producer
 //
-// For infos about the efficiency definition, have a look at the following presentation:
+// For infos about the SW definition, have a look at the following document:
 //
-// https://indico.cern.ch/getFile.py/access?contribId=0&resId=0&materialId=slides&confId=263068
+// https://www.dropbox.com/s/sc1ifhfbcv5pts3/Stub%20windows%20tuning-%20a%20tutorial.pdf?dl=0
 //
-// Input infos are :
 //
-// filename : the name and directory of the input ROOT file containing the STUB information
-// outfile  : the name of the output ROOT file containing the rates 
-// ptype    : the pdg ID of the particle type you want to test 
-//
-// Info about the code:
-//
-//  http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto (STEP III)
-//
-//  Author: viret@in2p3_dot_fr
-//  Date: 23/05/2013
+//  Author: s.viret@ipnl_dot_in2p3_dot_fr
+//  Date: 20/12/2017
 //
 ///////////////////////////////////
 
@@ -82,7 +73,7 @@ class windows
   // Here are the parameters needed from the data
   // Details on these might be found on
   //
-  // https://github.com/sviret/HL_LHC/blob/master/Extractors/RecoExtractor/interface/L1TrackTrigger_analysis.h
+  // https://github.com/sviret/HL_LHC/blob/Tools_for_10_0_0/Extractors/RecoExtractor/interface/StubExtractor.h
   //
   
   int n_e, n_r;

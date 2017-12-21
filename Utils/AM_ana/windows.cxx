@@ -1,4 +1,4 @@
-// Class for the efficiencies determination
+// Class for the stub windows determination
 // For more info, look at the header file
 
 #include "windows.h"
@@ -12,21 +12,21 @@ windows::windows(std::string file_r, std::string file_e, float pminm, float pmax
   m_prop=prop;
   m_lim=CIC_lim;
     
-  windows::initTuple(file_r,file_e);
-  windows::reset();
-  windows::initVars();
-  windows::get_rates();
-  windows::get_losses();
+  windows::initTuple(file_r,file_e); // Open the input files (PU0 PGUN and PUXXX data sequence
+  windows::reset();    
+  windows::initVars(); 
+  windows::get_rates();              // Determine the ave. stub rate in function of stub window, for the 108 regions
+  windows::get_losses();             // Determine the good stub losses in function of stub window, for the 108 regions
     
-  windows::get_effs(0);
+  windows::get_effs(0);              // Determine the muon stub efficiency in function of stub window, for the 108 regions
 
   m_pmin=pmine;
   m_pmax=pmaxe;
-  windows::get_effs(1);
-  windows::get_result(1,0);
-  windows::get_result(1,1);
-  windows::print_result(0);
-  windows::print_result(1);
+  windows::get_effs(1);              // Determine the electron stub efficiency in function of stub window, for the 108 regions
+  windows::get_result(1,0);          // Determine the muon-based tuning
+  windows::get_result(1,1);          // Determine the electron-based tuning
+  windows::print_result(0);          // Print the TIGHT SW tuning
+  windows::print_result(1);          // Print the LOOSE SW tuning
     
     m_ratetree->Fill();
     m_outfile->Write();
@@ -146,8 +146,6 @@ void windows::get_losses()
   for (int j=0;j<n_r;++j)
   {
     Losses->GetEntry(j);
-    
-    //if (j%1000==0) cout << j << endl;
 
     for (int k=0;k<6;++k)
     {
@@ -210,8 +208,6 @@ void windows::get_effs(int ptype)
   // Then loop over events
   
   int stub_per_lay[10][20];
-    
-//  n_e=300000;
 
     (ptype==0)
     ? m_ptype = 13
@@ -219,8 +215,6 @@ void windows::get_effs(int ptype)
     
   for (int j=0;j<n_e;++j)
   {
-   // if (j%100000==0) cout << j <<endl;
-    
     L1TT->GetEntry(j);
      
     for (int j=0;j<10;++j)
@@ -255,11 +249,12 @@ void windows::get_effs(int ptype)
       if (std::abs(m_stub_pdg->at(k))!=m_ptype) continue;
       if (m_stub_tp->at(k)>=10 || m_stub_tp->at(k)<0) continue;
 
-      //int modid = (m_stub_layer->at(k)-5)*10000+m_stub_ladder->at(k)*100+m_stub_module->at(k);
-
       layer  = m_stub_layer->at(k)-5;
       isba=false;
- 
+
+      // Here we add a cut to remove multi-cluster stubs. Electron-tuning is sufficient to account for them, and they would bias
+      // the tight tuning definition for muons
+
       if (stub_per_lay[m_stub_tp->at(k)][layer]>=3) continue;
           
       float pt_GEN = sqrt(m_stub_pxGEN->at(k)*m_stub_pxGEN->at(k)+m_stub_pyGEN->at(k)*m_stub_pyGEN->at(k));            
@@ -294,8 +289,6 @@ void windows::get_effs(int ptype)
       layer  = (layer-6)%7;
       ladder = m_stub_ladder->at(k);
 
-      //      if (layer>1) ladder+=3;
-
       for (int l=0;l<idx+1;++l) ++disk_w[layer][ladder][l][2+2*ptype];
                                     
     } // End for (int k=0;k<m_stub;++k)
@@ -329,11 +322,7 @@ void windows::get_effs(int ptype)
           disk_w[j][l][i][2+2*ptype] = (ntot-disk_w[j][l][i][2+2*ptype])/ntot;
       }
     }
-  }
-
-//  windows::print_result();
-  
-
+  }  
 }
 
 

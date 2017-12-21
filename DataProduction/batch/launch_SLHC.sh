@@ -20,20 +20,21 @@
 # p9 : ETAMIN
 # p10: ETAMAX
 # p11: TOWER ID: the trigger tower ID (not implemented anymore, put -1)
-# p12: THRESH: the pt threshold for the stub maker, in GeV (2/3/4, -1 for baseline, 140/200 for SW140/200 tunings, or 0 for no thresh (FE hardware limits))
+# p12: THRESH: the pt threshold for the stub maker, in GeV (2/3/4, -1 for baseline, 140/200/300 for SW140/200/300 tunings, or 0 for no thresh (FE hardware limits))
 # p13: SUFFIX: a specific nickname for this production 
 # p14: GEOMTYPE: TILT or FLAT 
-# p15: PU: PU scale (0,140,....)
+# p15: PU: PU scale (0,140,.... actually tested up to 400, but can certainly go a step further)
 # p16: BATCH or nothing: launch lxbatch jobs or not
 #
 # For more details, and examples, have a look at:
 # 
 # http://sviret.web.cern.ch/sviret/Welcome.php?n=CMS.HLLHCTuto920 (STEP II)
+# https://www.dropbox.com/s/nxajjbwgmnyc0a5/Getting_tilted_stubs_10.pdf?dl=0
 # 
-# Author: S.Viret (s.viret@ipnl.in2p3.fr)
-# Date  : 24/05/2017
+# Author: S.Viret (s.viret_at_ipnl.in2p3.fr)
+# Date  : 21/12/2017
 #
-# Script tested with release CMSSW_10_0_0
+# Script tested with release CMSSW_10_0_0_pre1
 #
 ###########################################
 
@@ -164,7 +165,7 @@ gfal-mkdir $OUTPUTDIR
 
 if [ $MATTER == "SWTUNING" ]; then
 
-    python /afs/cern.ch/work/s/sviret/testarea/SLHC_sample/das_client.py --query="dataset=/RelVal*"${13}"*/CMSSW_10_*_upgrade2023_realistic*2023D17*"$NPU"*/GEN-SIM-DIGI-RAW | sort dataset.creation_time-" --limit=1 | grep GEN-SIM > temp
+    dasgoclient --query="dataset=/RelVal"${13}"/${CMSSW_VERSION}_*_upgrade2023_realistic*2023D21*"$NPU"*/GEN-SIM-DIGI-RAW" --limit=1 | grep GEN-SIM > temp
 
     samplelist=`cat temp`
 
@@ -179,7 +180,7 @@ if [ $MATTER == "SWTUNING" ]; then
 	echo $type,$rel,$name
 
 	echo " #!/bin/bash " > files.txt
-	python /afs/cern.ch/work/s/sviret/testarea/SLHC_sample/das_client.py --query="file dataset="$f --limit=50 | grep store >> files.txt
+	dasgoclient --query="file dataset="$f --limit=50 | grep store >> files.txt
 
 	filelist=`cat files.txt`
 
@@ -208,7 +209,7 @@ do
 
     if [ $MATTER == $MATTER ]; then
 
-	deal=`gfal-ls $OUTPUTDIR/SLHC_extr_${MATTER}_${i}.root | wc -l`
+	deal=`gfal-ls $OUTPUTDIR/SLHC_extr_PU${NPU}_${MATTER}_${i}.root | wc -l`
 
 	if [ $deal != "0" ]; then
 
