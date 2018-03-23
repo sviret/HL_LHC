@@ -46,8 +46,8 @@ jobparams::jobparams(int argc, char** argv){
 				false, "/scratch/viret/data.root", "string");
      cmd.add(inputfileTRG);
 
-     ValueArg<int> prop("k","kprop","Proportion of 4 top events in the trg block (in %)",
-			false, 0, "int");
+     ValueArg<float> prop("k","kprop","Proportion of 4 top events in the trg block (in %)",
+			false, 0, "float");
      cmd.add(prop);
 
      ValueArg<int> l1size("l","l1size","size of L1 conc block in bits",

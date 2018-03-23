@@ -11,7 +11,7 @@ The FE analyzer package is providing some tools in order to test the different F
 
 The reference for the formats is:
 
-https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v3.pdf
+https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf
 
 Most useful methods are described in point VI and VII
 

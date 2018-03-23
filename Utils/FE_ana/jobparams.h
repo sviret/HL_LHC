@@ -40,7 +40,7 @@ class jobparams{
   int         mpabend() const;
   int         cbcbend() const;
   int         cicsize() const;
-  int         prop() const;
+  float       prop() const;
   int         lay() const;
   int         lad() const;
   int         mod() const;
@@ -63,7 +63,7 @@ class jobparams{
   int          m_rate;
   int          m_mpabend;
   int          m_cbcbend;
-  int          m_prop;
+  float        m_prop;
   int          m_cicsize;
   int          m_lay;
   int          m_lad;
@@ -134,7 +134,7 @@ inline int jobparams::cicsize() const{
   return m_cicsize;
 }
 
-inline int jobparams::prop() const{
+inline float jobparams::prop() const{
   return m_prop;
 }
 

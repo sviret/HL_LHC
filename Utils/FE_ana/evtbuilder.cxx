@@ -26,28 +26,26 @@
 #include "evtbuilder.h"
 
 evtbuilder::evtbuilder(std::string filenameRAW, std::string filenameTRG, std::string outfile, 
-		       int npatt, int rate, int layer, std::string sector, 
+		       int npatt, int rate, int layer,std::string sector, 
 		       bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,
-		       bool conc,int L1prop, int CICsize)
+		       bool conc,float L1prop, int CICsize)
 {
-  m_rate       = rate;
-  m_lay        = layer;
-  m_npblock    = npblock;
-  m_tri_data   = new  std::vector<int>;
-  m_raw_data   = new  std::vector<int>;
-  m_raw_chip_bx= new  std::vector<int>;;
-  m_raw_chip_fifo= new  std::vector<int>;;
-  m_L1prop     = L1prop; 
-  m_CICsize    = CICsize; 
-  m_write_raw  = RAW;
-  m_write_trg  = TRIG;
-  bend_bit_MPA = BMPA;
-  bend_bit_CBC = BCBC;
+  m_rate          = rate;
+  m_lay           = layer;
+  m_npblock       = npblock;
+  m_tri_data      = new  std::vector<int>;
+  m_raw_data      = new  std::vector<int>;
+  m_raw_chip_bx   = new  std::vector<int>;;
+  m_raw_chip_fifo = new  std::vector<int>;;
+  m_L1prop        = L1prop; 
+  m_CICsize       = CICsize; 
+  m_write_raw     = RAW;
+  m_write_trg     = TRIG;
+  bend_bit_MPA    = BMPA;
+  bend_bit_CBC    = BCBC;
 
-  m_write_out  = false;
-  int m_tower      = -1;
-
-  m_tilted = true;
+  m_write_out     = false;
+  int m_tower     = -1;
 
   evtbuilder::initVars();                                 // Initialize everything
   evtbuilder::convert(sector,m_tower);                    // Get the trigger tower module info
@@ -71,7 +69,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
  
   int B_id; // The detector module IDs (defined in the header)
 
-  int layer,ladder,module,strip,chip,seg,pt,nstrip,nseg;
+  int layer,ladder,module,strip,chip,seg,pt,nseg;
 
   int n_entries_TRG = L1TT->GetEntries();
   int n_entries_RAW = PIX->GetEntries();
@@ -110,10 +108,10 @@ void evtbuilder::get_stores(int nevts, bool conc)
   cout << "--> Entering loop 1, producing the big data stores for " 
        << store_size << " events..." << endl;
 
-  //for (int j=0;j<100;++j)
+  //for (int j=0;j<1500;++j)
   for (int j=0;j<store_size;++j)
   {    
-    if (j%20==0)
+    if (j%50==0)
       cout << "Processing event " <<  j << "/" << store_size << endl;
 
     m_chip_trig.clear();
@@ -169,47 +167,25 @@ void evtbuilder::get_stores(int nevts, bool conc)
       {
 	isPS  = false;
 	layer = m_pix_layer[i]; 
-	if (layer<5) continue;
 	if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
-	ladder= m_pix_ladder[i]-1;
-	if (layer<8 || (layer>10 && ladder<9)) isPS = true; 
+	ladder= m_pix_ladder[i];
+
+	int disk=-1;
+	if (layer>10) disk = (layer-11)%7;
+
+	if (layer<8) isPS=true;
+	if (layer>10 && disk<2 && ladder<10) isPS = true; 
+	if (layer>10 && disk>=2 && ladder<7) isPS = true; 
 	
-	module= static_cast<int>(m_pix_module[i]-1); 
+	module= static_cast<int>(m_pix_module[i]); 
+	//if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
+
 	seg   = m_pix_col[i]; 
 	strip = m_pix_row[i]; 
 	nseg  = m_pix_ncol[i]; 
-	nstrip= m_pix_nrow[i]; 
+	//	nstrip= m_pix_nrow[i]; 
 	z     = m_pix_z[i];
-
-	if (m_tilted)
-	{
-	  if (layer==5)
-	  {
-	    if (z<-15) module       = ladder;
-	    if (z>15)  module       = 18+ladder;
-	    if (fabs(z)<15)  module+= 11;
-	    if (fabs(z)>15)  ladder = static_cast<int>(m_pix_module[i]-1); 
-
-	  }
-	  
-	  if (layer==6)
-	  {
-	    if (z<-25) module       = ladder;
-	    if (z>25)  module       = 23+ladder;
-	    if (fabs(z)<25)  module+= 12;
-	    if (fabs(z)>25)  ladder = static_cast<int>(m_pix_module[i]-1); 
-	  }              
-	  
-	  if (layer==7)
-	  {
-	    if (z<-34) module       = ladder;
-	    if (z>34)  module       = 28+ladder;
-	    if (fabs(z)<34)  module+= 13;
-	    if (fabs(z)>34)  ladder = static_cast<int>(m_pix_module[i]-1);
-	  }
-	}
-
 
 	if (isPS && nseg==32) // Pixel size
 	{
@@ -224,8 +200,7 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	else // For the 2S
 	{
 	  chip  = static_cast<int>(strip/127)+seg*8;
-	  //	  strip = strip%127+((m_pix_module[i])%2)*127;
-	  strip = strip%127;
+	  strip = strip%127+(1-m_pix_bot[i])*127;
 	}
 
 	B_id = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the module ID corresponding to the map
@@ -277,42 +252,18 @@ void evtbuilder::get_stores(int nevts, bool conc)
 	
 	if (layer!=m_lay && m_lay!=-1) continue;
 	
-	ladder= m_stub_ladder[i]-1; 
+	ladder= m_stub_ladder[i]; 
 	
-	if (layer<8 || (layer>10 && ladder<9)) isPS = true; 
+	int disk=-1;
+	if (layer>10) disk = (layer-11)%7;
 	
-	module= m_stub_module[i]-1;
+	if (layer<8) isPS=true;
+	if (layer>10 && disk<2 && ladder<10) isPS = true; 
+	if (layer>10 && disk>=2 && ladder<7) isPS = true; 
+	
+	module= m_stub_module[i];
 	seg   = m_stub_seg[i]; 
 	z     = m_stub_z[i];
-
-	if (m_tilted)
-	{
-	  if (layer==5)
-	  {
-	    if (z<-15) module       = ladder;
-	    if (z>15)  module       = 18+ladder;
-	    if (fabs(z)<15)  module+= 11;
-	    if (fabs(z)>15)  ladder = static_cast<int>(m_stub_module[i]-1); 
-
-	  }
-	  
-	  if (layer==6)
-	  {
-	    if (z<-25) module       = ladder;
-	    if (z>25)  module       = 23+ladder;
-	    if (fabs(z)<25)  module+= 12;
-	    if (fabs(z)>25)  ladder = static_cast<int>(m_stub_module[i]-1); 
-	  }              
-	  
-	  if (layer==7)
-	  {
-	    if (z<-34) module       = ladder;
-	    if (z>34)  module       = 28+ladder;
-	    if (fabs(z)<34)  module+= 13;
-	    if (fabs(z)>34)  ladder = static_cast<int>(m_stub_module[i]-1);
-	  }
-	}	
-
 	
 	if (isPS)
 	{
@@ -463,9 +414,30 @@ void evtbuilder::get_stores(int nevts, bool conc)
 
   int n_l1 = 0;
 
+  std::vector<int> cicseq;
+  bool inseq;
+
+  // We build the TRG sequence, taking care that a given event does not end
+  // up twice in the same CIC train
+
   for (int i=0;i<nevts;++i)
   { 
-    trg_evnum = rand()%n_trig;
+    if (i%8==0) cicseq.clear();
+
+    inseq=true;
+
+    while (inseq)
+    {
+      trg_evnum = rand()%n_trig;
+      inseq=false;
+
+      for (unsigned int j=std::max(0,int(cicseq.size())-16);j<cicseq.size();++j)
+      {
+	if (trg_evnum==cicseq.at(j)) inseq=true;
+      }
+    }
+
+    cicseq.push_back(trg_evnum);
     trig_seq.push_back(trg_evnum);
 
     if (raw_seq.at(i)!=-1) ++n_l1;
@@ -1106,6 +1078,7 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
     pm_pix_module=&m_pix_module;
     pm_pix_row=&m_pix_row;
     pm_pix_col=&m_pix_col;
+    pm_pix_bot=&m_pix_bot;
     pm_pix_nrow=&m_pix_nrow;
     pm_pix_ncol=&m_pix_ncol;
     pm_pix_z=&m_pix_z;
@@ -1119,6 +1092,7 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
     PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
     PIX->SetBranchAddress("PIX_nrow",      &pm_pix_nrow);
     PIX->SetBranchAddress("PIX_ncolumn",   &pm_pix_ncol);
+    PIX->SetBranchAddress("PIX_bottom",    &pm_pix_bot);
     PIX->SetBranchAddress("PIX_z",         &pm_pix_z);
   }    
 
@@ -1173,21 +1147,53 @@ void evtbuilder::initTuple(std::string inRAW,std::string inTRG,std::string out)
 
 bool evtbuilder::convert(std::string sectorfilename, int sec_num) 
 {
-  std::vector<int> module;
+  int modid,lay,lad,mod,disk,type;
 
-  std::cout << "Convert in" << std::endl;
+  bool m_tilted=true;
 
-  m_modules.clear();
-  m_chips.clear();
-  m_concs.clear();
+  //  std::cout << "Starting the conversion" << std::endl;
 
-  for (int i=0;i<230000;++i)
+  int m_sec_mult = 0;
+
+  int limits[6][3];
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
+
+  for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+  for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+
+  if (m_tilted)
   {
-    module.clear();
-    module.push_back(-1);
-    m_modules.push_back(module);
+    n_tilted_rings[0]=12;
+    n_tilted_rings[1]=12;
+    n_tilted_rings[2]=12;
+    n_flat_rings[0]=7;
+    n_flat_rings[1]=11;
+    n_flat_rings[2]=15;
   }
 
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 3; ++j)
+    {
+      limits[i][j]=0;
+
+      if (n_tilted_rings[i]==0) continue;
+
+      limits[i][j]=(j%2)*n_flat_rings[i]+(j>0)*n_tilted_rings[i];
+    }
+  }
+
+  std::vector<int> module;
+
+  m_modules.clear();
+
+  for (unsigned int i=0;i<230000;++i)
+  {
+    module.clear();
+    m_modules.push_back(module);
+  }
+ 
   std::string STRING;
   std::ifstream in(sectorfilename.c_str());
   if (!in) 
@@ -1195,8 +1201,7 @@ bool evtbuilder::convert(std::string sectorfilename, int sec_num)
     std::cout << "Please provide a valid csv sector filename" << std::endl; 
     return false;
   }    
-
-  int m_sec_mult = 0;
+  
   int npar = 0;
 
   while (!in.eof()) 
@@ -1209,6 +1214,7 @@ bool evtbuilder::convert(std::string sectorfilename, int sec_num)
 
     std::istringstream ss(STRING);
     npar = 0;
+
     while (ss)
     {
       std::string s;
@@ -1217,24 +1223,81 @@ bool evtbuilder::convert(std::string sectorfilename, int sec_num)
       ++npar;
       if (npar<=2) continue;
 
-      if (int(atoi(s.c_str())/10000)!=m_lay && m_lay!=-1) continue;
+      modid = atoi(s.c_str());
+      //    found=false;
 
-      m_modules.at(atoi(s.c_str())).push_back(m_sec_mult-2);
+      std::bitset<32> detid = modid; // Le detid
+
+      int rmodid; // Le modid que l'on utilise
+
+      if (detid[25]) // barrel;
+      {
+	lay  = 8*detid[23]+4*detid[22]+2*detid[21]+detid[20]+4;
+
+
+	type = 2*detid[19]+detid[18];
+
+	if (type==3) // Pas tilté
+	{
+	  lad  = 128*detid[17]+64*detid[16]+32*detid[15]+16*detid[14]+
+	    8*detid[13]+4*detid[12]+2*detid[11]+detid[10]-1;
+	  mod  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	    8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1+limits[lay-5][type-1];
+	}
+	else // tilté
+	{
+	  mod  = 128*detid[17]+64*detid[16]+32*detid[15]+16*detid[14]+
+	    8*detid[13]+4*detid[12]+2*detid[11]+detid[10]-1+limits[lay-5][type-1];
+	  lad  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	    8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1;
+	}
+      }
+      else // endcap
+      {
+	disk  = 8*detid[21]+4*detid[20]+2*detid[19]+detid[18];
+	lay   = 10+disk+abs(2-(2*detid[24]+detid[23]))*7;
+	lad   = 32*detid[17]+16*detid[16]+8*detid[15]+4*detid[14]+2*detid[13]+detid[12]-1;
+
+	//	if (disk>=3 && m_tilted) lad += 2;
+
+	mod  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	  8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1;
+      }
+
+      if (m_lay!=-1 && lay!=m_lay) continue;
+
+      rmodid = 10000*lay+100*lad+mod;
+
+      //      if (m_sec_mult-2==0)
+      //      std::cout << modid << " / " << rmodid << std::endl; 
+
+      module = m_modules.at(rmodid);
+      module.push_back(m_sec_mult-2);
+
+      m_modules.at(rmodid) = module;
     }
   }
 
-  in.close();
+  //  std::cout << "Found " << m_modules.size() << " modules" << endl;
 
-  std::cout << "Convert out" << std::endl;
 
   for (int i=0;i<230000;++i)
   {
-    if (m_modules.at(i).size()<=1) continue;
+    if (m_modules.at(i).size()==0) continue;
+
+    //    std::cout << i << endl;
 
     for (int j=0;j<16;++j) m_chips.push_back(100*i+j);
     m_concs.push_back(100*i);
     m_concs.push_back(100*i+8);
   }
+
+  in.close();
+
+  m_sec_mult -= 2;
+
+  cout << m_chips.size() << " CBC/MPA chips"<< endl;
+  cout << m_concs.size() << " CIC chips "<< endl;
 
   return true;
 }
@@ -1243,7 +1306,7 @@ bool evtbuilder::convert(std::string sectorfilename, int sec_num)
 // List of method writing the data blocks, according to the format defined in
 // the following document:
 //
-// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v2.pdf
+// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf
 //
 
 
@@ -1414,6 +1477,7 @@ void evtbuilder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
       for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
       for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
+      m_raw_data->push_back(0); // The MIP bit
     }
 
     for (int j=0;j<np;++j)
@@ -1569,11 +1633,11 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     // Now encode them 
     ns = clus_s.size()/3; 
     m_raw_ns        = ns;
-    ns = std::min(31,ns);
+    ns = std::min(127,ns);
 
-    std::bitset<5> N_S = ns;
+    std::bitset<7> N_S = ns;
 
-    for (int j=0;j<5;++j) m_raw_data->push_back(N_S[4-j]);
+    for (int j=0;j<7;++j) m_raw_data->push_back(N_S[6-j]);
 
     for (int j=0;j<ns;++j)
     {
@@ -1724,16 +1788,16 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
     ns = clus_s.size()/3; 
     m_raw_np        = np;
     m_raw_ns        = ns;
-    np = std::min(63,np);
-    ns = std::min(63,ns);
+    np = std::min(127,np);
+    ns = std::min(127,ns);
 
-    std::bitset<6> N_S = ns;
-    std::bitset<6> N_P = np;
+    std::bitset<7> N_S = ns;
+    std::bitset<7> N_P = np;
 
     //    std::cout << "This MPA chip contains
 
-    for (int j=0;j<6;++j) m_raw_data->push_back(N_S[5-j]);
-    for (int j=0;j<6;++j) m_raw_data->push_back(N_P[5-j]);
+    for (int j=0;j<7;++j) m_raw_data->push_back(N_S[6-j]);
+    for (int j=0;j<7;++j) m_raw_data->push_back(N_P[6-j]);
 
     for (int j=0;j<ns;++j)
     {
@@ -1744,6 +1808,7 @@ void evtbuilder::fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid)
       for (int k=0;k<3;++k) m_raw_data->push_back(chp[2-k]);
       for (int k=0;k<7;++k) m_raw_data->push_back(row[6-k]);
       for (int k=0;k<3;++k) m_raw_data->push_back(wdt[2-k]);
+      m_raw_data->push_back(0);
     }
 
     for (int j=0;j<np;++j)
@@ -2041,15 +2106,15 @@ void evtbuilder::fill_RAW_header_CBC(int L1id)
 
 void evtbuilder::fill_RAW_header_MPA(int L1id)
 {
-  // Format of the CBC L1 word header
+  // Format of the MPA L1 word header
   //
   // 1111111111111111110EECCCCCCCCC0 : EE (error) CC..CC (L1 ID bet 0 and 512)
   //
 
   for (int j=0;j<18;++j) m_raw_data->push_back(1); 
   m_raw_data->push_back(0); 
-  m_raw_data->push_back(1); 
-  m_raw_data->push_back(1); 
+  m_raw_data->push_back(0); 
+  m_raw_data->push_back(0); 
 
   if (L1id>512)
   {

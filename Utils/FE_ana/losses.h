@@ -1,5 +1,5 @@
-#ifndef EVTBUILDER_H
-#define EVTBUILDER_H
+#ifndef LOSSES_H
+#define LOSSES_H
 
 
 #include <cstring>
@@ -53,28 +53,20 @@ using namespace std;
 
 
 
-class evtbuilder
+class losses
 {
  public:
 
-  evtbuilder(std::string filenameRAW, std::string filenameTRG, std::string outfile, int npatt, int rate, int layer, std::string sector, bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,bool conc, float L1prop, int CICsize);
+  losses(std::string filenameRAW, std::string filenameTRG, std::string outfile, int npatt, int rate, int layer, std::string sector, bool RAW, bool TRIG, int npblock, int BMPA, int BCBC,bool conc, int L1prop, int CICsize);
   void  initVars();
   void  initTuple(std::string inRAW,std::string inTRG,std::string out);
   void  get_stores(int nevts,bool conc);
   bool  convert(std::string sectorfilename, int sec_num); 
 
 
-  void  fill_TRG_block(std::vector< std::vector<int> > stubs, bool spars, bool conc, int BXid);
-
-
-  void  fill_RAW_block(std::vector<int> digis,bool spars,int BXid);
-  void  fill_CONC_RAW_block(std::vector<int> digis,bool spars,int BXid);
-
-  void  fill_RAW_header_CBC(int L1id);
-  void  fill_RAW_header_MPA(int L1id);
-
+  void  fill_TRG_block(std::vector< std::vector<int> > stubs, bool spars, int lim_CIC);
   void  fill_CONC_TRG_header(int BXid, int MPA);
-  void  fill_CONC_RAW_header(int L1id);
+
 
 
  private:
@@ -204,10 +196,23 @@ class evtbuilder
   int m_tri_size;
   int m_tri_size_anders;
   int m_tri_chip;
-  int m_tri_nstubs;
-  int m_tri_nstubs_s;
-  int m_tri_nstubs_g;
-  int m_tri_nstubs_gs;
+
+
+
+  int m_tri_nstubs[40][3][2];
+
+  float m_tri_b_nstubs[6][40][40][3][2];
+  float m_los_b_nstubs[6][40][40][3][2];
+  int   m_lp_b_nstubs[6][40][40][3][2];
+  float   m_ovflow_b_nstubs[6][40][40][3][2];
+
+  float m_tri_d_nstubs[5][15][40][3][2];
+  float m_los_d_nstubs[5][15][40][3][2];
+  int   m_lp_d_nstubs[5][15][40][3][2];
+  float   m_ovflow_d_nstubs[5][15][40][3][2];
+
+
+  float m_sw[40];
 
   int m_raw_bx;
   int m_raw_chip;

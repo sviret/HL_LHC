@@ -105,17 +105,29 @@ class l1_builder
 
     int m_pix;
     int m_npu;
-    std::vector<int>    m_pix_layer;
+   std::vector<int>    m_pix_layer;
     std::vector<int>    m_pix_ladder;
     std::vector<int>    m_pix_module;
     std::vector<int>    m_pix_row;
     std::vector<int>    m_pix_col;
-
+    std::vector<int>    m_pix_ncol;
+    std::vector<int>    m_pix_bot;
+    std::vector<float>  m_pix_ch;
+    std::vector<float>  m_pix_x;
+    std::vector<float>  m_pix_y;
+    std::vector<float>  m_pix_z;
+    
     std::vector<int>    *pm_pix_layer;
     std::vector<int>    *pm_pix_ladder;
     std::vector<int>    *pm_pix_module;
     std::vector<int>    *pm_pix_row;
     std::vector<int>    *pm_pix_col;
+    std::vector<int>    *pm_pix_ncol;
+    std::vector<int>    *pm_pix_bot;
+    std::vector<float>  *pm_pix_x;
+    std::vector<float>  *pm_pix_y;
+    std::vector<float>  *pm_pix_z;
+
     
     std::multimap< int, std::vector<int> > m_conc_raw;  //
     std::multimap< int, std::vector<int> > m_chip_raw;  //
@@ -189,6 +201,8 @@ class l1_builder
     ofstream FE_L1_OUT;
     ofstream FE_L1_OUT_E;
     ofstream CIC_L1_OUT;
+
+    bool m_tilted;
 };
 
 #endif

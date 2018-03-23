@@ -68,7 +68,6 @@ void compa_files::compa_TRG()
     }    
 
     int line_ver = 0;
-    int line_sim = 0;
 
     char bufver[512];
     char bufsim[512];
@@ -195,7 +194,6 @@ void compa_files::compa_L1()
   }    
 
   int line_ver = 0;
-  int line_sim = 0;
 
   char bufver[512];
   char bufsim[512];
@@ -275,7 +273,7 @@ void compa_files::compa_L1()
     std::string tver(tokenver[n-1]);
     std::string tsim(tokensim[n-1]);
     
-    for (int i = 0; i < std::min(tver.size(),tsim.size()); i++)
+    for (unsigned int i = 0; i < std::min(tver.size(),tsim.size()); i++)
     {
       sec_ver.push_back(tver.at(i)-48);
       sec_sim.push_back(tsim.at(i)-48);
@@ -339,7 +337,7 @@ void compa_files::do_ana(std::vector<int> sec_ver,std::vector<int> sec_sim, int 
             L1_id   = 0;
             new_seq = 0;
             
-            for (int j = i+11; j < i+20; j++) // Get the L1 ID
+            for (unsigned int j = i+11; j < i+20; j++) // Get the L1 ID
             {
                 L1_id = L1_id+sec_ver[j]*pow(2,i+19-j);
             }
@@ -354,7 +352,7 @@ void compa_files::do_ana(std::vector<int> sec_ver,std::vector<int> sec_sim, int 
     L1_id   = 0;
     new_seq = 0;
     
-    for (int i = 0; i < sec_sim.size(); i++) // Same for the sim info
+    for (unsigned int i = 0; i < sec_sim.size(); i++) // Same for the sim info
     {
         if (new_seq==0 && sec_sim[i]==1)
         {
@@ -374,7 +372,7 @@ void compa_files::do_ana(std::vector<int> sec_ver,std::vector<int> sec_sim, int 
             L1_id   = 0;
             new_seq = 0;
             
-            for (int j = i+11; j < i+20; j++)
+            for (unsigned int j = i+11; j < i+20; j++)
             {
                 L1_id = L1_id+sec_sim[j]*pow(2,i+19-j);
             }

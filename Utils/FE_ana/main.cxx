@@ -4,10 +4,10 @@
 
 // Internal includes
 
-#include "patterngen.h"
 #include "evtbuilder.h"
 #include "stim_builder.h"
 #include "l1_builder.h"
+#include "losses.h"
 #include "compa_files.h"
 #include "jobparams.h"
 #include "TROOT.h"
@@ -41,46 +41,47 @@ int main(int argc, char** argv) {
   // Depending on the option chosen, process the information
 
 
-  // Option 1: generate a serie of patterns for the concentrator in a text file
-  if (params.option()=="pattgen_CONC")
-  {
-    patterngen* my_pgen = new patterngen(params.inputfile(),params.outfile(),params.nevt(),params.rate(),0,0,0);
-    delete my_pgen;
-  }
+  // Option 1: generate a serie of events into a root file
   
-
-  // Option 2: generate a serie of events for the MPA chip in a text file
-  if (params.option()=="pattgen_MPA")
+  if (params.option()=="losses_TRG_CONC") // TRG block for CIC
   {
-    patterngen* my_pgen = new patterngen(params.inputfile(),params.outfile(),params.nevt(),0,params.lay(),params.lad(),params.mod());
-    delete my_pgen;
-  }
-
-  // Option 3: generate a serie of events into a root file
-  
-
-  if (params.option()=="evtbuild_TRG_CONC")
-  {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),false,true,params.l1size(),params.mpabend(),params.cbcbend(),true,params.prop(),params.cicsize());
-    delete my_pgen;
-  }
-
-  if (params.option()=="evtbuild_L1_CONC")
-  {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),true,0,8);
+    losses* my_pgen = new losses(params.inputfile(),params.inputfileTRG(),params.outfile(),
+				 params.nevt(),params.rate(),params.lay(),params.testfile(),
+				 false,true,params.l1size(),params.mpabend(),params.cbcbend(),true,params.prop(),params.cicsize());
     delete my_pgen;
   }
 
 
-  if (params.option()=="evtbuild_TRG_FE")
+  if (params.option()=="evtbuild_TRG_CONC") // TRG block for CIC
   {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),false,true,params.l1size(),params.mpabend(),params.cbcbend(),false,params.prop(),8);
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),
+					 params.nevt(),params.rate(),params.lay(),params.testfile(),
+					 false,true,params.l1size(),params.mpabend(),params.cbcbend(),true,params.prop(),params.cicsize());
     delete my_pgen;
   }
 
-  if (params.option()=="evtbuild_L1_FE")
+  if (params.option()=="evtbuild_L1_CONC") // L1 block for CIC
   {
-    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),params.nevt(),params.rate(),-1,params.testfile(),true,false,params.l1size(),params.mpabend(),params.cbcbend(),false,0,8);
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),
+					 params.nevt(),params.rate(),params.lay(),params.testfile(),
+					 true,false,params.l1size(),params.mpabend(),params.cbcbend(),true,0,8);
+    delete my_pgen;
+  }
+
+
+  if (params.option()=="evtbuild_TRG_FE") // TRG block for FE
+  {
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),
+					 params.nevt(),params.rate(),-1,params.testfile(),
+					 false,true,params.l1size(),params.mpabend(),params.cbcbend(),false,params.prop(),8);
+    delete my_pgen;
+  }
+
+  if (params.option()=="evtbuild_L1_FE") // L1 block for FE
+  {
+    evtbuilder* my_pgen = new evtbuilder(params.inputfile(),params.inputfileTRG(),params.outfile(),
+					 params.nevt(),params.rate(),-1,params.testfile(),
+					 true,false,params.l1size(),params.mpabend(),params.cbcbend(),false,0,8);
     delete my_pgen;
   }
 

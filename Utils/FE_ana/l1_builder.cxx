@@ -64,11 +64,12 @@ l1_builder::l1_builder(std::string filenameRAW, std::string outfile, std::string
 
     if (error==2) unsp=true; // Turn on unsparsification for the CBC
 
-
     l1_builder::initVars();                       // Initialize everything
     l1_builder::convert(sectorfile);              // Get the trigger tower module info
     l1_builder::initTuple(filenameRAW,outfile);   // Initialize ROOT stuff
     l1_builder::get_stores(npatt);                // Prepare the data store where to pickup info
+
+    m_tilted = false;
 
 }
 
@@ -88,7 +89,9 @@ void l1_builder::get_stores(int nevts)
  
     int B_id, B_id_conc; // The detector module IDs (defined in the header)
 
-    int layer,ladder,module,strip,chip,seg;
+    int layer,ladder,module,strip,chip,seg,nseg;
+
+    float z;
 
     int n_entries_RAW = PIX->GetEntries();
 
@@ -130,139 +133,127 @@ void l1_builder::get_stores(int nevts)
         << m_concs.size() << " CIC chips..." << endl;
     
     //for (int j=0;j<10;++j)
+
     for (int j=0;j<store_size;++j)
     {
-        if (j%1==20)
-            cout << "Processing event " <<  j << "/" << store_size << endl;
 
-        m_chip_raw.clear();
-        m_conc_raw.clear();
+      if (j%1==20)
+	cout << "Processing event " <<  j << "/" << store_size << endl;
+      
+      m_chip_raw.clear();
+      m_conc_raw.clear();
+      
+      mixpar = rand()%n_entries_RAW;
+      
+      PIX->GetEntry(mixpar); // For the L1 it's much more simple
+      
+      // Initialize the map with dummy values for all referenced modules
+      //
+      // Please keep in mind that this map is 8 times larger in the FE output case
+      // Maps are quite heavy, so don't produce a lot of FE events
+      
+      for (unsigned int i=0;i<m_chips.size();++i) // All the chips if one asks the FE output
+      {
+	m_digi_list.clear();
+	m_digi_list.push_back(mixpar);
+	m_chip_raw.insert(std::make_pair(m_chips.at(i),m_digi_list));
+      }
+      
+      for (unsigned int i=0;i<m_concs.size();++i) // All the concentrators if one asks the CONC output (8 times less)
+      {
+	m_digi_list.clear();
+	m_digi_list.push_back(mixpar);
+	m_conc_raw.insert(std::make_pair(m_concs.at(i),m_digi_list));
+      }
+
+      for (int i=0;i<m_pix;++i) // Loop over pixels
+      {
+        isPS  = false;
+        layer = m_pix_layer[i];
+        if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
+	
+        ladder= m_pix_ladder[i];
+      
+        if (ladder!=m_lad && m_lad!=-1) continue; // By default we loop over all ladders (-1)
+
+	int disk=-1;
+	if (layer>10) disk = (layer-11)%7;
+	
+	if (layer<8) isPS=true;
+	if (layer>10 && disk<2 && ladder<10) isPS = true; 
+	if (layer>10 && disk>=2 && ladder<7) isPS = true; 
+
+        module= static_cast<int>(m_pix_module[i]);
         
-        mixpar = rand()%n_entries_RAW;
+        if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
+        seg   = m_pix_col[i];
+        strip = m_pix_row[i];
+	nseg  = m_pix_ncol[i]/2; 
+	
+	if (isPS) // PS
+	{
+	  chip  = static_cast<int>(strip/120)+(seg/nseg)*8;	  
+	  strip = strip%120+(1-m_pix_bot[i])*120;
+	}
+	else // 2S
+	{
+	  chip  = static_cast<int>(strip/127)+(seg/nseg)*8;
+	  strip = strip%127+(1-m_pix_bot[i])*127;
+	}
+		  
+	B_id      = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the module ID corresponding to the map
+	B_id_conc = B_id - chip%8; // Here we get the concentrator ID
 
-        PIX->GetEntry(mixpar); // For the L1 it's much more simple
+	// Look if this chip has already been touched in this event
+	m_iter  = m_chip_raw.find(B_id);
+	m_iter2 = m_conc_raw.find(B_id_conc);
 
-        // Initialize the map with dummy values for all referenced modules
-        //
-        // Please keep in mind that this map is 8 times larger in the FE output case
-        // Maps are quite heavy, so don't produce a lot of FE events
-        
-        for (unsigned int i=0;i<m_chips.size();++i) // All the chips if one asks the FE output
+        if (m_iter == m_chip_raw.end() || m_iter2 == m_chip_raw.end()) 
         {
-            m_digi_list.clear();
-            m_digi_list.push_back(mixpar);
-            m_chip_raw.insert(std::make_pair(m_chips.at(i),m_digi_list));
+	  // Unknown chip, this can happen because csv file is only considering chips involved in TRG
+            continue; // We don't consider them for the moment...
         }
-    
-        for (unsigned int i=0;i<m_concs.size();++i) // All the concentrators if one asks the CONC output (8 times less)
-        {
-            m_digi_list.clear();
-            m_digi_list.push_back(mixpar);
-            m_conc_raw.insert(std::make_pair(m_concs.at(i),m_digi_list));
-        }
-
         
-        for (int i=0;i<m_pix;++i) // Loop over pixels
-        {
-            isPS  = false;
-            layer = m_pix_layer[i];
-	
-            if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
-	
-            ladder= m_pix_ladder[i]-1;
-            
-            if (ladder!=m_lad && m_lad!=-1) continue; // By default we loop over all ladders (-1)
-            if (layer<8 || (layer>10 && ladder<9)) isPS = true;
-            
-            module= static_cast<int>((m_pix_module[i]-1)/2);
-            
-            if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
-            
-            seg   = m_pix_col[i];
-            strip = m_pix_row[i];
-	
-            
-            ///////////////////////
-            //////// SV 27/08/15: SHOULD BE CROSSCHECKED !!!!
-            ///////////////////////
-            
-            if (isPS && m_pix_module[i]%2==1) // Ger the chip number for the PS-P
-            {
-                chip  = static_cast<int>(strip/120)+(seg/16)*8;
-                strip = strip%120+((m_pix_module[i]-1)%2)*120;
-            }
-            else if (isPS && m_pix_module[i]%2==0) // Ger the chip number for the PS-S
-            {
-                chip  = static_cast<int>(strip/120)+seg*8;
-                strip = strip%120+((m_pix_module[i]-1)%2)*120;
-            }
-            else // For the 2S
-            {
-                chip  = static_cast<int>(strip/127)+seg*8;
-                strip = strip%127+((m_pix_module[i]-1)%2)*127;
-            }
-
-            ///////////////////////
-            ///////////////////////
-            
-            B_id      = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the module ID corresponding to the map
-            B_id_conc = B_id - chip%8; // Here we get the concentrator ID
-
-            // Look if this chip has already been touched in this event
-            m_iter  = m_chip_raw.find(B_id);
-	    m_iter2 = m_conc_raw.find(B_id_conc);
-            
-            if (m_iter == m_chip_raw.end()) // Unknown chip, this can happen because csv file is only considering chips involved in TRG
-            {
-                m_digi_list.clear();
-                m_digi_list.push_back(-1);
-                m_chip_raw.insert(std::make_pair(B_id,m_digi_list));
-                m_iter = m_chip_raw.find(B_id);
-            }
-
-            m_digi_list.clear();
-            m_digi_list = m_iter->second;
-            m_digi_list.push_back(chip%8);
-            m_digi_list.push_back(strip);
-            
-            (isPS)
-            ? m_digi_list.push_back(seg%16)
-            : m_digi_list.push_back(-1);
-
-            m_chip_raw.erase(m_iter->first);
-            m_chip_raw.insert(std::make_pair(B_id,m_digi_list));
-            
-            if (m_iter2 == m_conc_raw.end()) // Unknown chip, this can happen because csv file is only considering chips involved in TRG
-            {
-                m_digi_list.clear();
-                m_digi_list.push_back(-1);
-                m_conc_raw.insert(std::make_pair(B_id_conc,m_digi_list));
-                m_iter = m_conc_raw.find(B_id_conc);
-            }
-            
-            m_digi_list.clear();
-            m_digi_list = m_iter2->second;
-            m_digi_list.push_back(chip%8);
-            m_digi_list.push_back(strip);
-            
-            (isPS)
-            ? m_digi_list.push_back(seg%16)
-            : m_digi_list.push_back(-1);
-            
-            m_conc_raw.erase(m_iter2->first);
-            m_conc_raw.insert(std::make_pair(B_id_conc,m_digi_list));
-
-        } // End of digi collection
+	m_digi_list.clear();
+	m_digi_list.push_back(mixpar);
+	m_digi_list = m_iter->second;
+	m_digi_list.push_back(chip%8);
+	m_digi_list.push_back(strip);
         
-        m_data_raw.push_back(m_chip_raw);
-        m_data_raw.push_back(m_conc_raw);
-        
+	(isPS)
+	  ? m_digi_list.push_back(seg%16)
+	  : m_digi_list.push_back(-1);
+	
+	m_chip_raw.erase(m_iter->first);
+	m_chip_raw.insert(std::make_pair(B_id,m_digi_list));
+
+	//	cout  << B_id << " // " <<  m_digi_list.size() << endl;
+
+	m_digi_list.clear();
+	m_digi_list.push_back(mixpar);
+	m_digi_list = m_iter2->second;
+	m_digi_list.push_back(chip%8);
+	m_digi_list.push_back(strip);
+	
+	(isPS)
+	  ? m_digi_list.push_back(seg%16)
+	  : m_digi_list.push_back(-1);
+	
+	m_conc_raw.erase(m_iter2->first);
+	m_conc_raw.insert(std::make_pair(B_id_conc,m_digi_list));
+
+      } // End of digi collection
+         
+      m_data_raw.push_back(m_chip_raw);
+      m_data_raw.push_back(m_conc_raw);
+      
     } // End of raw event collection
 
     // Now we have the collection containing the raw data
     // Raw data is sent every n BX, where n depends on the L1 rate
     // If the L1 rate is given in kHz, we have n=40000/rate
     //
+
 
     cout << "--> Entering loop 2, producing the random L1 sequence..." << endl;
 
@@ -285,11 +276,11 @@ void l1_builder::get_stores(int nevts)
 
     // First we create random sequence for L1 satisfying the trigger rules
 
-    // Rules are following the ones described in part 2.3 of following ref (2009):
+    // Rules are following the ones described in part 2.2.3 of following ref (2018):
     //
-    // http://arxiv.org/pdf/0911.5422.pdf
+    // https://cds.cern.ch/record/2283193/files/CMS-TDR-018.pdf
     //
-    // The last rule (4 in 240) is discarded as it prevents 1MHz L1A rate.
+    // No more than 8 L1A in 130BXs
     
     
     // The first L1 is always sent at BX=0
@@ -297,13 +288,10 @@ void l1_builder::get_stores(int nevts)
     raw_seq.push_back(rand()%n_raw);
 
     int rank_r1 = 0;
-    int rank_r2 = 0;
-    int rank_r3 = 0;
+    int rank_r8 = 0;
 
-
-    int lim_r1 = 3;
-    int lim_r2 = 25;
-    int lim_r3 = 100;
+    int lim_r1 = 130;
+    int max_r1 = 8;
 
     //    int lim_r1 = 0;
     //    int lim_r2 = 0;
@@ -315,34 +303,49 @@ void l1_builder::get_stores(int nevts)
 
     while (rank_r1<nevts)
     {
-        L1_rule = false;
+      L1_rule = false;
 
-        // First we need to generate a space which is not enforcing the trigger rules
-        //
+      // First we need to generate a space which is not enforcing the trigger rules
+      //
+      rank_r8=-1;
+      max_r1=0;
 
-        while (!L1_rule)
-        {
-            delta = L1s(generator); // Compute a L1 space
+      for (int i=rank_r1;i>=0;--i)
+      {
+	if (raw_seq.at(i)!=-1) ++rank_r8;
+	if (rank_r8==7) 
+	{	  
+	  rank_r8=i;
+	  max_r1=7;
+	  break;
+	}
 
-            if (delta < lim_r1) continue;         // Rule 1 enforced
-            if ((delta+rank_r1-rank_r2) < lim_r2 && rank_r2!=0) continue; // Rule 2 enforced
-            if ((delta+rank_r1-rank_r3) < lim_r3 && rank_r3!=0) continue; // Rule 3 enforced
+	max_r1=rank_r8;
+      }
 
-            L1_rule=true;
-        }
+      if (max_r1<7) rank_r8=-1;
 
-        // Event satisfying the trigger rules update the ranks
+      //      cout << rank_r8 << " / " << rank_r1 << endl;
 
-        rank_r3 = rank_r2;
-        rank_r2 = rank_r1;
-        rank_r1 = rank_r2+delta;
+      while (!L1_rule)
+      {
+	delta = L1s(generator); // Compute a L1 space
+		
+	if ((delta+rank_r1-rank_r8) < lim_r1 && rank_r8!=-1) continue; // Rule 1 enforced
 
-        for (int i=0;i<delta-1;++i)
-        {
-            raw_seq.push_back(-1);
-        }
+	L1_rule=true;
+      }
+       
+      // Event satisfying the trigger rules update the ranks
 
-        raw_seq.push_back(rand()%n_raw);
+      rank_r1 += delta;
+
+      for (int i=0;i<delta-1;++i)
+      {
+	raw_seq.push_back(-1);
+      }
+
+      raw_seq.push_back(rand()%n_raw);
     }
 
     int n_l1 = 0;
@@ -473,7 +476,7 @@ void l1_builder::get_stores(int nevts)
     FE_L1_OUT << "Digital L1 output of the FE chip.\n";
     FE_L1_OUT << "\n";
     FE_L1_OUT << "Format defined in:\n";
-    FE_L1_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    FE_L1_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf\n";
     FE_L1_OUT << "\n";
     FE_L1_OUT << "For each FE chip required, the list of L1 fragments is given for a period of " << nevts << " bunch crossings\n";
     FE_L1_OUT << "Errors in the stream (outside L1 data)      : 0\n";
@@ -483,7 +486,7 @@ void l1_builder::get_stores(int nevts)
     FE_L1_OUT_E<< "Digital L1 output of the FE chip (with random errors).\n";
     FE_L1_OUT_E << "\n";
     FE_L1_OUT_E << "Format defined in:\n";
-    FE_L1_OUT_E << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    FE_L1_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf\n";
     FE_L1_OUT_E << "\n";
     FE_L1_OUT_E << "For each FE chip required, the list of L1 fragments is given for a period of " << nevts << " bunch crossings\n";
     FE_L1_OUT_E << "Errors in the stream (outside L1 data)      : "<< m_error_rdm <<"\n";
@@ -493,7 +496,7 @@ void l1_builder::get_stores(int nevts)
     CIC_L1_OUT << "Digital L1 output of the CIC chip.\n";
     CIC_L1_OUT << "\n";
     CIC_L1_OUT << "Format defined in:\n";
-    CIC_L1_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    CIC_L1_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf\n";
     CIC_L1_OUT << "\n";
     CIC_L1_OUT << "For each CIC chip required, the list of L1 fragments is given for a period of " << nevts << " bunch crossings\n";
 
@@ -573,8 +576,10 @@ void l1_builder::get_stores(int nevts)
 
         if (i%3564==0) L1_id=0; // BCR, L1ID get back to 0
 
+	//	my_tools->clear();
+
         l1_builder::initVars();
-        
+
         if (raw_seq.at(i)!=-1) // Chip has received received a L1 A, we write the raw block
         {
             ++L1_id;
@@ -647,7 +652,7 @@ void l1_builder::get_stores(int nevts)
                 
 
                 int delay                = 0; // Delay is the minimal period, in BX, between L1A reception and data emission by the chip
-                
+
                 (isPS)
                 ? delay = m_MPA_L1_delay+m_raw_np+m_raw_ns // From D.Ceresa
                 : delay = m_CBC_L1_delay;
@@ -670,7 +675,6 @@ void l1_builder::get_stores(int nevts)
                 {
                     // BXin is BX for for the event starts to be extractible from the chip
                     // BXout = BXin + numb of BXs to extract the event (if FIFO is empty it's simple)
-                    
                     FIFO_new.push_back(L1_id);
                     FIFO_new.push_back(i+delay);  // BXin
                     FIFO_new.push_back(i+delay+m_raw_size/(extracted_bit_per_BX)+1); // BXout
@@ -691,8 +695,7 @@ void l1_builder::get_stores(int nevts)
                     }
                     
                     m_words.erase(m_iter3->first);
-                    m_words.insert(std::make_pair(m_raw_chip,word));
-                        
+                    m_words.insert(std::make_pair(m_raw_chip,word));       
                 }
                 else  // FIFO not empty, one need to increment
                 {
@@ -946,7 +949,7 @@ void l1_builder::get_stores(int nevts)
         FE_L1_OUT << "     CHIP ID |    BX ID | L1 ID | L1 fragment " << "\n";
         FE_L1_OUT_E << "     CHIP ID |    BX ID | L1 ID | L1 fragment " << "\n";
         
-        for (unsigned int j=0;j<m_iter->second.size();++j)
+        for (int j=0;j<static_cast<int>(m_iter->second.size());++j)
         {
             if (j%8==0)
             {
@@ -997,13 +1000,13 @@ void l1_builder::get_stores(int nevts)
 	FE_L1_OUT_E << "\n";
     }
     
-    for (unsigned int i=0;i<m_concs.size();++i)
+    for (int i=0;i<static_cast<int>(m_concs.size());++i)
     {
         L1_id = 0;
         m_iter = m_c_words.find(m_concs.at(i));
         CIC_L1_OUT << "      CIC ID |    BX ID | L1 ID | L1 fragment " << "\n";
         
-        for (unsigned int j=0;j<m_iter->second.size();++j)
+        for (int j=0;j<static_cast<int>(m_iter->second.size());++j)
         {
             if (j%m_npblock==0)
             {
@@ -1060,7 +1063,7 @@ void l1_builder::get_stores(int nevts)
   float a,b;
   float da,db;
   
-  float x,z;
+  float x;
 	
     for ( m_iter = m_chip_FIFOs.begin(); m_iter != m_chip_FIFOs.end();++m_iter )
     {
@@ -1250,26 +1253,32 @@ void l1_builder::initTuple(std::string inRAW,std::string out)
     
       in2.close();
     }
+
+  pm_pix_layer=&m_pix_layer;
+  pm_pix_ladder=&m_pix_ladder;
+  pm_pix_module=&m_pix_module;
+  pm_pix_row=&m_pix_row;
+  pm_pix_col=&m_pix_col;
+  pm_pix_ncol=&m_pix_ncol;
+  pm_pix_bot=&m_pix_bot;
+  pm_pix_x=&m_pix_x;
+  pm_pix_y=&m_pix_y;
+  pm_pix_z=&m_pix_z;
   
-
-    pm_pix_layer=&m_pix_layer;
-    pm_pix_ladder=&m_pix_ladder;
-    pm_pix_module=&m_pix_module;
-    pm_pix_row=&m_pix_row;
-    pm_pix_col=&m_pix_col;
-
-    PIX->SetBranchAddress("PIX_n",         &m_pix);
-    PIX->SetBranchAddress("PIX_nPU",       &m_npu);
-    PIX->SetBranchAddress("PIX_layer",     &pm_pix_layer);
-    PIX->SetBranchAddress("PIX_ladder",    &pm_pix_ladder);
-    PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
-    PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
-    PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
-
+  PIX->SetBranchAddress("PIX_n",         &m_pix);
+  PIX->SetBranchAddress("PIX_nPU",       &m_npu);
+  PIX->SetBranchAddress("PIX_layer",     &pm_pix_layer);
+  PIX->SetBranchAddress("PIX_ladder",    &pm_pix_ladder);
+  PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
+  PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
+  PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
+  PIX->SetBranchAddress("PIX_ncolumn",   &pm_pix_ncol);
+  PIX->SetBranchAddress("PIX_bottom",    &pm_pix_bot);
+  PIX->SetBranchAddress("PIX_x",         &pm_pix_x);
+  PIX->SetBranchAddress("PIX_y",         &pm_pix_y);
+  PIX->SetBranchAddress("PIX_z",         &pm_pix_z);
+ 
 }
-
-
-
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1278,29 +1287,62 @@ void l1_builder::initTuple(std::string inRAW,std::string out)
 //
 // Here we retrieve info from the TKLayout CSV file containing the sector definition
 //
-// This file contains, for each sector, the ids of the modules and chips contained in the sector sec_num
+// This file contains, for each sector, the detids of the modules and chips contained in the sector sec_num
 //
 // The role of this method is to create the opposite, ie a vector containing, for every module the list of sectors belonging to it
 //
 /////////////////////////////////////////////////////////////////////////////////
 
-bool l1_builder::convert(std::string sectorfilename)
+bool l1_builder::convert(std::string sectorfilename) 
 {
-  std::vector<int> module;
+  int modid,lay,lad,mod,disk,type;
 
-  std::cout << "Convert in" << std::endl;
+  bool m_tilted=true;
+  int m_tower=-1;
 
-  m_modules.clear();
-  m_chips.clear();
-  m_concs.clear();
+  //  std::cout << "Starting the conversion" << std::endl;
 
-  for (int i=0;i<230000;++i)
+  int m_sec_mult = 0;
+
+  int limits[6][3];
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
+
+  for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+  for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+
+  if (m_tilted)
   {
-    module.clear();
-    module.push_back(-1);
-    m_modules.push_back(module);
+    n_tilted_rings[0]=12;
+    n_tilted_rings[1]=12;
+    n_tilted_rings[2]=12;
+    n_flat_rings[0]=7;
+    n_flat_rings[1]=11;
+    n_flat_rings[2]=15;
   }
 
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 3; ++j)
+    {
+      limits[i][j]=0;
+
+      if (n_tilted_rings[i]==0) continue;
+
+      limits[i][j]=(j%2)*n_flat_rings[i]+(j>0)*n_tilted_rings[i];
+    }
+  }
+
+  std::vector<int> module;
+
+  m_modules.clear();
+
+  for (unsigned int i=0;i<230000;++i)
+  {
+    module.clear();
+    m_modules.push_back(module);
+  }
+ 
   std::string STRING;
   std::ifstream in(sectorfilename.c_str());
   if (!in) 
@@ -1308,61 +1350,112 @@ bool l1_builder::convert(std::string sectorfilename)
     std::cout << "Please provide a valid csv sector filename" << std::endl; 
     return false;
   }    
-
-  int m_sec_mult = 0;
+  
   int npar = 0;
-    
-  int mlay, mlad, mmod;
-    
+
   while (!in.eof()) 
   {
     ++m_sec_mult;
     getline(in,STRING);
 
     if (m_sec_mult<2) continue;
+    if (m_sec_mult-2!=m_tower && m_tower!=-1) continue;
 
     std::istringstream ss(STRING);
     npar = 0;
+
     while (ss)
     {
-        std::string s;
-        if (!getline( ss, s, ',' )) break;
+      std::string s;
+      if (!getline( ss, s, ',' )) break;
 
-        ++npar;
-        if (npar<=2) continue;
+      ++npar;
+      if (npar<=2) continue;
 
-        mlay = int(atoi(s.c_str())/10000);
-        mlad = int(atoi(s.c_str())-10000*mlay)/100;
-        mmod = int(atoi(s.c_str())-10000*mlay-100*mlad);
-        
+      modid = atoi(s.c_str());
+      //      found=false;
 
-        if (mlay!=m_lay && m_lay!=-1) continue;
-        if (mlad!=m_lad && m_lad!=-1) continue;
-        if (mmod!=m_mod && m_mod!=-1) continue;
+      std::bitset<32> detid = modid; // Le detid
 
-        m_modules.at(atoi(s.c_str())).push_back(m_sec_mult-2);
+      int rmodid; // Le modid que l'on utilise
+
+      if (detid[25]) // barrel;
+      {
+	lay  = 8*detid[23]+4*detid[22]+2*detid[21]+detid[20]+4;
+
+
+	type = 2*detid[19]+detid[18];
+
+	if (type==3) // Non-tilted
+	{
+	  lad  = 128*detid[17]+64*detid[16]+32*detid[15]+16*detid[14]+
+	    8*detid[13]+4*detid[12]+2*detid[11]+detid[10]-1;
+	  mod  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	    8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1+limits[lay-5][type-1];
+	}
+	else // Tilted
+	{
+	  mod  = 128*detid[17]+64*detid[16]+32*detid[15]+16*detid[14]+
+	    8*detid[13]+4*detid[12]+2*detid[11]+detid[10]-1+limits[lay-5][type-1];
+	  lad  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	    8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1;
+	}
+      }
+      else // endcap
+      {
+	disk  = 8*detid[21]+4*detid[20]+2*detid[19]+detid[18];
+	lay   = 10+disk+abs(2-(2*detid[24]+detid[23]))*7;
+	lad   = 32*detid[17]+16*detid[16]+8*detid[15]+4*detid[14]+2*detid[13]+detid[12]-1;
+	mod  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	  8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1;
+      }
+
+      if (m_tower==-1)
+      {
+          if (lay!=m_lay && m_lay!=-1) continue;
+          if (lad!=m_lad && m_lad!=-1) continue;
+          if (mod!=m_mod && m_mod!=-1) continue;
+      }
+
+      rmodid = 10000*lay+100*lad+mod;
+
+      module = m_modules.at(rmodid);
+      module.push_back(m_sec_mult-2);
+
+      m_modules.at(rmodid) = module;
     }
   }
 
-  in.close();
+  //  std::cout << "Found " << m_modules.size() << " modules" << endl;
+
 
   for (int i=0;i<230000;++i)
   {
-    if (m_modules.at(i).size()<=1) continue;
+    if (m_modules.at(i).size()==0) continue;
+
+    //    std::cout << i << endl;
 
     for (int j=0;j<16;++j) m_chips.push_back(100*i+j);
     m_concs.push_back(100*i);
     m_concs.push_back(100*i+8);
   }
 
+  in.close();
+
+  m_sec_mult -= 2;
+
+  cout << m_chips.size() << " CBC/MPA chips"<< endl;
+  cout << m_concs.size() << " CIC chips "<< endl;
+
   return true;
 }
+
 
 //
 // List of method writing the data blocks, according to the format defined in
 // the following document:
 //
-// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v3.pdf
+// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf
 //
 
 
@@ -1376,6 +1469,8 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
 
     // First write the headers
   
+    //    cout << "Into FillRAW" << endl;
+
     (spars)
         ? l1_builder::fill_RAW_header_MPA(BXid)
         : l1_builder::fill_RAW_header_CBC(BXid);
@@ -1561,9 +1656,9 @@ void l1_builder::fill_RAW_block(std::vector<int> digis,bool spars,int BXid)
     // Here we put a common trailer (if needed)
 
 
-    //std::cout << m_raw_chip << " / size of the L1 raw word / " << spars << " / " << m_raw_data->size() << std::endl;
+    //    std::cout << m_raw_chip << " / size of the L1 raw word / " << spars << " / " << m_raw_data->size() << std::endl;
     
-    //for (int j=0;j<m_raw_data->size();++j) std::cout << m_raw_data->at(j);
+    // for (int j=0;j<m_raw_data->size();++j) std::cout << m_raw_data->at(j);
     
     //std::cout << std::endl;
     

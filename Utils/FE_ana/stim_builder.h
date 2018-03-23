@@ -59,7 +59,7 @@ class stim_builder
 
   stim_builder(std::string filenameRAW, std::string filenameTRG, std::string outfile,
                int npatt, int layer, int ladder, int module, int tower, std::string sector,
-               int L1prop, int TRGsize);
+               float L1prop, int TRGsize);
 
   void  initVars();
   void  initTuple(std::string inRAW,std::string inTRG,std::string out);

@@ -1,7 +1,7 @@
 // Base class for Phase II tracker FrontEnd tests stimulus builder
 //
 // Main methods for the trigger block construction
-// (see stim_builder_L1 for the L1 block)
+// (see l1_builder for the L1 block)
 //
 //
 // Meaning of the parameters
@@ -24,7 +24,7 @@
 
 stim_builder::stim_builder(std::string filenameRAW, std::string filenameTRG, std::string outfile, 
 			   int npatt, int layer, int ladder, int module, int tower, std::string sector,
-			   int L1prop, int TRGsize)
+			   float L1prop, int TRGsize)
 {
     m_lay        = layer;
     m_lad        = ladder;
@@ -108,6 +108,7 @@ void stim_builder::get_stores(int nevts, bool conc)
 	 << m_concs.size() << " CIC chips..." << endl;
 
 
+    // for (int j=0;j<2000;++j)
     for (int j=0;j<store_size;++j)
     {    
       if (j%10==0)
@@ -158,39 +159,36 @@ void stim_builder::get_stores(int nevts, bool conc)
       {
         isPS  = false;
         layer = m_pix_layer[i];
-	
         if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
-        ladder= m_pix_ladder[i]-1;
+        ladder= m_pix_ladder[i];
       
         if (ladder!=m_lad && m_lad!=-1) continue; // By default we loop over all ladders (-1)
-        if (layer<8 || (layer>10 && ladder<9)) isPS = true;
 
-        module= static_cast<int>(m_pix_module[i]-1);
+	int disk=-1;
+	if (layer>10) disk = (layer-11)%7;
+	
+	if (layer<8) isPS=true;
+	if (layer>10 && disk<2 && ladder<10) isPS = true; 
+	if (layer>10 && disk>=2 && ladder<7) isPS = true; 
+
+        module= static_cast<int>(m_pix_module[i]);
         
         if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
         seg   = m_pix_col[i];
         strip = m_pix_row[i];
-	nseg  = m_pix_ncol[i]; 
-
-	if (isPS && nseg==32) // Pixel size
+	nseg  = m_pix_ncol[i]/2; 
+	
+	if (isPS) // PS
 	{
-	  chip  = static_cast<int>(strip/120)+(seg/16)*8;
-	  strip = strip%120;
+	  chip  = static_cast<int>(strip/120)+(seg/nseg)*8;	  
+	  strip = strip%120+(1-m_pix_bot[i])*120;
 	}
-	else if (isPS && m_pix_module[i]%2==0) // Ger the chip number for the PS-S
+	else // 2S
 	{
-	  chip  = static_cast<int>(strip/120)+seg*8;
-	  strip = strip%120+120;
-	}
-	else // For the 2S
-	{
-	  chip  = static_cast<int>(strip/127)+seg*8;
+	  chip  = static_cast<int>(strip/127)+(seg/nseg)*8;
 	  strip = strip%127+(1-m_pix_bot[i])*127;
 	}
-
-	//   cout << m_pix_module[i] << " / " << strip << " / " << seg << " / " << chip << endl;       
-	// cout << m_pix_module[i] << " // " << strip << endl;
 	
         B_id = layer*1000000 + ladder*10000 + module*100 + chip; // Finally get the FE chip ID
 
@@ -227,12 +225,12 @@ void stim_builder::get_stores(int nevts, bool conc)
 	
         if (layer!=m_lay && m_lay!=-1) continue; // By default we loop over all layers (-1)
 	
-        ladder   = m_stub_ladder[i]-1;
+        ladder   = m_stub_ladder[i];
       
         if (ladder!=m_lad && m_lad!=-1) continue; // By default we loop over all ladders (-1)
         if (layer<8 || (layer>10 && ladder<9)) isPS = true;
       
-        module   = m_stub_module[i]-1;
+        module   = m_stub_module[i];
       
         if (module!=m_mod && m_mod!=-1) continue; // By default we loop over all modules (-1)
       
@@ -305,22 +303,40 @@ void stim_builder::get_stores(int nevts, bool conc)
     int trg_evnum;
 
     std::vector<int> trig_seq;
+    std::vector<int> cicseq;
+    bool inseq;
 
     trig_seq.clear();
 
     cout << "... Generate the sequence of " << nevts << " by picking up events in the store..." << std::endl;
     
     for (int i=0;i<nevts;++i)
-    { 
-      trg_evnum = rand()%n_trig;
+    {
+      if (i%8==0) cicseq.clear();
+
+      inseq=true;
+
+      while (inseq)
+      {
+	trg_evnum = rand()%n_trig;
+	inseq=false;
+
+	for (unsigned int j=std::max(0,int(cicseq.size())-16);j<cicseq.size();++j)
+	{
+	  if (trg_evnum==cicseq.at(j)) inseq=true;
+	}
+      }
+
+      cicseq.push_back(trg_evnum);
+
       trig_seq.push_back(trg_evnum);
+
     }
 
-    // Now we have a sequence of nevts, with L1A distributed randomly 
-    // following the trigger rules
+    // Now we have a sequence of nevts
     
     // Next stage consists in creating a ROOT/txt file containing this sequence 
-    // of events, with the correspondind data for each Concentrator chip
+    // of events, with the corresponding data for each Concentrator chip
     
     cout << "--> Entering loop 3, producing the final root file..." << endl;
 
@@ -399,17 +415,17 @@ void stim_builder::get_stores(int nevts, bool conc)
     FE_TRG_OUT << "Digital output of the FE chip.\n";
     FE_TRG_OUT << "\n";
     FE_TRG_OUT << "Format defined in:\n";
-    FE_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    FE_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf\n";
     
     CIC_TRG_OUT << "Digital output of the CIC chip.\n";
     CIC_TRG_OUT << "\n";
     CIC_TRG_OUT << "Format defined in:\n";
-    CIC_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared_Documents/Data_formats/CIC_IO_Formats_v2.pdf\n";
+    CIC_TRG_OUT << "https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf\n";
     
     float ptGEN;
     float d0GEN;
     bool isGOOD;
-    
+    int disk;
     int evtID;
     
     for (int i=0;i<nevts;++i) // Create the sequence
@@ -451,7 +467,13 @@ void stim_builder::get_stores(int nevts, bool conc)
           
 	  trig_sequence.push_back(m_iter->second);
 	      
-	  if (m_tri_lay<8 || (m_tri_lay>10 && m_tri_lad<9)) isPS = true;
+	  disk=-1;
+	  if (m_tri_lay>10) disk = (m_tri_lay-11)%7;
+
+	  if (m_tri_lay<8) isPS=true;
+
+	  if (m_tri_lay>10 && disk<2 && m_tri_lad<10) isPS = true; 
+	  if (m_tri_lay>10 && disk>=2 && m_tri_lad<7) isPS = true; 
           
 	  for (int j=1;j<8;++j)
 	  {
@@ -529,8 +551,15 @@ void stim_builder::get_stores(int nevts, bool conc)
 	m_raw_lay  = m_raw_chip/1000000;
 	m_raw_lad  = (m_raw_chip-1000000*m_raw_lay)/10000;
 	m_raw_mod  = (m_raw_chip-1000000*m_raw_lay-10000*m_raw_lad)/100;
-        
-	if (m_raw_lay<8 || (m_raw_lay>10 && m_raw_lad<9)) isPS = true;
+      
+	disk=-1;
+	if (m_raw_lay>10) disk = (m_raw_lay-11)%7;
+	
+	if (m_raw_lay<8) isPS=true;
+	
+	if (m_raw_lay>10 && disk<2 && m_raw_lad<10) isPS = true; 
+	if (m_raw_lay>10 && disk>=2 && m_raw_lad<7) isPS = true; 
+	
         
 	FE_TRG_IN << "\n";
 	FE_TRG_IN << "__________________________________________________\n";
@@ -704,8 +733,8 @@ void stim_builder::ana_pix(int lay,int lad,int mod, std::vector<int> digits)
     for (int i=0;i<m_clus;++i)
     {
         if (m_clus_layer[i]!=lay) continue;
-        if (m_clus_ladder[i]!=lad+1) continue;
-        if (int(m_clus_module[i])!=mod+1) continue;
+        if (m_clus_ladder[i]!=lad) continue;
+        if (m_clus_module[i]!=mod) continue;
         
         list_pix.clear();
         list_pix_coords.clear();
@@ -743,8 +772,8 @@ void stim_builder::ana_pix(int lay,int lad,int mod, std::vector<int> digits)
     for (int i=0;i<m_stub;++i)
     {
         if (m_stub_layer[i] !=lay) continue;
-        if (m_stub_ladder[i]!=lad+1) continue;
-        if (m_stub_module[i]!=mod+1) continue;
+        if (m_stub_ladder[i]!=lad) continue;
+        if (m_stub_module[i]!=mod) continue;
         
         // First of all we compute the ID of the stub's module
         
@@ -761,232 +790,231 @@ void stim_builder::ana_pix(int lay,int lad,int mod, std::vector<int> digits)
 
 void stim_builder::do_stub(std::vector<int> stubs)
 {
-    int idx;
+  int idx;
+  
+  for (unsigned int i=1;i<stubs.size();++i)
+  {
+    idx = stubs.at(i);
     
-    for (unsigned int i=1;i<stubs.size();++i)
-    {
-        idx = stubs.at(i);
-
-        // First of all we compute the ID of the stub's module
-        
-        FE_TRG_IN << "stub: "
-            << std::setw(6) << std::fixed << std::setprecision(1) << m_stub_strip[idx] << " "
-            << std::setw(5) << m_stub_deltas[idx]
-            << " " << std::setprecision(2)
-            << std::setw(7) <<  m_stub_seg[idx] << "\n";
-    }
+    // First of all we compute the ID of the stub's module
+    
+    FE_TRG_IN << "stub: "
+	      << std::setw(6) << std::fixed << std::setprecision(1) << m_stub_strip[idx] << " "
+	      << std::setw(5) << m_stub_deltas[idx]
+	      << " " << std::setprecision(2)
+	      << std::setw(7) <<  m_stub_seg[idx] << "\n";
+  }
 }
 
 void stim_builder::initTuple(std::string inRAW,std::string inTRG,std::string out)
 {
-    m_outfile    = new TFile(out.c_str(),"recreate");
+  m_outfile    = new TFile(out.c_str(),"recreate");
 
-    m_tri_tree    = new TTree("Trigger_FE","L1Trigger words after FE");
-    m_raw_tree    = new TTree("Raw_FE","Raw data words after FE");
-    m_raw_summary = new TTree("Raw_SUM","Raw data summary info");
+  m_tri_tree    = new TTree("Trigger_FE","L1Trigger words after FE");
+  m_raw_tree    = new TTree("Raw_FE","Raw data words after FE");
+  m_raw_summary = new TTree("Raw_SUM","Raw data summary info");
 
-    m_tri_tree->Branch("TRI_BX",         &m_tri_bx,      "TRI_BX/I");
-    m_tri_tree->Branch("TRI_CHP",        &m_tri_chip,    "TRI_CHP/I");
-    m_tri_tree->Branch("TRI_LAY",        &m_tri_lay,     "TRI_LAY/I");
-    m_tri_tree->Branch("TRI_LAD",        &m_tri_lad,     "TRI_LAD/I");
-    m_tri_tree->Branch("TRI_MOD",        &m_tri_mod,     "TRI_MOD/I");
-    m_tri_tree->Branch("TRI_WORD",       &m_tri_data);
-    m_tri_tree->Branch("TRI_SIZE",       &m_tri_size,    "TRI_SIZE/I");
-    m_tri_tree->Branch("TRI_NSTUBS",     &m_tri_nstubs);
-    m_tri_tree->Branch("TRI_NSTUBS_S",   &m_tri_nstubs_s);
-    m_tri_tree->Branch("TRI_NSTUBS_G",   &m_tri_nstubs_g);
-    m_tri_tree->Branch("TRI_NSTUBS_GS",  &m_tri_nstubs_gs);
-
-    m_raw_tree->Branch("RAW_BX",         &m_raw_bx,      "RAW_BX/I");
-    m_raw_tree->Branch("RAW_CHP",        &m_raw_chip,    "RAW_CHP/I");
-    m_raw_tree->Branch("RAW_LAY",        &m_raw_lay,     "RAW_LAY/I");
-    m_raw_tree->Branch("RAW_LAD",        &m_raw_lad,     "RAW_LAD/I");
-    m_raw_tree->Branch("RAW_MOD",        &m_raw_mod,     "RAW_MOD/I");
-    m_raw_tree->Branch("RAW_WORD",       &m_raw_data);
-    m_raw_tree->Branch("RAW_SIZE",       &m_raw_size,    "RAW_SIZE/I");
-    m_raw_tree->Branch("RAW_MBITS",      &m_raw_mbits,   "RAW_MBITS/I");
-
-    m_raw_tree->Branch("RAW_NPCLUS",     &m_raw_np);
-    m_raw_tree->Branch("RAW_NSCLUS",     &m_raw_ns);
-
-    L1TT   = new TChain("TkStubs");
-    PIX    = new TChain("Pixels");
-    MC     = new TChain("MC");
+  m_tri_tree->Branch("TRI_BX",         &m_tri_bx,      "TRI_BX/I");
+  m_tri_tree->Branch("TRI_CHP",        &m_tri_chip,    "TRI_CHP/I");
+  m_tri_tree->Branch("TRI_LAY",        &m_tri_lay,     "TRI_LAY/I");
+  m_tri_tree->Branch("TRI_LAD",        &m_tri_lad,     "TRI_LAD/I");
+  m_tri_tree->Branch("TRI_MOD",        &m_tri_mod,     "TRI_MOD/I");
+  m_tri_tree->Branch("TRI_WORD",       &m_tri_data);
+  m_tri_tree->Branch("TRI_SIZE",       &m_tri_size,    "TRI_SIZE/I");
+  m_tri_tree->Branch("TRI_NSTUBS",     &m_tri_nstubs);
+  m_tri_tree->Branch("TRI_NSTUBS_S",   &m_tri_nstubs_s);
+  m_tri_tree->Branch("TRI_NSTUBS_G",   &m_tri_nstubs_g);
+  m_tri_tree->Branch("TRI_NSTUBS_GS",  &m_tri_nstubs_gs);
+  
+  m_raw_tree->Branch("RAW_BX",         &m_raw_bx,      "RAW_BX/I");
+  m_raw_tree->Branch("RAW_CHP",        &m_raw_chip,    "RAW_CHP/I");
+  m_raw_tree->Branch("RAW_LAY",        &m_raw_lay,     "RAW_LAY/I");
+  m_raw_tree->Branch("RAW_LAD",        &m_raw_lad,     "RAW_LAD/I");
+  m_raw_tree->Branch("RAW_MOD",        &m_raw_mod,     "RAW_MOD/I");
+  m_raw_tree->Branch("RAW_WORD",       &m_raw_data);
+  m_raw_tree->Branch("RAW_SIZE",       &m_raw_size,    "RAW_SIZE/I");
+  m_raw_tree->Branch("RAW_MBITS",      &m_raw_mbits,   "RAW_MBITS/I");
+  
+  m_raw_tree->Branch("RAW_NPCLUS",     &m_raw_np);
+  m_raw_tree->Branch("RAW_NSCLUS",     &m_raw_ns);
+  
+  L1TT   = new TChain("TkStubs");
+  PIX    = new TChain("Pixels");
+  MC     = new TChain("MC");
+  
+  std::size_t found = inRAW.find(".root");
+  
+  // Case 1, it's a root file
+  if (found!=std::string::npos)
+  {
+    PIX->Add(inRAW.c_str());
+    L1TT->Add(inRAW.c_str());
+    MC->Add(inRAW.c_str());
+  }
+  else // This is a list provided into a text file
+  {
+    std::string STRING;
+    std::ifstream in2(inRAW.c_str());
+    if (!in2)
+    {
+      std::cout << "Please provide a valid RAW data filename list" << std::endl;
+      return;
+    }
     
-    std::size_t found = inRAW.find(".root");
-  
-    // Case 1, it's a root file
-    if (found!=std::string::npos)
+    while (!in2.eof())
     {
-        PIX->Add(inRAW.c_str());
-        L1TT->Add(inRAW.c_str());
-        MC->Add(inRAW.c_str());
-    }
-    else // This is a list provided into a text file
-    {
-        std::string STRING;
-        std::ifstream in2(inRAW.c_str());
-        if (!in2)
-        {
-            std::cout << "Please provide a valid RAW data filename list" << std::endl;
-            return;
-        }
-  
-        while (!in2.eof())
-        {
-            getline(in2,STRING);
+      getline(in2,STRING);
       
-            found = STRING.find(".root");
-            if (found!=std::string::npos)
-            {
-                L1TT->Add(STRING.c_str());
-                PIX->Add(STRING.c_str());
-                MC->Add(STRING.c_str());
-            }
-        }
-      
-        in2.close();
+      found = STRING.find(".root");
+      if (found!=std::string::npos)
+      {
+	L1TT->Add(STRING.c_str());
+	PIX->Add(STRING.c_str());
+	MC->Add(STRING.c_str());
+      }
     }
-
-    m_PHYsize = L1TT->GetEntries();
-
-    found = inTRG.find(".root");
-  
-    // Case 1, it's a root file
-    if (found!=std::string::npos)
-    {
-        PIX->Add(inTRG.c_str());
-        L1TT->Add(inTRG.c_str());
-        MC->Add(inTRG.c_str());
-    }
-    else // This is a list provided into a text file
-    {
-        std::string STRING;
-        std::ifstream in2(inTRG.c_str());
-        if (!in2)
-        {
-            std::cout << "Please provide a valid TRG data filename list" << std::endl;
-            return;
-        }
-  
-        while (!in2.eof())
-        {
-            getline(in2,STRING);
-      
-            found = STRING.find(".root");
-            if (found!=std::string::npos)
-            {
-                L1TT->Add(STRING.c_str());
-                PIX->Add(STRING.c_str());
-                MC->Add(STRING.c_str());
-            }
-        }
     
-        in2.close();
+    in2.close();
+  }
+
+  m_PHYsize = L1TT->GetEntries();
+  
+  found = inTRG.find(".root");
+  
+  // Case 1, it's a root file
+  if (found!=std::string::npos)
+  {
+    PIX->Add(inTRG.c_str());
+    L1TT->Add(inTRG.c_str());
+    MC->Add(inTRG.c_str());
+  }
+  else // This is a list provided into a text file
+  {
+    std::string STRING;
+    std::ifstream in2(inTRG.c_str());
+    if (!in2)
+    {
+      std::cout << "Please provide a valid TRG data filename list" << std::endl;
+      return;
+    }
+  
+    while (!in2.eof())
+    {
+      getline(in2,STRING);
+      
+      found = STRING.find(".root");
+      if (found!=std::string::npos)
+      {
+	L1TT->Add(STRING.c_str());
+	PIX->Add(STRING.c_str());
+	MC->Add(STRING.c_str());
+      }
+    }
+    
+    in2.close();
    
-    }
+  }
     
     
-    pm_part_px=&m_part_px;
-    pm_part_py=&m_part_py;
-    pm_part_eta=&m_part_eta;
-    pm_part_x=&m_part_x;
-    pm_part_y=&m_part_y;
-    pm_part_z=&m_part_z;
-    
-    MC->SetBranchAddress("subpart_n",        &m_ntp);
-    MC->SetBranchAddress("subpart_x",        &pm_part_x);
-    MC->SetBranchAddress("subpart_y",        &pm_part_y);
-    MC->SetBranchAddress("subpart_z",        &pm_part_z);
-    MC->SetBranchAddress("subpart_px",       &pm_part_px);
-    MC->SetBranchAddress("subpart_py",       &pm_part_py);
-    MC->SetBranchAddress("subpart_eta",      &pm_part_eta);
-    
-    pm_pix_layer=&m_pix_layer;
-    pm_pix_ladder=&m_pix_ladder;
-    pm_pix_module=&m_pix_module;
-    pm_pix_row=&m_pix_row;
-    pm_pix_col=&m_pix_col;
-    pm_pix_ncol=&m_pix_ncol;
-    pm_pix_bot=&m_pix_bot;
-    pm_pix_x=&m_pix_x;
-    pm_pix_y=&m_pix_y;
-    pm_pix_z=&m_pix_z;
-
-    PIX->SetBranchAddress("PIX_n",         &m_pix);
-    PIX->SetBranchAddress("PIX_nPU",       &m_npu);
-    PIX->SetBranchAddress("PIX_layer",     &pm_pix_layer);
-    PIX->SetBranchAddress("PIX_ladder",    &pm_pix_ladder);
-    PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
-    PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
-    PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
-    PIX->SetBranchAddress("PIX_ncolumn",   &pm_pix_ncol);
-    PIX->SetBranchAddress("PIX_bottom",    &pm_pix_bot);
-    PIX->SetBranchAddress("PIX_x",         &pm_pix_x);
-    PIX->SetBranchAddress("PIX_y",         &pm_pix_y);
-    PIX->SetBranchAddress("PIX_z",         &pm_pix_z);
-    
-    pm_stub_layer=&m_stub_layer;
-    pm_stub_ladder=&m_stub_ladder;
-    pm_stub_module=&m_stub_module;
-    pm_stub_pt=&m_stub_pt;
-    pm_stub_tp=&m_stub_tp;
-    pm_stub_deltas=&m_stub_deltas;
-    pm_stub_strip=&m_stub_strip;
-    pm_stub_seg=&m_stub_seg;
-    pm_stub_z=&m_stub_z;
-    pm_clus_nseg=&m_clus_nseg;
-    pm_clus_pix=&m_clus_pix;
-    pm_clus_mult=&m_clus_mult;
-    pm_stub_chip=&m_stub_chip;
-    pm_stub_clust1=&m_stub_clust1;
-    pm_stub_clust2=&m_stub_clust2;
-    pm_stub_pxGEN=&m_stub_pxGEN;
-    pm_stub_pyGEN=&m_stub_pyGEN;
-    pm_stub_etaGEN=&m_stub_etaGEN;
-    pm_stub_X0=&m_stub_X0;
-    pm_stub_Y0=&m_stub_Y0;
-    pm_stub_Z0=&m_stub_Z0;
-    
-    pm_clus_layer=&m_clus_layer;
-    pm_clus_ladder=&m_clus_ladder;
-    pm_clus_module=&m_clus_module;
-    pm_clus_bot=&m_clus_bot;
-    pm_clus_tp=&m_clus_tp;
-    
-    L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
-    L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
-    L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
-    L1TT->SetBranchAddress("L1TkSTUB_module",    &pm_stub_module);
-    L1TT->SetBranchAddress("L1TkSTUB_pt",        &pm_stub_pt);
-    L1TT->SetBranchAddress("L1TkSTUB_z",         &pm_stub_z);
-    L1TT->SetBranchAddress("L1TkSTUB_tp",        &pm_stub_tp);
-    L1TT->SetBranchAddress("L1TkSTUB_deltas",    &pm_stub_deltas);
-    L1TT->SetBranchAddress("L1TkSTUB_strip",     &pm_stub_strip);
-    L1TT->SetBranchAddress("L1TkSTUB_seg",       &pm_stub_seg);
-    L1TT->SetBranchAddress("L1TkSTUB_chip",      &pm_stub_chip);
-    L1TT->SetBranchAddress("L1TkSTUB_clust1",    &pm_stub_clust1);
-    L1TT->SetBranchAddress("L1TkSTUB_clust2",    &pm_stub_clust2);
-    L1TT->SetBranchAddress("L1TkCLUS_PS",        &pm_clus_nseg);
-    
-    L1TT->SetBranchAddress("L1TkCLUS_n",         &m_clus);
-    L1TT->SetBranchAddress("L1TkCLUS_PIX",       &pm_clus_pix);
-    //    L1TT->SetBranchAddress("L1TkCLUS_MULT",      &pm_clus_mult);
-    L1TT->SetBranchAddress("L1TkCLUS_tp",        &pm_clus_tp);
-    L1TT->SetBranchAddress("L1TkCLUS_layer",     &pm_clus_layer);
-    L1TT->SetBranchAddress("L1TkCLUS_ladder",    &pm_clus_ladder);
-    L1TT->SetBranchAddress("L1TkCLUS_module",    &pm_clus_module);
-    L1TT->SetBranchAddress("L1TkCLUS_bottom",    &pm_clus_bot);    
-
-    L1TT->SetBranchAddress("L1TkSTUB_pxGEN",     &pm_stub_pxGEN);
-    L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
-    L1TT->SetBranchAddress("L1TkSTUB_etaGEN",    &pm_stub_etaGEN);
-    L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
-    L1TT->SetBranchAddress("L1TkSTUB_Y0",        &pm_stub_Y0);
-    L1TT->SetBranchAddress("L1TkSTUB_Z0",        &pm_stub_Z0);
-
+  pm_part_px=&m_part_px;
+  pm_part_py=&m_part_py;
+  pm_part_eta=&m_part_eta;
+  pm_part_x=&m_part_x;
+  pm_part_y=&m_part_y;
+  pm_part_z=&m_part_z;
+  
+  MC->SetBranchAddress("subpart_n",        &m_ntp);
+  MC->SetBranchAddress("subpart_x",        &pm_part_x);
+  MC->SetBranchAddress("subpart_y",        &pm_part_y);
+  MC->SetBranchAddress("subpart_z",        &pm_part_z);
+  MC->SetBranchAddress("subpart_px",       &pm_part_px);
+  MC->SetBranchAddress("subpart_py",       &pm_part_py);
+  MC->SetBranchAddress("subpart_eta",      &pm_part_eta);
+  
+  pm_pix_layer=&m_pix_layer;
+  pm_pix_ladder=&m_pix_ladder;
+  pm_pix_module=&m_pix_module;
+  pm_pix_row=&m_pix_row;
+  pm_pix_col=&m_pix_col;
+  pm_pix_ncol=&m_pix_ncol;
+  pm_pix_bot=&m_pix_bot;
+  pm_pix_x=&m_pix_x;
+  pm_pix_y=&m_pix_y;
+  pm_pix_z=&m_pix_z;
+  
+  PIX->SetBranchAddress("PIX_n",         &m_pix);
+  PIX->SetBranchAddress("PIX_nPU",       &m_npu);
+  PIX->SetBranchAddress("PIX_layer",     &pm_pix_layer);
+  PIX->SetBranchAddress("PIX_ladder",    &pm_pix_ladder);
+  PIX->SetBranchAddress("PIX_module",    &pm_pix_module);
+  PIX->SetBranchAddress("PIX_row",       &pm_pix_row);
+  PIX->SetBranchAddress("PIX_column",    &pm_pix_col);
+  PIX->SetBranchAddress("PIX_ncolumn",   &pm_pix_ncol);
+  PIX->SetBranchAddress("PIX_bottom",    &pm_pix_bot);
+  PIX->SetBranchAddress("PIX_x",         &pm_pix_x);
+  PIX->SetBranchAddress("PIX_y",         &pm_pix_y);
+  PIX->SetBranchAddress("PIX_z",         &pm_pix_z);
+  
+  pm_stub_layer=&m_stub_layer;
+  pm_stub_ladder=&m_stub_ladder;
+  pm_stub_module=&m_stub_module;
+  pm_stub_pt=&m_stub_pt;
+  pm_stub_tp=&m_stub_tp;
+  pm_stub_deltas=&m_stub_deltas;
+  pm_stub_strip=&m_stub_strip;
+  pm_stub_seg=&m_stub_seg;
+  pm_stub_z=&m_stub_z;
+  pm_clus_nseg=&m_clus_nseg;
+  pm_clus_pix=&m_clus_pix;
+  pm_clus_mult=&m_clus_mult;
+  pm_stub_chip=&m_stub_chip;
+  pm_stub_clust1=&m_stub_clust1;
+  pm_stub_clust2=&m_stub_clust2;
+  pm_stub_pxGEN=&m_stub_pxGEN;
+  pm_stub_pyGEN=&m_stub_pyGEN;
+  pm_stub_etaGEN=&m_stub_etaGEN;
+  pm_stub_X0=&m_stub_X0;
+  pm_stub_Y0=&m_stub_Y0;
+  pm_stub_Z0=&m_stub_Z0;
+  
+  pm_clus_layer=&m_clus_layer;
+  pm_clus_ladder=&m_clus_ladder;
+  pm_clus_module=&m_clus_module;
+  pm_clus_bot=&m_clus_bot;
+  pm_clus_tp=&m_clus_tp;
+  
+  L1TT->SetBranchAddress("L1TkSTUB_n",         &m_stub);
+  L1TT->SetBranchAddress("L1TkSTUB_layer",     &pm_stub_layer);
+  L1TT->SetBranchAddress("L1TkSTUB_ladder",    &pm_stub_ladder);
+  L1TT->SetBranchAddress("L1TkSTUB_module",    &pm_stub_module);
+  L1TT->SetBranchAddress("L1TkSTUB_pt",        &pm_stub_pt);
+  L1TT->SetBranchAddress("L1TkSTUB_z",         &pm_stub_z);
+  L1TT->SetBranchAddress("L1TkSTUB_tp",        &pm_stub_tp);
+  L1TT->SetBranchAddress("L1TkSTUB_deltas",    &pm_stub_deltas);
+  L1TT->SetBranchAddress("L1TkSTUB_strip",     &pm_stub_strip);
+  L1TT->SetBranchAddress("L1TkSTUB_seg",       &pm_stub_seg);
+  L1TT->SetBranchAddress("L1TkSTUB_chip",      &pm_stub_chip);
+  L1TT->SetBranchAddress("L1TkSTUB_clust1",    &pm_stub_clust1);
+  L1TT->SetBranchAddress("L1TkSTUB_clust2",    &pm_stub_clust2);
+  L1TT->SetBranchAddress("L1TkCLUS_PS",        &pm_clus_nseg);
+  
+  L1TT->SetBranchAddress("L1TkCLUS_n",         &m_clus);
+  L1TT->SetBranchAddress("L1TkCLUS_PIX",       &pm_clus_pix);
+  //    L1TT->SetBranchAddress("L1TkCLUS_MULT",      &pm_clus_mult);
+  L1TT->SetBranchAddress("L1TkCLUS_tp",        &pm_clus_tp);
+  L1TT->SetBranchAddress("L1TkCLUS_layer",     &pm_clus_layer);
+  L1TT->SetBranchAddress("L1TkCLUS_ladder",    &pm_clus_ladder);
+  L1TT->SetBranchAddress("L1TkCLUS_module",    &pm_clus_module);
+  L1TT->SetBranchAddress("L1TkCLUS_bottom",    &pm_clus_bot);    
+  
+  L1TT->SetBranchAddress("L1TkSTUB_pxGEN",     &pm_stub_pxGEN);
+  L1TT->SetBranchAddress("L1TkSTUB_pyGEN",     &pm_stub_pyGEN);
+  L1TT->SetBranchAddress("L1TkSTUB_etaGEN",    &pm_stub_etaGEN);
+  L1TT->SetBranchAddress("L1TkSTUB_X0",        &pm_stub_X0);
+  L1TT->SetBranchAddress("L1TkSTUB_Y0",        &pm_stub_Y0);
+  L1TT->SetBranchAddress("L1TkSTUB_Z0",        &pm_stub_Z0);
+  
 }
-
 
 
 
@@ -997,27 +1025,61 @@ void stim_builder::initTuple(std::string inRAW,std::string inTRG,std::string out
 //
 // Here we retrieve info from the TKLayout CSV file containing the sector definition
 //
-// This file contains, for each sector, the ids of the modules and chips contained in the sector sec_num
+// This file contains, for each sector, the detids of the modules and chips contained in the sector sec_num
 //
 // The role of this method is to create the opposite, ie a vector containing, for every module the list of sectors belonging to it
 //
 /////////////////////////////////////////////////////////////////////////////////
 
-bool stim_builder::convert(std::string sectorfilename)
+bool stim_builder::convert(std::string sectorfilename) 
 {
+  int modid,lay,lad,mod,disk,type;
+
+  bool m_tilted=true;
+
+  //  std::cout << "Starting the conversion" << std::endl;
+
+  int m_sec_mult = 0;
+
+  int limits[6][3];
+  int n_tilted_rings[6];
+  int n_flat_rings[6];
+
+  for (int i=0; i < 6; ++i) n_tilted_rings[i]=0;
+  for (int i=0; i < 6; ++i) n_flat_rings[i]=0;
+
+  if (m_tilted)
+  {
+    n_tilted_rings[0]=12;
+    n_tilted_rings[1]=12;
+    n_tilted_rings[2]=12;
+    n_flat_rings[0]=7;
+    n_flat_rings[1]=11;
+    n_flat_rings[2]=15;
+  }
+
+  for (int i=0; i < 6; ++i)
+  {
+    for (int j=0; j < 3; ++j)
+    {
+      limits[i][j]=0;
+
+      if (n_tilted_rings[i]==0) continue;
+
+      limits[i][j]=(j%2)*n_flat_rings[i]+(j>0)*n_tilted_rings[i];
+    }
+  }
+
   std::vector<int> module;
 
   m_modules.clear();
-  m_chips.clear();
-  m_concs.clear();
 
-  for (int i=0;i<230000;++i)
+  for (unsigned int i=0;i<230000;++i)
   {
     module.clear();
-    module.push_back(-1);
     m_modules.push_back(module);
   }
-
+ 
   std::string STRING;
   std::ifstream in(sectorfilename.c_str());
   if (!in) 
@@ -1025,11 +1087,8 @@ bool stim_builder::convert(std::string sectorfilename)
     std::cout << "Please provide a valid csv sector filename" << std::endl; 
     return false;
   }    
-
-  int m_sec_mult = 0;
+  
   int npar = 0;
-
-  int mlay, mlad, mmod;
 
   while (!in.eof()) 
   {
@@ -1041,6 +1100,7 @@ bool stim_builder::convert(std::string sectorfilename)
 
     std::istringstream ss(STRING);
     npar = 0;
+
     while (ss)
     {
       std::string s;
@@ -1049,40 +1109,89 @@ bool stim_builder::convert(std::string sectorfilename)
       ++npar;
       if (npar<=2) continue;
 
-      mlay = int(atoi(s.c_str())/10000);
-      mlad = int(atoi(s.c_str())-10000*mlay)/100;
-      mmod = int(atoi(s.c_str())-10000*mlay-100*mlad);
+      modid = atoi(s.c_str());
+
+      std::bitset<32> detid = modid; // Le detid
+
+      int rmodid; // Le modid que l'on utilise
+
+      if (detid[25]) // barrel;
+      {
+	lay  = 8*detid[23]+4*detid[22]+2*detid[21]+detid[20]+4;
+
+
+	type = 2*detid[19]+detid[18];
+
+	if (type==3) // Non-tilted
+	{
+	  lad  = 128*detid[17]+64*detid[16]+32*detid[15]+16*detid[14]+
+	    8*detid[13]+4*detid[12]+2*detid[11]+detid[10]-1;
+	  mod  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	    8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1+limits[lay-5][type-1];
+	}
+	else // Tilted
+	{
+	  mod  = 128*detid[17]+64*detid[16]+32*detid[15]+16*detid[14]+
+	    8*detid[13]+4*detid[12]+2*detid[11]+detid[10]-1+limits[lay-5][type-1];
+	  lad  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	    8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1;
+	}
+      }
+      else // endcap
+      {
+	disk  = 8*detid[21]+4*detid[20]+2*detid[19]+detid[18];
+	lay   = 10+disk+abs(2-(2*detid[24]+detid[23]))*7;
+	lad   = 32*detid[17]+16*detid[16]+8*detid[15]+4*detid[14]+2*detid[13]+detid[12]-1;
+	mod  = 128*detid[9]+64*detid[8]+32*detid[7]+16*detid[6]+
+	  8*detid[5]+4*detid[4]+2*detid[3]+detid[2]-1;
+      }
 
       if (m_tower==-1)
       {
-          if (mlay!=m_lay && m_lay!=-1) continue;
-          if (mlad!=m_lad && m_lad!=-1) continue;
-          if (mmod!=m_mod && m_mod!=-1) continue;
+          if (lay!=m_lay && m_lay!=-1) continue;
+          if (lad!=m_lad && m_lad!=-1) continue;
+          if (mod!=m_mod && m_mod!=-1) continue;
       }
-        
-      m_modules.at(atoi(s.c_str())).push_back(m_sec_mult-2);
+
+      rmodid = 10000*lay+100*lad+mod;
+
+      module = m_modules.at(rmodid);
+      module.push_back(m_sec_mult-2);
+
+      m_modules.at(rmodid) = module;
     }
   }
 
-  in.close();
+  //  std::cout << "Found " << m_modules.size() << " modules" << endl;
+
 
   for (int i=0;i<230000;++i)
   {
-    if (m_modules.at(i).size()<=1) continue;
+    if (m_modules.at(i).size()==0) continue;
+
+    //    std::cout << i << endl;
 
     for (int j=0;j<16;++j) m_chips.push_back(100*i+j);
     m_concs.push_back(100*i);
     m_concs.push_back(100*i+8);
   }
 
+  in.close();
+
+  m_sec_mult -= 2;
+
+  cout << m_chips.size() << " CBC/MPA chips"<< endl;
+  cout << m_concs.size() << " CIC chips "<< endl;
+
   return true;
 }
+
 
 //
 // List of method writing the data blocks, according to the format defined in
 // the following document:
 //
-// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Data%20formats/CIC_IO_Formats_v2.pdf
+// https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Specifications/CIC_specs_v2p1.pdf
 //
 
 //
@@ -1277,6 +1386,9 @@ void stim_builder::fill_TRG_block(std::vector<std::vector<int> > stubs, bool ps,
     // Finally, in case of equal chip numbers, priority is given to higher strip number
     //
     // There is no sorting on the Z position
+    //
+    // Note: 23/03/18: In the current CIC model, only the first priority (lowest bend first) has been kept, 
+    // rest of the sorting is not easily reproducible in c++ 
     
     
     int CBC_word[40];
@@ -1447,7 +1559,7 @@ void stim_builder::fill_TRG_block(std::vector<std::vector<int> > stubs, bool ps,
             for (int j=0;j<4;++j) m_tri_data->at(22+j) = nst[3-j];
         }
 
-        for (int j=m_tri_data->size();j<256;++j)
+        for (int j=m_tri_data->size();j<m_TRGsize;++j)
         {
             m_tri_data->push_back(0); // padding
         }
@@ -1490,214 +1602,228 @@ void stim_builder::fill_CONC_TRG_header(int BXid,int MPA)
 
 std::bitset<3> stim_builder::convert_bend_PS(int layer,int ring, float bend)
 {
-    // Format defined in these talks:
-    //
-    //  * Implementation of reduced bits for the bend information.
-    // https://indico.cern.ch/event/350910/session/4/contribution/12/material/slides/0.pdf
-    // https://indico.cern.ch/event/361219/session/7/contribution/17/material/slides/5.pdf
-    // 3 bits for PS, 4 bits for 2S.
-    //
+  // Format defined in these talks:
+  //
+  //  * Implementation of reduced bits for the bend information.
+  // https://indico.cern.ch/event/350910/session/4/contribution/12/material/slides/0.pdf
+  // https://indico.cern.ch/event/361219/session/7/contribution/17/material/slides/5.pdf
+  // 3 bits for PS, 4 bits for 2S.
+  //
+  // SV 23/03/18: This encoding is now obsolete. Correct encoding is now depending on the stub window
+  // and is defined here:
+  //
+  // https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Simulation%20studies/PS_modules_bend_encoding_map.pdf
+  // 
+  // This has to be implemented here
+  //
     
-    int code=0;
+  int code=0;
     
-    if (layer<=10) // barrel
+  if (layer<=10) // barrel
+  {
+    switch( layer )
     {
-        switch( layer )
-        {
-            case 5:
-                if (fabs(bend)<=0.5) code=0;
-                if (bend==-1)        code=5;
-                if (bend==-1.5)      code=6;
-                if (bend<=-2)        code=7;
-                if (bend==1)         code=1;
-                if (bend==1.5)       code=2;
-                if (bend>=2)         code=3;
-                break;
-            case 6:
-                if (fabs(bend)<=0.5) code=0;
-                if (bend==-1)        code=5;
-                if (bend==-1.5)      code=6;
-                if (bend<=-2)        code=7;
-                if (bend==1)         code=1;
-                if (bend==1.5)       code=2;
-                if (bend>=2)         code=3;
-                break;
-            case 7:
-                if (fabs(bend)<=0.5)        code=0;
-                if (bend==-1)               code=5;
-                if (bend==-1.5 || bend==-2) code=6;
-                if (bend<=-2.5)             code=7;
-                if (bend==1)                code=1;
-                if (bend==1.5 || bend==2)   code=2;
-                if (bend<=2.5)              code=3;
-                break;
-            default:
-                break;
-        }
+    case 5:
+      if (fabs(bend)<=0.5) code=0;
+      if (bend==-1)        code=5;
+      if (bend==-1.5)      code=6;
+      if (bend<=-2)        code=7;
+      if (bend==1)         code=1;
+      if (bend==1.5)       code=2;
+      if (bend>=2)         code=3;
+      break;
+    case 6:
+      if (fabs(bend)<=0.5) code=0;
+      if (bend==-1)        code=5;
+      if (bend==-1.5)      code=6;
+      if (bend<=-2)        code=7;
+      if (bend==1)         code=1;
+      if (bend==1.5)       code=2;
+      if (bend>=2)         code=3;
+      break;
+    case 7:
+      if (fabs(bend)<=0.5)        code=0;
+      if (bend==-1)               code=5;
+      if (bend==-1.5 || bend==-2) code=6;
+      if (bend<=-2.5)             code=7;
+      if (bend==1)                code=1;
+      if (bend==1.5 || bend==2)   code=2;
+      if (bend<=2.5)              code=3;
+      break;
+    default:
+      break;
+    }
+  }
+  else
+  {
+    if (ring<=3)
+    {
+      if (fabs(bend)<=0.5)        code=0;
+      if (bend==-1)               code=5;
+      if (bend==-1.5 || bend==-2) code=6;
+      if (bend<=-2.5)             code=7;
+      if (bend==1)                code=1;
+      if (bend==1.5 || bend==2)   code=2;
+      if (bend<=2.5)              code=3;
+    }
+    else if (ring<=6)
+    {
+      if (fabs(bend)<=1.)  code=0;
+      if (bend==-1.5)      code=5;
+      if (bend==-2.)       code=6;
+      if (bend<=-2.5)      code=7;
+      if (bend==1.5)       code=1;
+      if (bend==2.)        code=2;
+      if (bend>=2.5)       code=3;
+    }
+    else if (ring==8)
+    {
+      if (fabs(bend)<=1.)         code=0;
+      if (bend==-1.5 || bend==-2) code=5;
+      if (bend==-2.5)             code=6;
+      if (bend<=-3.)              code=7;
+      if (bend==1.5 || bend==2)   code=1;
+      if (bend==2.5)              code=2;
+      if (bend<=3.)               code=3;
     }
     else
     {
-        if (ring<=3)
-        {
-            if (fabs(bend)<=0.5)        code=0;
-            if (bend==-1)               code=5;
-            if (bend==-1.5 || bend==-2) code=6;
-            if (bend<=-2.5)             code=7;
-            if (bend==1)                code=1;
-            if (bend==1.5 || bend==2)   code=2;
-            if (bend<=2.5)              code=3;
-        }
-        else if (ring<=6)
-        {
-            if (fabs(bend)<=1.)  code=0;
-            if (bend==-1.5)      code=5;
-            if (bend==-2.)       code=6;
-            if (bend<=-2.5)      code=7;
-            if (bend==1.5)       code=1;
-            if (bend==2.)        code=2;
-            if (bend>=2.5)       code=3;
-        }
-        else if (ring==8)
-        {
-            if (fabs(bend)<=1.)         code=0;
-            if (bend==-1.5 || bend==-2) code=5;
-            if (bend==-2.5)             code=6;
-            if (bend<=-3.)              code=7;
-            if (bend==1.5 || bend==2)   code=1;
-            if (bend==2.5)              code=2;
-            if (bend<=3.)               code=3;
-        }
-        else
-        {
-            if (fabs(bend)<=1.)         code=0;
-            if (bend==-1.5 || bend==-2) code=5;
-            if (bend==-2.5 || bend==-3) code=6;
-            if (bend<=-3.5)             code=7;
-            if (bend==1.5 || bend==2)   code=1;
-            if (bend==2.5 || bend==3)   code=2;
-            if (bend>=3.5)              code=3;
-        }
+      if (fabs(bend)<=1.)         code=0;
+      if (bend==-1.5 || bend==-2) code=5;
+      if (bend==-2.5 || bend==-3) code=6;
+      if (bend<=-3.5)             code=7;
+      if (bend==1.5 || bend==2)   code=1;
+      if (bend==2.5 || bend==3)   code=2;
+      if (bend>=3.5)              code=3;
     }
-    
-    std::bitset<3> bendcode = code;
-    
-    return bendcode;
+  }
+  
+  std::bitset<3> bendcode = code;
+  
+  return bendcode;
 }
 
 std::bitset<4> stim_builder::convert_bend_2S(int layer,int ring, float bend)
 {
-    // Format defined in these talks:
-    //
-    //  * Implementation of reduced bits for the bend information.
-    // https://indico.cern.ch/event/350910/session/4/contribution/12/material/slides/0.pdf
-    // https://indico.cern.ch/event/361219/session/7/contribution/17/material/slides/5.pdf
-    // 3 bits for PS, 4 bits for 2S.
-    //
+  // Format defined in these talks:
+  //
+  //  * Implementation of reduced bits for the bend information.
+  // https://indico.cern.ch/event/350910/session/4/contribution/12/material/slides/0.pdf
+  // https://indico.cern.ch/event/361219/session/7/contribution/17/material/slides/5.pdf
+  // 3 bits for PS, 4 bits for 2S.
+  //
+  // SV 23/03/18: This encoding is now obsolete. Correct encoding is now depending on the stub window
+  // and is defined here:
+  //
+  // https://espace.cern.ch/Tracker-Upgrade/Electronics/CIC/Shared%20Documents/Simulation%20studies/2S_modules_bend_encoding_map.pdf
+  // 
+  // This has to be implemented here
+  //
+  
+  int code=0;
     
-    int code=0;
-    
-    if (layer<=10) // barrel
+  if (layer<=10) // barrel
+  {
+    switch( layer )
     {
-        switch( layer )
-        {
-            case 8:
-                if (fabs(bend)<=0.5) code=0;
-                if (bend==-1)        code=9;
-                if (bend==-1.5)      code=10;
-                if (bend==-2)        code=11;
-                if (bend==-2.5)      code=12;
-                if (bend==-3)        code=13;
-                if (bend==-3.5)      code=14;
-                if (bend<=-4)        code=15;
-                if (bend==1)         code=1;
-                if (bend==1.5)       code=2;
-                if (bend==2)         code=3;
-                if (bend==2.5)       code=4;
-                if (bend==3)         code=5;
-                if (bend==3.5)       code=6;
-                if (bend>=4)         code=7;
-                break;
-            case 9:
-                if (fabs(bend)<=0.5) code=0;
-                if (bend==-1)        code=9;
-                if (bend==-1.5)      code=10;
-                if (bend==-2)        code=10;
-                if (bend==-2.5)      code=10;
-                if (bend==-3)        code=11;
-                if (bend==-3.5)      code=11;
-                if (bend==-4)        code=12;
-                if (bend==-4.5)      code=13;
-                if (bend==-5)        code=14;
-                if (bend<=-5.5)      code=15;
-                if (bend==1)         code=1;
-                if (bend==1.5)       code=2;
-                if (bend==2)         code=2;
-                if (bend==2.5)       code=2;
-                if (bend==3)         code=3;
-                if (bend==3.5)       code=3;
-                if (bend==4)         code=4;
-                if (bend==4.5)       code=5;
-                if (bend==5)         code=6;
-                if (bend>=5.5)       code=7;
-                break;
-            case 10:
-                if (fabs(bend)<=0.5) code=0;
-                if (bend==-1)        code=9;
-                if (bend==-1.5)      code=10;
-                if (bend==-2)        code=10;
-                if (bend==-2.5)      code=10;
-                if (bend==-3)        code=11;
-                if (bend==-3.5)      code=11;
-                if (bend==-4)        code=11;
-                if (bend==-4.5)      code=12;
-                if (bend==-5)        code=12;
-                if (bend==-5.5)      code=13;
-                if (bend==-6)        code=14;
-                if (bend<=-6.5)      code=15;
-                if (bend==1)         code=1;
-                if (bend==1.5)       code=2;
-                if (bend==2)         code=2;
-                if (bend==2.5)       code=2;
-                if (bend==3)         code=3;
-                if (bend==3.5)       code=3;
-                if (bend==4)         code=3;
-                if (bend==4.5)       code=4;
-                if (bend==5)         code=4;
-                if (bend==5.5)       code=5;
-                if (bend==6)         code=6;
-                if (bend>=6.5)       code=7;
-                break;
-            default:
-                break;
-        }
+    case 8:
+      if (fabs(bend)<=0.5) code=0;
+      if (bend==-1)        code=9;
+      if (bend==-1.5)      code=10;
+      if (bend==-2)        code=11;
+      if (bend==-2.5)      code=12;
+      if (bend==-3)        code=13;
+      if (bend==-3.5)      code=14;
+      if (bend<=-4)        code=15;
+      if (bend==1)         code=1;
+      if (bend==1.5)       code=2;
+      if (bend==2)         code=3;
+      if (bend==2.5)       code=4;
+      if (bend==3)         code=5;
+      if (bend==3.5)       code=6;
+      if (bend>=4)         code=7;
+      break;
+    case 9:
+      if (fabs(bend)<=0.5) code=0;
+      if (bend==-1)        code=9;
+      if (bend==-1.5)      code=10;
+      if (bend==-2)        code=10;
+      if (bend==-2.5)      code=10;
+      if (bend==-3)        code=11;
+      if (bend==-3.5)      code=11;
+      if (bend==-4)        code=12;
+      if (bend==-4.5)      code=13;
+      if (bend==-5)        code=14;
+      if (bend<=-5.5)      code=15;
+      if (bend==1)         code=1;
+      if (bend==1.5)       code=2;
+      if (bend==2)         code=2;
+      if (bend==2.5)       code=2;
+      if (bend==3)         code=3;
+      if (bend==3.5)       code=3;
+      if (bend==4)         code=4;
+      if (bend==4.5)       code=5;
+      if (bend==5)         code=6;
+      if (bend>=5.5)       code=7;
+      break;
+    case 10:
+      if (fabs(bend)<=0.5) code=0;
+      if (bend==-1)        code=9;
+      if (bend==-1.5)      code=10;
+      if (bend==-2)        code=10;
+      if (bend==-2.5)      code=10;
+      if (bend==-3)        code=11;
+      if (bend==-3.5)      code=11;
+      if (bend==-4)        code=11;
+      if (bend==-4.5)      code=12;
+      if (bend==-5)        code=12;
+      if (bend==-5.5)      code=13;
+      if (bend==-6)        code=14;
+      if (bend<=-6.5)      code=15;
+      if (bend==1)         code=1;
+      if (bend==1.5)       code=2;
+      if (bend==2)         code=2;
+      if (bend==2.5)       code=2;
+      if (bend==3)         code=3;
+      if (bend==3.5)       code=3;
+      if (bend==4)         code=3;
+      if (bend==4.5)       code=4;
+      if (bend==5)         code=4;
+      if (bend==5.5)       code=5;
+      if (bend==6)         code=6;
+      if (bend>=6.5)       code=7;
+      break;
+    default:
+      break;
     }
-    else
-    {
-        if (fabs(bend)<=0.5) code=0;
-        if (bend==-1)        code=9;
-        if (bend==-1.5)      code=10;
-        if (bend==-2)        code=10;
-        if (bend==-2.5)      code=11;
-        if (bend==-3)        code=11;
-        if (bend==-3.5)      code=12;
-        if (bend==-4)        code=12;
-        if (bend==-4.5)      code=13;
-        if (bend==-5)        code=14;
-        if (bend<=-5.5)      code=15;
-        if (bend==1)         code=1;
-        if (bend==1.5)       code=2;
-        if (bend==2)         code=2;
-        if (bend==2.5)       code=3;
-        if (bend==3)         code=3;
-        if (bend==3.5)       code=4;
-        if (bend==4)         code=4;
-        if (bend==4.5)       code=5;
-        if (bend==5)         code=6;
-        if (bend>=5.5)       code=7;
-    }
+  }
+  else
+  {
+    if (fabs(bend)<=0.5) code=0;
+    if (bend==-1)        code=9;
+    if (bend==-1.5)      code=10;
+    if (bend==-2)        code=10;
+    if (bend==-2.5)      code=11;
+    if (bend==-3)        code=11;
+    if (bend==-3.5)      code=12;
+    if (bend==-4)        code=12;
+    if (bend==-4.5)      code=13;
+    if (bend==-5)        code=14;
+    if (bend<=-5.5)      code=15;
+    if (bend==1)         code=1;
+    if (bend==1.5)       code=2;
+    if (bend==2)         code=2;
+    if (bend==2.5)       code=3;
+    if (bend==3)         code=3;
+    if (bend==3.5)       code=4;
+    if (bend==4)         code=4;
+    if (bend==4.5)       code=5;
+    if (bend==5)         code=6;
+    if (bend>=5.5)       code=7;
+  }
+  
+  std::bitset<4> bendcode = code;
     
-    std::bitset<4> bendcode = code;
-    
-    return bendcode;
+  return bendcode;
 }
 

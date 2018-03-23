@@ -10,7 +10,7 @@ INCS = $(ROOTSYS)/include/ $(PWD)/../tclap-1.2.1/include/ .
 	@echo "*"
 	$(CXX) $(CFLAGS) $(addprefix -I, $(INCS)) -c $< -o $@
 
-FE_ana:main.o evtbuilder.o patterngen.o jobparams.o l1_builder.o stim_builder.o compa_files.o
+FE_ana:main.o evtbuilder.o jobparams.o l1_builder.o stim_builder.o compa_files.o losses.o
 	@echo "Build FE data analyzer tool" 
 	$(LD) $^ $(shell $(ROOTSYS)/bin/root-config --libs) -o $@
 
