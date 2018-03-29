@@ -49,9 +49,8 @@
 # You have to adapt this to the storage element you plan to use
 
 # Info concerning the grid directory where the data will be stored
-export LFC_HOST=osg-se.sprace.org.br
-STORAGEDIR=/cms/store/user/calligar/phase2_tracker_simulation/data/SebViret_HLLHCTuto920/20180629_ttbarpu200_32000evts
-
+export LFC_HOST=lyogrid06.in2p3.fr
+STORAGEDIR=/dpm/in2p3.fr/home/cms/data/store/user/sviret/SLHC/GEN
 
 # The queue over which you want to send the job
 BQUEUE=1nd
