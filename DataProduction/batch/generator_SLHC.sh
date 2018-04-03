@@ -166,7 +166,7 @@ sed "s#PUFILEA#$TOP/MBiasSample.root#"                 -i BH_dummy.py
 sed "s/TILTEDORFLAT/$GEOM/"                            -i BH_dummy2.py
 sed "s/MYGLOBALTAG/$GTAG/"                             -i BH_dummy2.py
 
-perl -i.bak -pe 's/SWTUNING/'"${SWTUN}"'/g' BH_dummy.py
+perl -i.bak -pe 's@SWTUNING@'"${SWTUN}"'@g' BH_dummy.py
 
 if [ "$BANK" -eq 1 ]; then
     sed "s/NEVTS/$EVTS/"                                   -i BH_dummy2.py

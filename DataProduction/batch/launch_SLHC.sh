@@ -50,13 +50,13 @@
 
 # Info concerning the grid directory where the data will be stored
 export LFC_HOST=lyogrid06.in2p3.fr
-STORAGEDIR=/dpm/in2p3.fr/home/cms/data/store/user/sviret/SLHC/GEN 
+STORAGEDIR=/dpm/in2p3.fr/home/cms/data/store/user/sviret/SLHC/GEN
 
 # The queue over which you want to send the job
 BQUEUE=1nd
 
 # The directory GRID-friendly address
-STORAGEDIR2=srm://$LFC_HOST/$STORAGEDIR                            
+STORAGEDIR2=gsiftp://$LFC_HOST/$STORAGEDIR
 
 ###########################################################
 ###########################################################
@@ -142,7 +142,7 @@ TID=${11}
 THRESH=${12}
 
 DIRNAME=${MATTER}_PU${NPU}_${GTYPE}_${13}
-
+LOGNAME=${MATTER}_PU${NPU}_${GTYPE}_${13}
 # Then we setup some environment variables
 
 cd  ..
@@ -159,7 +159,7 @@ echo 'Creating directory '$STORAGEDIR/$DIRNAME' for type '$PTYPE
 OUTPUTDIR=$STORAGEDIR2/$DIRNAME
 OUTPUTDIR2=$STORAGEDIR/$DIRNAME
 
-gfal-mkdir $OUTPUTDIR
+gfal-mkdir -p $OUTPUTDIR
 
 # Special case, rerun the stub production on relval sample
 
@@ -192,7 +192,7 @@ if [ $MATTER == "SWTUNING" ]; then
 	    chmod 755 gen_job_${DIRNAME}_${i}.sh
 
 	    if [ ${16} == "BATCH" ]; then	
-		bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${DIRNAME}_${i}.sh
+		bsub -q $BQUEUE -e /tmp/$(whoami)_${LOGNAME}_err.txt -o /tmp/$(whoami)_${LOGNAME}_out.txt gen_job_${DIRNAME}_${i}.sh
 	    fi
 
 	    i=$(( $i + 1))
@@ -223,7 +223,7 @@ do
     chmod 755 gen_job_${DIRNAME}_${i}.sh
 
     if [ ${16} == "BATCH" ]; then	
-	bsub -q $BQUEUE -e /dev/null -o /tmp/${LOGNAME}_out.txt gen_job_${DIRNAME}_${i}.sh
+	bsub -q $BQUEUE -e /tmp/$(whoami)_${LOGNAME}_err.txt -o /tmp/$(whoami)_${LOGNAME}_out.txt gen_job_${DIRNAME}_${i}.sh
     fi
 
     i=$(( $i + 1))
