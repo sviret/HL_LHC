@@ -52,7 +52,7 @@ freq=640  # The default output freq is 640Mz
 fsplit=file.split('/')
 fname=fsplit[len(fsplit)-1]
 
-outputlog='TRG_SEU_ana_'+fname
+outputlog='L1_SEU_ana_'+fname
 outlog=open(outputlog,'w')
 
 fp = open(file, 'r')
