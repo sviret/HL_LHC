@@ -2,7 +2,7 @@
 
 DataParse_trigger.py
 
-Main data parser for CIC2 SEU data (TRIGGER part).
+Main data parser for CIC SEU data (TRIGGER part).
 
 Takes as input a txt file containing the info for one run
 Provides in output different type of info on TRG paths errors
@@ -24,7 +24,7 @@ import sys, getopt
 import os
 import math
 import pickle
-import six
+from datetime import datetime
 
 verbose=0  # Debug mode, put to 1 to get massive outlog.writeouts
 
@@ -73,9 +73,9 @@ MPA=1
 t2=-1
 runtime=0
 
-ncycles=2
+ncycles=2  # this is the default value, but corrected if necessary
 
-#We loop over all the lines, and check for data
+#We loop over all the lines of the output file, and check for data
 
 for line in lines:
 
@@ -110,6 +110,8 @@ for line in lines:
         input = pickle.load(inBitStreamFile) # Open the bit file w/pickle
         
         lOutTriggerBitstream=input[2]  # The trigger reference output
+                                       # This is what we expect from the run
+                                       # Into the CIC
         #llData=input[4]                # The output stored on firmware (not used for the moment)
 
         # TRGO contains the full triggger output over the ncycles generated cycles
@@ -121,7 +123,7 @@ for line in lines:
                 word.append(lOutTriggerBitstream[i][j])
             sword="".join(word)
             TRGO.append(sword)
-    # End of the input file opening loop
+    # End of the input file reading loop
 
     '''
     # Here we parse the error line provided by the analysis software:
@@ -152,17 +154,22 @@ for line in lines:
         time_stamp_1=int(lData[19]+lData[18]+lData[17]+lData[16],16)
         time_stamp_2=int(lData[23]+lData[22]+lData[21]+lData[20],16)
         
+        treal=time_stamp_1*25*1e-9
+        
+        #print(treal)
         tcor=(time_stamp_2-19)%(ncycles*3564) # Frame in the firmware is in advance wrt the CIC one
         # Delay here is 19 clock cycles but it can change by +/- 1
-        
+        # Basically time_stamp_1 never changes, whereas the other depends a lot on the RESYNC signals
         
         # Do we have a trigger error ?
         if error_type[0:2]=='01' or error_type[0:2]=='03' or error_type[0:2]=='07':
 
+            #print(time_stamp_1,int((time_stamp_2)/(ncycles*3564)),error_type[0:2])
+
             # If so we compare the data recorded at the ouptut of the CIC with
             # the expectation. Reminder, when an error is recorded, the expected
             # work is also available
-            line_r=[]  # Reference
+            line_r=[]  # Reference (Should be equivalent to TRGO data)
             line_d=[]  # Data from CIC
 
             line_rb=[]
@@ -220,8 +227,10 @@ for line in lines:
                     if i!=j:
                         bitflip_trg+=1
                         count+=1
-                if verbose==1:
-                    outlog.write(srt(line_rb[jj])+str(line_db[jj])+'\n')
+                if verbose==1 and count>0:
+                    outlog.write(str(line_rb[jj])+'/'+str(line_db[jj])+'/'+str(int((time_stamp_2)/(ncycles*3564)))+'/'+str((time_stamp_2)%(ncycles*3564))+'\n')
+                #else:
+                #    outlog.write(str(line_rb[jj])+'\n')
                 check=0
                 
                 # Thoses lines are just a control at 320M, there is no data here at 640M
@@ -243,13 +252,15 @@ for line in lines:
                 # error[7] : not used
                 # error[8/9/10] : debug params to detect output data transmission issues (phase aligment problems), only possible at 320 where we duplicate bits
                 
-                error=[int((time_stamp_2)/(ncycles*3564)),(time_stamp_2)%(ncycles*3564),jj,line_rb[jj],line_db[jj],count,error_type[0:2],(time_stamp_2)%(8),line_rbb[jj],line_dbb[jj],check]
+                error=[int((time_stamp_2)/(ncycles*3564)),(time_stamp_2)%(ncycles*3564),jj,line_rb[jj],line_db[jj],count,error_type[0:2],(time_stamp_2)%(8),line_rbb[jj],line_dbb[jj],check,treal]
                 errlist_trg.append(error)
 
 #
 # 2. Parsing is completed, one can now analyze the different errors and compare the
 #    bad frames to the reference ones
 #
+
+#print(errlist_trg)
 
 errbycycles_trg=[]
 
@@ -260,12 +271,13 @@ errbycycles_trg=[]
 for error in errlist_trg:
     cycle=error[0]
     found=0
+    #print(cycle,error)
     for data in errbycycles_trg:
         if cycle==data[0]:
             data.append(error)
             found=1
             break
-    if found==0:
+    if found==0: # New cycle
         errbycycles_trg.append([cycle,error])
 
 nflip_trg=0
@@ -280,7 +292,7 @@ simple_err=0
 simpleflip=0
 simpleflip_pad=0
 
-outlog.write('Number of LHC cycles in the input stream:'+str(ncycles)+'\n')
+outlog.write('Number of LHC cycles in the input stream: '+str(ncycles)+'\n')
 
 for cycle in errbycycles_trg:
 
@@ -288,16 +300,18 @@ for cycle in errbycycles_trg:
         outlog.write(str(cycle)+'\n')
     
 
-    if len(cycle)-1>=0:
+    if len(cycle)-1>1: # Let's look at everything
 
         lines=0
         outlog.write('\n')
         outlog.write('//////////////////////////////////'+'\n')
         outlog.write('Start detailed analysis for cycle '+str(cycle[0])+' / '+str(cycle[1][1]%3564)+'\n')
-        
+        outlog.write('T_error = '+str(cycle[1][11])+'s\n')
         if len(cycle)-1==8*freq/320: # The simplest case (usually a flip in the output)
-            outlog.write('Single word error'+'\n')
+            outlog.write('Only one BX in error in this cycle'+'\n')
             simple_err+=1
+            # Many single bitflip errors in different BXs in one cycle are highly unlikely
+            # On the contrary it's likely to happen in case of IR drop issue
         outlog.write('\n')
         
         #
@@ -316,7 +330,7 @@ for cycle in errbycycles_trg:
         start_fr=cycle[1][1]-cycle[1][1]%8 # The start of the output block where the error is
         lgth_fr=int(max(64*freq/320,8*freq/320*(cycle[len(cycle)-1][1]-start_fr+1))) # Clk counts at 320/640
         if verbose==1:
-            outlog.write('Properties of the output block retrieved:'+str(start_fr)+str(lgth_fr)+str(len(cycle)-1)+'\n')
+            outlog.write('Properties of the output block retrieved (BXID/NLines/NBX): '+str(start_fr)+'/'+str(lgth_fr)+'/'+str(len(cycle)-1)+'\n')
         
         idx=[]   # Where to look in the TRGO vector
         false=[] # Will be used to store the wrong words ID
@@ -345,6 +359,9 @@ for cycle in errbycycles_trg:
         # We are now ready to write the data word
         
         nwrg=0
+
+        if verbose==1:
+            outlog.write('EXPECT//MEASURE (if different)'+'\n')
 
         for i in range(lgth_fr):
 
@@ -387,6 +404,11 @@ for cycle in errbycycles_trg:
         refcnt=[]  # Stubs retrieved in the ref block
         datcnt=[]  # Stubs retrieved in the data block
 
+        if verbose==1:
+            outlog.write(str(cycle)+'\n')
+            outlog.write(str(ref)+'\n')
+            outlog.write(str(dat)+'\n')
+            
         for i in range(nstubs): # Reference stubs
             nbits=0
             for p in ref[28+lstub*i:28+lstub*(i+1)]:
@@ -396,26 +418,22 @@ for cycle in errbycycles_trg:
                 continue
             refcnt.append(ref[28+lstub*i:28+lstub*(i+1)])
             if verbose==1:
-                outlog.write('Refstub '+str(i)+str(ref[28+21*i:28+21*(i+1)])+'\n')
+                outlog.write('Refstub '+str(i)+' '+str(ref[28+lstub*i:28+lstub*(i+1)])+'\n')
         outlog.write('\n')
 
-        if verbose==1:
-            outlog.write(str(cycle)+'\n')
-            outlog.write(str(ref)+'\n')
-            outlog.write(str(dat)+'\n')
 
-        
         for i in range(nstubs): # Data stubs
             nbits=0
             for p in dat[28+lstub*i:28+lstub*(i+1)]:
                 if int(p)==1:
                     nbits+=1
-            if nbits==0:
+            if nbits==0:  # Here we can possibly have a bit flip, to be verified.
                 continue
             datcnt.append(dat[28+lstub*i:28+lstub*(i+1)])
             if verbose==1:
-                outlog.write('Datstub '+str(i)+str(dat[28+21*i:28+21*(i+1)])+'\n')
-
+                outlog.write('Datstub '+str(i)+' '+str(dat[28+lstub*i:28+lstub*(i+1)])+'\n')
+        outlog.write('\n')
+        
         # Compute the number of stubs stored in the blocks
         refmult=int(ref[27])+int(ref[26])*2+int(ref[25])*4+int(ref[24])*8+int(ref[23])*16+int(ref[22])*32
         datmult=int(dat[27])+int(dat[26])*2+int(dat[25])*4+int(dat[24])*8+int(dat[23])*16+int(dat[22])*32
@@ -427,7 +445,7 @@ for cycle in errbycycles_trg:
                             # which are not due to SEU
                             
 
-        # Check for errors in the header (don't like them...)
+        # Check for errors in the header (>>>we don't like them...<<<)
         if ref[0:22]!=dat[0:22]:
             if ref[0]!=dat[0]:
                 outlog.write("Header error (CHIP TYPE)"+'\n')
@@ -448,6 +466,8 @@ for cycle in errbycycles_trg:
                 outlog.write(str(data)+'\n')
 
         # Error in stub multiplicity is annoying, but less worrying
+        # as stub can be artificially created by a bit flip. So Ndat>Nref is possible
+        # The opposite a bit more dodgy
         multdiff=0
         if ref[22:28]!=dat[22:28]:
             outlog.write("Stub mult difference"+'\n')
@@ -492,7 +512,7 @@ for cycle in errbycycles_trg:
                 for p in stub[6:lstub]: # Compute the number of bitflip in the MPA/CBC level stub payload (wo BX and Chip IDs)
                     if int(p)==1:
                         nbits+=1
-                # Check is this new stub can come from a simple bit flip in the
+                # Check if this new stub can come from a simple bit flip in the
                 # payload of one CBC/MPA
                 #
                 # Problem is described in the SEU note, an artificial stub which just one bit in its payload can arise. This is a very specific situation, logically much less likely in CIC2.1. In MPA, by definition it can occur only in the 2nd BX of the input block
